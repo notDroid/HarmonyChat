@@ -15,7 +15,7 @@ Run the application (on port 8080):
 uvicorn main:app --reload --port 8080
 ```
 Do a post request:
-POST http://localhost:8000/messages
+POST http://localhost:8080/messages
 body:
 ```json
 {
