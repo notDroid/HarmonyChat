@@ -26,4 +26,4 @@ body:
 }
 ```
 Do a get request:
-GET http://localhost:8080/messages/1
+GET http://localhost:8080/messages/0
