@@ -6,6 +6,16 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
+@router.get("/", response_model=CreateChatResponse)
+async def create_chat(
+    msg: CreateChatRequest,
+    chat_service = Depends(get_chat_service)
+):
+    chat_id = await chat_service.create_chat(
+        user_id_list=msg.user_id_list,
+    )
+    return {"chat_id": chat_id}
+
 @router.post("/{chat_id}", response_model=SendMessageResponse, status_code=201)
 async def send_message(
     chat_id: str,
@@ -24,4 +34,5 @@ async def get_chat_history(
     chat_id: str,
     chat_service = Depends(get_chat_service)
 ):
-    return await chat_service.get_chat_history(chat_id=chat_id)
+    messages = await chat_service.get_chat_history(chat_id=chat_id)
+    return GetChatHistoryResponse(messages=messages)

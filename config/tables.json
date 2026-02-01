@@ -1,6 +1,7 @@
 {
     "ChatHistory": {
         "TableName": "ChatHistory",
+        "BillingMode": "PAY_PER_REQUEST",
         "KeySchema": [
             {"AttributeName": "chat_id", "KeyType": "HASH"},
             {"AttributeName": "ulid", "KeyType": "RANGE"}
@@ -8,19 +9,26 @@
         "AttributeDefinitions": [
             {"AttributeName": "chat_id", "AttributeType": "S"},
             {"AttributeName": "ulid", "AttributeType": "S"}
-        ],
-        "ProvisionedThroughput": {"ReadCapacityUnits": 1, "WriteCapacityUnits": 1}
+        ]
     },
 
     "UserData": {
         "TableName": "UserData",
+        "BillingMode": "PAY_PER_REQUEST",
         "KeySchema": [{"AttributeName": "user_id", "KeyType": "HASH"}],
-        "AttributeDefinitions": [{"AttributeName": "user_id", "AttributeType": "S"}],
-        "ProvisionedThroughput": {"ReadCapacityUnits": 1, "WriteCapacityUnits": 1}
+        "AttributeDefinitions": [{"AttributeName": "user_id", "AttributeType": "S"}]
+    },
+
+    "ChatData": {
+        "TableName": "ChatData",
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [{"AttributeName": "chat_id", "KeyType": "HASH"}],
+        "AttributeDefinitions": [{"AttributeName": "chat_id", "AttributeType": "S"}]
     },
     
     "UserChat": {
         "TableName": "UserChat",
+        "BillingMode": "PAY_PER_REQUEST",
         "KeySchema": [
             {"AttributeName": "user_id", "KeyType": "HASH"},
             {"AttributeName": "chat_id", "KeyType": "RANGE"}
@@ -32,11 +40,12 @@
         "GlobalSecondaryIndexes": [
             {
                 "IndexName": "ChatIdIndex",
-                "KeySchema": [{"AttributeName": "chat_id", "KeyType": "HASH"}],
-                "Projection": {"ProjectionType": "ALL"},
-                "ProvisionedThroughput": {"ReadCapacityUnits": 1, "WriteCapacityUnits": 1}
+                "KeySchema": [
+                    {"AttributeName": "chat_id", "KeyType": "HASH"},
+                    {"AttributeName": "user_id", "KeyType": "RANGE"}
+                ],
+                "Projection": {"ProjectionType": "ALL"}
             }
-        ],
-        "ProvisionedThroughput": {"ReadCapacityUnits": 1, "WriteCapacityUnits": 1}
+        ]
     }
 }

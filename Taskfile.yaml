@@ -13,21 +13,15 @@ tasks:
       - docker run -d -p 8000:8000 amazon/dynamodb-local &
       - python init_db.py --table-file {{.table_file}}
 
-  run-app-local:
+  run-local:
     desc: "Run the FastAPI application with Uvicorn"
     dir: src/
     cmds:
       - task: clean-up-local
       - task: init-local
-      - uvicorn simple_discord.app.main:app --reload --port 8080
+      - uvicorn simple_discord.app.main:app --reload --port 8080 --host 0.0.0.0
 
   clean-up-local:
     desc: "Stop and remove local DynamoDB Docker container"
     cmds:
       - docker ps -q --filter "ancestor=amazon/dynamodb-local" | xargs -r docker stop | xargs -r docker rm
-
-  update-dependencies:
-    desc: "Freeze dependencies"
-    cmds:
-      - conda env export --no-builds > environment.yaml
-      - pip freeze > requirements.txt
