@@ -31,12 +31,12 @@ tasks:
       - pkill -f uvicorn || true
 
   run-local-background:
-    desc: "Run the FastAPI application with Uvicorn"
+    desc: "Run the FastAPI application with Uvicorn in the background for testing"
     dir: src/
     cmds:
       - task: clean-up-local
       - task: init-local
-      - uvicorn simple_discord.app.main:app --reload --port ${API_PORT} --host 0.0.0.0 &
+      - uvicorn simple_discord.app.main:app --reload --port ${API_PORT} --host 0.0.0.0 > /tmp/discord_test.log &
 
   test-local:
     desc: "Run tests against the local DynamoDB instance"
