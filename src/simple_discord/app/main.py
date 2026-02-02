@@ -22,3 +22,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, debug=True)
 app.include_router(api_v1_router, prefix="/api/v1")
+
+@app.get("/")
+async def root():
+    return {"message": "Simple Discord API is running."}

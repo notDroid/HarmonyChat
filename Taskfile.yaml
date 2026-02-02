@@ -1,7 +1,10 @@
-version: '3'
+version: '3'  
 
-vars:
-  
+env:
+  DYNAMODB_PORT: 8010
+  API_PORT: 8000
+  DYNAMODB_ENDPOINT: "http://localhost:8010"
+  API_ENDPOINT_URL: "http://localhost:8000"
 
 tasks:
   init-local:
@@ -10,7 +13,7 @@ tasks:
       table_file: "../../config/tables.json"
     dir: infra/local
     cmds:
-      - docker run -d -p 8000:8000 amazon/dynamodb-local &
+      - docker run -d -p ${DYNAMODB_PORT}:8000 amazon/dynamodb-local &
       - python init_db.py --table-file {{.table_file}}
 
   run-local:
@@ -19,9 +22,29 @@ tasks:
     cmds:
       - task: clean-up-local
       - task: init-local
-      - uvicorn simple_discord.app.main:app --reload --port 8080 --host 0.0.0.0
+      - uvicorn simple_discord.app.main:app --reload --port ${API_PORT} --host 0.0.0.0
 
   clean-up-local:
     desc: "Stop and remove local DynamoDB Docker container"
     cmds:
       - docker ps -q --filter "ancestor=amazon/dynamodb-local" | xargs -r docker stop | xargs -r docker rm
+      - pkill -f uvicorn || true
+
+  run-local-background:
+    desc: "Run the FastAPI application with Uvicorn"
+    dir: src/
+    cmds:
+      - task: clean-up-local
+      - task: init-local
+      - uvicorn simple_discord.app.main:app --reload --port ${API_PORT} --host 0.0.0.0 &
+
+  test-local:
+    desc: "Run tests against the local DynamoDB instance"
+    dir: src/simple_discord/tests
+    env:
+      API_PATH: "api/v1"
+    cmds:
+      - task: run-local-background
+      - defer:
+          task: clean-up-local
+      - pytest

@@ -28,3 +28,10 @@ class UnitOfWork:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.operations.clear()
+
+class UnitOfWorkFactory:
+    def __init__(self, client):
+        self.client = client
+
+    def __call__(self):
+        return UnitOfWork(self.client)

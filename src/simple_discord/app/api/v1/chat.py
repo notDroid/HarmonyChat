@@ -6,7 +6,7 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.get("/", response_model=CreateChatResponse)
+@router.post("/", response_model=CreateChatResponse)
 async def create_chat(
     msg: CreateChatRequest,
     chat_service = Depends(get_chat_service)

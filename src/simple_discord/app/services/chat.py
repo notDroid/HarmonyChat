@@ -1,14 +1,15 @@
 from ulid import ULID
 from datetime import datetime, timezone
+from fastapi import HTTPException
 
 from simple_discord.app.schemas import *
 from simple_discord.app.repositories import ChatHistoryRepository, UserChatRepository, ChatDataRepository
-from simple_discord.app.db import UnitOfWork
+from simple_discord.app.db import UnitOfWorkFactory
 
 
 class ChatService:
     '''
-    Docstring for ChatService
+    Docstring for ChatService (Not fully implemented yet)
 
     This service handles chat operations including creating chats, sending messages, and retrieving chat history.
     It interacts with the ChatHistoryRepository, UserChatRepository, and ChatDataRepository to perform these operations.
@@ -36,16 +37,16 @@ class ChatService:
             chat_history_repository: ChatHistoryRepository, 
             user_chat_repository: UserChatRepository, 
             chat_data_repository: ChatDataRepository,
-            unit_of_work: UnitOfWork
+            unit_of_work: UnitOfWorkFactory
         ):
         self.chat_history_repository = chat_history_repository
         self.user_chat_repository = user_chat_repository
         self.chat_data_repository = chat_data_repository
-        self.uow_fn = unit_of_work
+        self.uow_factory = unit_of_work
 
     async def create_chat(self, user_id_list: list[str]) -> str:
         if len(user_id_list) < 2:
-            raise ValueError("A chat must have at least two users.")
+            raise HTTPException(400, "A chat must have at least two users.")
         
         chat_id = str(ULID())
         
@@ -54,7 +55,7 @@ class ChatService:
             created_at=datetime.now(timezone.utc).isoformat()
         )
 
-        async with self.uow_fn() as uow:
+        async with self.uow_factory() as uow:
             await self.chat_data_repository.create_chat(chat_data_item, uow)
             await self.user_chat_repository.create_chat(chat_id=chat_id, user_id_list=user_id_list, unit_of_work=uow)
             await uow.commit()
