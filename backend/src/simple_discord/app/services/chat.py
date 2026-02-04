@@ -109,7 +109,8 @@ class ChatService:
         messages = await self.chat_history_repository.get_chat_history(chat_id)
         return messages
     
-    async def delete_chat(self, chat_id: str):
+    async def delete_chat(self, user_id: str, chat_id: str):
+        await self.verify_user_in_chat(user_id, chat_id)
         async with self.uow_factory() as uow:
             await self.chat_data_repository.delete_chat(chat_id, uow)
             await self.user_chat_repository.delete_chat(chat_id, uow)

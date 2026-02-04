@@ -62,6 +62,7 @@ async def get_chat_history(
 @router.delete("/{chat_id}", status_code=204) # TODO: finish implementation (can cause db memory leaks until then)
 async def delete_chat(
     chat_id: str,
+    user_id: str,
     chat_service = Depends(get_chat_service)
 ):
-    await chat_service.delete_chat(chat_id=chat_id)
+    await chat_service.delete_chat(user_id=user_id, chat_id=chat_id)
