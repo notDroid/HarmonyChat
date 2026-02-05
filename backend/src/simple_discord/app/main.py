@@ -3,6 +3,7 @@ import aioboto3
 from fastapi import FastAPI
 from .core import settings
 from .api.v1 import router as api_v1_router
+from fastapi.middleware.cors import CORSMiddleware
 
 session = aioboto3.Session()
 
@@ -22,6 +23,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, debug=True)
 app.include_router(api_v1_router, prefix="/api/v1")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 @app.get("/")
 async def root():
