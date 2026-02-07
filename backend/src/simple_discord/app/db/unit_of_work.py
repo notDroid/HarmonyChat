@@ -31,7 +31,8 @@ class UnitOfWork:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        active_writer_var.reset(self._token)
+        if self._token:
+            active_writer_var.reset(self._token)
         self.operations.clear()
 
 class UnitOfWorkFactory:
@@ -45,7 +46,7 @@ class TransactionWriter:
     def __init__(self, uow: UnitOfWork):
         self.uow = uow
 
-    async def put_item(self, TableName: str, Item: dict, ConditionExpression: str = None):
+    async def put_item(self, TableName: str, Item: dict, ConditionExpression: str | None = None):
         op = {
             "Put": {
                 "TableName": TableName,
