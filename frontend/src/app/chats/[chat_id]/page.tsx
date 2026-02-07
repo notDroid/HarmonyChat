@@ -2,10 +2,11 @@
 
 import { use, useState, useEffect } from 'react';
 import useSWR from 'swr';
+import Message from "@/components/ui/message"
 
-const host_name = "walis-macbook-pro";
+const host_name = "macbook-pro";
 const API_ENDPOINT = `http://${host_name}:8000/api/v1/`;
-const user_id ='01KGTSE09YZJSZNR77KESMKPS5';
+const user_id ='01KGWSCDW9J1NEY5ZV4WFA4YMH';
 const refreshInterval = 1000; // 1 second
 
 async function getChatHistory(chat_id: string, user_id: string) {
@@ -32,13 +33,7 @@ async function sendMessage(chat_id: string, user_id: string, content: string) {
   return data;
 }
 
-export function Message({message}: { message: any; }) {
-  return (
-    <div>
-      <strong>{message.user_id}:</strong> {message.content}
-    </div>
-  );
-}
+
 
 export function ChatBar({ onSendMessage }: { onSendMessage: (message: string) => void }) {
   const [message, setMessage] = useState<string>('');

@@ -1,26 +1,74 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  
+  /* Base Colors */
+  --color-brand: #5865F2;
+  --color-green: #23A559;
+  --color-red: #DA373C;
+  
+  /* Light Theme Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f2f3f5;
+  --bg-tertiary: #e3e5e8;
+  --bg-message-hover: #f0f1f5;
+  --text-primary: #060607;
+  --text-muted: #5c5e66;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Dark Theme Colors */
+    --bg-primary: #313338;
+    --bg-secondary: #2b2d31; 
+    --bg-tertiary: #1e1f22; 
+    --bg-message-hover: #2e3035;
+    --text-primary: #f2f3f5;
+    --text-muted: #949ba4;
   }
 }
 
+@theme inline {
+  /* Colors */
+  --color-brand: var(--color-brand);
+  --color-discord-bg: var(--bg-primary);
+  --color-discord-sidebar: var(--bg-secondary);
+  --color-discord-server: var(--bg-tertiary);
+  --color-discord-text: var(--text-primary);
+  --color-discord-muted: var(--text-muted);
+
+  /* Layout Spacing */
+  --spacing-sidebar: 4.5rem; /* Discord is slightly narrower than 5rem usually */
+  --spacing-server-icon: 3rem;
+  
+  /* The "Pill" (White Bar) Dimensions */
+  --width-pill: 0.3rem;       /* 4px */
+  --height-pill-small: 1rem; /* 8px (Unread) */
+  --height-pill-hover: 1.75rem;/* 20px (Hover) */
+  --height-pill-active: 2.5rem;/* 40px (Active) */
+  
+  --radius-discord: 1rem;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
