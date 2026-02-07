@@ -46,7 +46,7 @@ class ChatService:
         self.user_service = user_service
         self.uow_factory = unit_of_work
 
-    async def verify_user_in_chat(self, user_id: str, chat_id: str) -> bool:
+    async def verify_user_in_chat(self, user_id: str, chat_id: str) -> bool | None:
         user_in_chat = await self.user_service.verify_user_in_chat(user_id=user_id, chat_id=chat_id)
         if not user_in_chat:
             chat_exists = await self.chat_data_repository.chat_exists(chat_id)

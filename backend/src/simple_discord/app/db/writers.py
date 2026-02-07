@@ -15,7 +15,7 @@ class Delegator:
             setattr(self._obj, name, value)
 
     def __dir__(self):
-        return sorted(set(dir(type(self)) | dir(self._obj)))
+        return sorted(set(dir(type(self))))
 
 class DirectWriter(Delegator):
     def __init__(self, client):
