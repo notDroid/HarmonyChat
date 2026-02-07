@@ -1,8 +1,7 @@
 from simple_discord.app.schemas import *
 from .dependencies import get_chat_service
 
-from fastapi import Depends
-from fastapi import APIRouter
+from fastapi import Depends, BackgroundTasks, APIRouter
 
 router = APIRouter()
 
@@ -63,6 +62,8 @@ async def get_chat_history(
 async def delete_chat(
     chat_id: str,
     user_id: str,
-    chat_service = Depends(get_chat_service)
+    background_tasks: BackgroundTasks,
+    chat_service = Depends(get_chat_service),
 ):
     await chat_service.delete_chat(user_id=user_id, chat_id=chat_id)
+    background_tasks.add_task(chat_service.background_delete_chat_history, chat_id=chat_id)

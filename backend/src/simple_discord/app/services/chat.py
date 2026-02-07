@@ -116,5 +116,7 @@ class ChatService:
             await self.user_chat_repository.delete_chat(chat_id)
             # TODO: Add background task to delete chat history (this function can cause database memory leaks until then)
             await uow.commit()
-        await self.chat_history_repository.delete_chat_history(chat_id) # TODO: Maybe make this async as a background task later
+
+    async def background_delete_chat_history(self, chat_id: str):
+        await self.chat_history_repository.delete_chat_history(chat_id)
         

@@ -1,8 +1,7 @@
 from simple_discord.app.schemas import *
 from .dependencies import get_user_service
 
-from fastapi import Depends
-from fastapi import APIRouter
+from fastapi import Depends, APIRouter
 
 router = APIRouter()
 
