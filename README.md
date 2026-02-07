@@ -13,7 +13,7 @@ Create and activate the conda environment:
 ```bash
 conda env create -f environment.yaml
 conda activate simple-discord
-python -m pip install -e .
+python -m pip install -e backend
 ```
 
 ### Run and Test Locally
