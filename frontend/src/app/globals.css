@@ -35,6 +35,8 @@
     --text-primary: #dbdee1;
     --text-muted: #949ba4;
     --bg-chatbar:#34363a;
+    --outline-primary: #4a5565;
+    --bg-dark-secondary: #151718;
   }
 }
 
@@ -48,6 +50,8 @@
   --color-discord-muted: var(--text-muted);
   --color-discord-hover: var(--bg-highlight);
   --color-discord-chatbar: var(--bg-chatbar);
+  --color-discord-outline: var(--outline-primary);
+  --color-discord-loading: var(--bg-dark-secondary);
 
   /* Layout Spacing */
   --spacing-sidebar: 4.5rem;

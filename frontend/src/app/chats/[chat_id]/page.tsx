@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import Message from "@/components/ui/message"
 import ChatBar from "@/components/ui/chat_bar"
 import { getChatHistory, sendMessage} from "@/lib/api";
+import LoadingChatPanel from "@/components/ui/loading_chat_panel"
 
 // Temporary constants for demo purposes.
 const refreshInterval = 1000; // 1 second
@@ -17,16 +18,16 @@ function ChatPanel({ chat_id }: { chat_id: string }) {
     () => getChatHistory(chat_id, user_id),
     { refreshInterval: refreshInterval }
   )
-
-  if (isLoading) return <div>Loading...</div>;
+  return <LoadingChatPanel />;
+  if (isLoading) return <LoadingChatPanel />;
   if (error) return <div>Error loading data</div>;
 
   // 2. Render Messages: Maps over the fetched messages and renders a Message component for each one.
   return (
     <div className="
-        flex-1 overflow-y-auto        
+        flex-1 overflow-y-auto pb-4 flex flex-col-reverse  
       ">   
-      {data.map((message: any, index: number) => (
+      {[...data].reverse().map((message: any, index: number) => (
         <Message key={index} message={message} />
       ))}
     </div>

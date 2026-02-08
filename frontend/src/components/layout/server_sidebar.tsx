@@ -10,6 +10,8 @@ export default function ServerSidebar() {
         flex flex-col items-center
         overflow-y-auto scrollbar-hide
         py-3 gap-3
+        border-r
+        border-discord-outline
     ">
       <ServerIcon label="A" active />
       <ServerIcon label="B" unread />
