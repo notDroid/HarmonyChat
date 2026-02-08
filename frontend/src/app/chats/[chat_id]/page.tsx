@@ -1,5 +1,5 @@
 import { use } from 'react';
-import ChatWindowView from "@/views/chat/chat_window";
+import ChatWindowView from "@/features/chat/view/chat_window";
 
 
 export default function ChatWindow({ params }: { params: Promise<{ chat_id: string }> }) {

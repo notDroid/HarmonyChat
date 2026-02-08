@@ -27,6 +27,7 @@ export default function ServerIcon(
           h-server-icon w-server-icon
           flex items-center justify-center
           transition-all duration-200 ease-linear
+          shadow-sm
           
           /* Determine Shape: Active is rounded, Hover is rounded, Default is circle */
           ${active ? 'rounded-discord' : 'rounded-[50%] group-hover:rounded-discord'}

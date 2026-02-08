@@ -1,4 +1,4 @@
-import Message from "@/ui/chat/chat_message"
+import Message from "./chat_message"
 
 
 export default function ChatPanel({ messages }: { messages: any[] }) {
