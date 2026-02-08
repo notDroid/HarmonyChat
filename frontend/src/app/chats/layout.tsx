@@ -6,9 +6,11 @@ export default function ChatsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen w-full">
       <ServerSidebar />
-      <div className="ml-sidebar">{children}</div>
+      <div className="h-full w-full">
+        {children}
+      </div>
     </div>
   );
 }

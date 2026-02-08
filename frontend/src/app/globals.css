@@ -20,7 +20,7 @@
   --bg-primary: #ffffff;
   --bg-secondary: #f2f3f5;
   --bg-tertiary: #e3e5e8;
-  --bg-message-hover: #f0f1f5;
+  --bg-highlight: #f0f1f5;
   --text-primary: #060607;
   --text-muted: #5c5e66;
 }
@@ -28,12 +28,13 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark Theme Colors */
-    --bg-primary: #313338;
+    --bg-primary: #2e3035;
     --bg-secondary: #2b2d31; 
     --bg-tertiary: #1e1f22; 
-    --bg-message-hover: #2e3035;
-    --text-primary: #f2f3f5;
+    --bg-highlight: #393b41;
+    --text-primary: #dbdee1;
     --text-muted: #949ba4;
+    --bg-chatbar:#34363a;
   }
 }
 
@@ -45,16 +46,25 @@
   --color-discord-server: var(--bg-tertiary);
   --color-discord-text: var(--text-primary);
   --color-discord-muted: var(--text-muted);
+  --color-discord-hover: var(--bg-highlight);
+  --color-discord-chatbar: var(--bg-chatbar);
 
   /* Layout Spacing */
-  --spacing-sidebar: 4.5rem; /* Discord is slightly narrower than 5rem usually */
+  --spacing-sidebar: 4.5rem;
+  --spacing-header: 3rem;
+  --spacing-chatbar: 3rem;
   --spacing-server-icon: 3rem;
+
+  /* Messages */
+  --size-avatar: 2.5rem; 
+  --spacing-message-gutter: 1rem; 
   
-  /* The "Pill" (White Bar) Dimensions */
-  --width-pill: 0.3rem;       /* 4px */
-  --height-pill-small: 1rem; /* 8px (Unread) */
-  --height-pill-hover: 1.75rem;/* 20px (Hover) */
-  --height-pill-active: 2.5rem;/* 40px (Active) */
+
+  /* Pills */
+  --width-pill: 0.3rem;       
+  --height-pill-small: 1rem; 
+  --height-pill-hover: 1.75rem;
+  --height-pill-active: 2.5rem;
   
   --radius-discord: 1rem;
 }
