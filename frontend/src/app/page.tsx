@@ -1,16 +1,14 @@
-import { redirect } from "next/navigation";
-import { getChatList } from "@/lib/api";
+import AuthWrapper from '@/features/auth/auth_wrapper';
 
-// Temporary constant for demo purposes.
-const user_id = '01KGX14KWXN0TR47C3N36N7ZBN'; 
-
-export default async function HomePage() {
-  const data = await getChatList(user_id);
-  const chat_ids = data.chat_id_list;
-
-  if (!chat_ids || chat_ids.length === 0) {
-    return <div>No chats</div>;
-  }
-
-  redirect(`/chats/${chat_ids[0]}`);
+export default function DashboardPage() {
+  return (
+    <AuthWrapper>
+      {/* This content is only visible to logged-in users */}
+      <div className="bg-gray-100 p-4 rounded">
+        <h2>Protected Dashboard Content</h2>
+        <p>If you can see this, you are authenticated!</p>
+      </div>
+    </AuthWrapper>
+  );
 }
+

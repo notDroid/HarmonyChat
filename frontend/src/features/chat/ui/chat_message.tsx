@@ -23,7 +23,7 @@ export default function Message({ message }: MessageProps) {
     <div className="
     grid grid-cols-[auto_minmax(0,1fr)] 
     gap-3 w-full px-3 py-4
-    text-sm hover:bg-discord-hover transition-colors
+    text-sm hover:bg-app-hover transition-colors
     ">
       
       {/* Icon */}
@@ -43,16 +43,16 @@ export default function Message({ message }: MessageProps) {
       <div className="flex flex-col">
         {/* User name and timestamp */}
         <div className="flex items-baseline gap-2 break-all">
-          <span className="cursor-pointer font-medium text-discord-text hover:underline">
+          <span className="cursor-pointer font-medium text-app-text hover:underline">
             {message.user_id}
           </span>
-          <span className="font-light text-xs text-discord-muted cursor-default select-none break-all">
+          <span className="font-light text-xs text-app-muted cursor-default select-none break-all">
             {date}
           </span>
         </div>
 
         {/* Message content */}
-        <div className="text-discord-text leading-5.5 wrap-break-word whitespace-pre-wrap">
+        <div className="text-app-text leading-5.5 wrap-break-word whitespace-pre-wrap">
           {message.content}
         </div>
       </div>

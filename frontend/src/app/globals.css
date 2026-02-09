@@ -1,56 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  --font-sans:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
-  
-  /* Base Colors */
-  --color-brand: #5865F2;
-  --color-green: #23A559;
-  --color-red: #DA373C;
-  
-  /* Light Theme Colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f2f3f5;
-  --bg-tertiary: #e3e5e8;
-  --bg-highlight: #f0f1f5;
-  --text-primary: #060607;
-  --text-muted: #5c5e66;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --color-brand: #10b981;
+  --color-green: #059669;
+  --color-red: #be123c;
+  --bg-primary: #fafaf9;
+  --bg-secondary: #f0fdf4;
+  --bg-tertiary: #e7e5e4;
+  --bg-highlight: #d6d3d1;
+  --text-primary: #1c1917;
+  --text-muted: #57534e;
+  --outline-primary: #d6d3d1;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Dark Theme Colors */
-    --bg-primary: #2e3035;
-    --bg-secondary: #2b2d31; 
-    --bg-tertiary: #1e1f22; 
-    --bg-highlight: #393b41;
-    --text-primary: #dbdee1;
-    --text-muted: #949ba4;
-    --bg-chatbar:#34363a;
-    --outline-primary: #4a5565;
+    --bg-primary: #18181b;
+    --bg-secondary: #27272a;
+    --bg-tertiary: #131316;
+    --bg-highlight: #3f3f46;
+    --text-primary: #f4f4f5;
+    --text-muted: #a1a1aa;
+    --outline-primary: #3f3f46;
   }
 }
 
 @theme inline {
   /* Colors */
   --color-brand: var(--color-brand);
-  --color-discord-bg: var(--bg-primary);
-  --color-discord-sidebar: var(--bg-secondary);
-  --color-discord-server: var(--bg-tertiary);
-  --color-discord-text: var(--text-primary);
-  --color-discord-muted: var(--text-muted);
-  --color-discord-hover: var(--bg-highlight);
-  --color-discord-chatbar: var(--bg-chatbar);
-  --color-discord-outline: var(--outline-primary);
-  --color-discord-loading: var(--bg-tertiary);
+  --color-app-bg: var(--bg-primary);
+  --color-app-sidebar: var(--bg-secondary);
+  --color-app-server: var(--bg-tertiary);
+  --color-app-text: var(--text-primary);
+  --color-app-muted: var(--text-muted);
+  --color-app-hover: var(--bg-highlight);
+  --color-app-chatbar: var(--bg-secondary);
+  --color-app-outline: var(--outline-primary);
+  --color-app-loading: var(--bg-tertiary);
 
   /* Layout Spacing */
   --spacing-sidebar: 4.5rem;
@@ -69,7 +56,7 @@
   --height-pill-hover: 1.75rem;
   --height-pill-active: 2.5rem;
   
-  --radius-discord: 1rem;
+  --radius-server-icon-expanded: 1rem;
 }
 
 body {

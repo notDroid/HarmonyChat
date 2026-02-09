@@ -1,6 +1,8 @@
 services:
   api:
     build: backend
+    ports:
+      - "8000:8000"
     environment:
       - API_PORT=8000
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
@@ -13,13 +15,38 @@ services:
       init:
         condition: service_completed_successfully
 
+  frontend:
+    build: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - INTERNAL_API_URL=http://api:8000/api/v1
+      - NEXT_PUBLIC_USER_POOL_ID=dev-pool
+      - NEXT_PUBLIC_USER_POOL_CLIENT_ID=dev-client
+    depends_on:
+      api:
+        condition: service_started
+
   dynamodb:
     image: amazon/dynamodb-local
     container_name: simple_discord_db
 
+  localstack:
+    container_name: localstack_main
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=cognito-idp
+      - DEBUG=1
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - ./localstack_init:/etc/localstack/init/ready.d
+
   init:
     build: backend
-    container_name: simple_discord_init
+    container_name: init
     environment:
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
       - AWS_ACCESS_KEY_ID=test

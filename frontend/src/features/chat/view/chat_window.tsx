@@ -20,7 +20,7 @@ export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
   let loaded = false;
 
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate loading delay
+    // await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate loading delay
     initial_messages = await getChatHistory(chat_id, user_id);
     loaded = true;
   
@@ -29,7 +29,7 @@ export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
     console.log("Failed to fetch initial chat history:", error);
     // Throw the error page on API errors, for network errors fall back to the loading page.
     if (error instanceof ApiError) {
-      return <ErrorChatPanel message={`API Error: ${error.message}`} />;
+      return <ErrorChatPanel message={`${error.message}`} />;
     } else if (!(error instanceof NetworkError)) {
       throw error;
     }

@@ -15,7 +15,7 @@ export function ServerIcon(
       <div 
         className={`
           absolute left-0 
-          bg-discord-text 
+          bg-app-text 
           rounded-r-full 
           w-pill
           transition-all duration-200 ease-in-out
@@ -37,11 +37,11 @@ export function ServerIcon(
           shadow-sm
           overflow-hidden  /* Added: Ensures the image clips to the circle/rounded shape */
           
-          ${server_item.is_active ? 'rounded-discord' : 'rounded-[50%] group-hover:rounded-discord'}
+          ${server_item.is_active ? 'rounded-server-icon-expanded' : 'rounded-[50%] group-hover:rounded-server-icon-expanded'}
 
           ${server_item.is_active 
             ? 'bg-brand text-white' 
-            : 'bg-discord-sidebar text-discord-text group-hover:bg-brand group-hover:text-white'
+            : 'bg-app-sidebar text-app-text group-hover:bg-brand group-hover:text-white'
           }
       `}>
         {/* Render Image if URL exists, otherwise render ID */}

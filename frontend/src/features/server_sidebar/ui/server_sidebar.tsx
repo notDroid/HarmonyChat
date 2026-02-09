@@ -4,12 +4,12 @@ export default function ServerSidebar({ children }: { children: React.ReactNode 
         flex-none
         top-0 left-0 h-screen
         w-sidebar
-        bg-discord-server 
+        bg-app-server 
         flex flex-col items-center
         overflow-y-auto scrollbar-hide
         py-3 gap-3
         border-r
-        border-discord-outline
+        border-app-outline
     ">
       {children}
     </nav>

@@ -3,13 +3,13 @@ export default function ChatHeader() {
         <div className="
             w-full h-header 
             flex items-center
-            bg-discord-bg
+            bg-app-bg
             border-b
-            border-discord-outline
+            border-app-outline
             shrink-0
         ">
 
-            <h1 className="text-lg font-semibold text-discord-text px-3">
+            <h1 className="text-lg font-semibold text-app-text px-3">
               Chat Title
             </h1>
 

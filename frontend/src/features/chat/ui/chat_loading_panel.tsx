@@ -7,7 +7,7 @@ import React, { useMemo } from 'react';
 const SKELETON_CONFIG = {
   // Appearance & Theme
   theme: {
-    colorClass: 'bg-discord-loading', // Your global CSS variable class
+    colorClass: 'bg-app-loading', // Your global CSS variable class
     avatarSize: 'w-10 h-10',
     lineHeight: 'h-4',
     gap: 'gap-5',
