@@ -22,8 +22,11 @@ class DirectWriter(Delegator):
         super().__init__(client)
         self.client = client
 
-    async def put_batch(self, TableName: str, Items: List[dict]):
-        await batch_request(self.client, TableName, [{"PutRequest": {"Item": item}} for item in Items])
+    async def put_batch(self, TableName: str, Items: List[dict], **kwargs):
+        await batch_request(self.client, TableName, [{"PutRequest": {"Item": item}} for item in Items], **kwargs)
 
-    async def delete_batch(self, TableName: str, Keys: List[dict]):
-        await batch_request(self.client, TableName, [{"DeleteRequest": {"Key": key}} for key in Keys])
+    async def delete_batch(self, TableName: str, Keys: List[dict], **kwargs):
+        await batch_request(self.client, TableName, [{"DeleteRequest": {"Key": key}} for key in Keys], **kwargs)
+
+    async def require_condition(self, TableName: str, Key: dict, ConditionExpression: str, **kwargs):
+        raise NotImplementedError("DirectWriter does not support condition checks")

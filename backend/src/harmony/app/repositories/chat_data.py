@@ -15,7 +15,7 @@ class ChatDataRepository(BaseRepository):
         await self.writer.put_item(
             TableName=self.table_name,
             Item=dynamo_item,
-            ConditionExpression='attribute_not_exists(chat_id)',
+            ConditionExpression='attribute_not_exists(chat_id)', # Ensure we don't overwrite existing chat
         )
 
     async def get_chat_by_id(self, chat_id: str) -> ChatDataItem | None:
@@ -29,16 +29,22 @@ class ChatDataRepository(BaseRepository):
         chat_data = from_dynamo_json(item)
         return ChatDataItem.model_validate(chat_data)
     
-    async def chat_exists(self, chat_id: str) -> bool:
+    async def check_chat_exists(self, chat_id: str) -> bool:
         response = await self.client.get_item(
             TableName=self.table_name,
             Key=to_dynamo_json({"chat_id": chat_id}),
             ProjectionExpression="chat_id"
         )
-        return "Item" in response
+        return "Item" in response and response["Item"] is not None
+    
+    async def require_chat_exists(self, chat_id: str):
+        self.writer.require_condition(
+            TableName=self.table_name,
+            Key=to_dynamo_json({"chat_id": chat_id}),
+            ConditionExpression="attribute_exists(chat_id)"
+        )
     
     async def delete_chat(self, chat_id: str):
-
         await self.writer.delete_item(
             TableName=self.table_name,
             Key=to_dynamo_json({"chat_id": chat_id})

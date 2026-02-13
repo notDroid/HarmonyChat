@@ -46,39 +46,51 @@ class TransactionWriter:
     def __init__(self, uow: UnitOfWork):
         self.uow = uow
 
-    async def put_item(self, TableName: str, Item: dict, ConditionExpression: str | None = None):
+    async def put_item(self, TableName: str, Item: dict, **kwargs):
         op = {
             "Put": {
                 "TableName": TableName,
                 "Item": Item
+                **kwargs
             }
-        }
-        if ConditionExpression:
-            op["Put"]["ConditionExpression"] = ConditionExpression
+        }            
         self.uow.add_operation(op)
 
-    async def put_batch(self, TableName: str, Items: List[dict]):
+    async def put_batch(self, TableName: str, Items: List[dict], **kwargs):
         for item in Items:
             self.uow.add_operation({
                 "Put": {
                     "TableName": TableName,
-                    "Item": item
+                    "Item": item,
+                    **kwargs
                 }
             })
 
-    async def delete_item(self, TableName: str, Key: dict):
+    async def delete_item(self, TableName: str, Key: dict, **kwargs):
         self.uow.add_operation({
             "Delete": {
                 "TableName": TableName,
-                "Key": Key
+                "Key": Key,
+                **kwargs
             }
         })
 
-    async def delete_batch(self, TableName: str, Keys: List[dict]):
+    async def delete_batch(self, TableName: str, Keys: List[dict], **kwargs):
         for key in Keys:
             self.uow.add_operation({
                 "Delete": {
                     "TableName": TableName,
-                    "Key": key
+                    "Key": key,
+                    **kwargs
                 }
             })
+
+    async def require_condition(self, TableName: str, Key: dict, ConditionExpression: str, **kwargs):
+        self.uow.add_operation({
+            "ConditionCheck": {
+                "TableName": TableName,
+                "Key": Key,
+                "ConditionExpression": ConditionExpression,
+                **kwargs
+            }
+        })

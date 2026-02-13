@@ -1,6 +1,6 @@
 from harmony.app.core import settings
 from harmony.app.schemas import ChatMessage
-from harmony.app.db import to_dynamo_json, from_dynamo_json
+from harmony.app.db import to_dynamo_json, from_dynamo_json, paginate_in_batches
 from .base_repo import BaseRepository
 
 class ChatHistoryRepository(BaseRepository):
@@ -18,6 +18,7 @@ class ChatHistoryRepository(BaseRepository):
             ConditionExpression='attribute_not_exists(chat_id)',
         )
             
+    # TODO: Switch to a paginated approach
     async def get_chat_history(self, chat_id: str):
         response = await self.client.query(
             TableName=self.table_name,
@@ -29,27 +30,16 @@ class ChatHistoryRepository(BaseRepository):
         return [ChatMessage.model_validate(item) for item in items]
 
     async def delete_chat_history(self, chat_id: str):
-        paginator = self.client.get_paginator('query')
-        
-        async for page in paginator.paginate(
-            TableName=self.table_name,
-            KeyConditionExpression="chat_id = :cid",
-            ExpressionAttributeValues=to_dynamo_json({":cid": chat_id}),
-            ProjectionExpression="ulid" # Only fetch the Sort Key
+        async for batch in paginate_in_batches(
+            client=self.client,
+            query_kwargs={
+                "TableName": self.table_name,
+                "KeyConditionExpression": "chat_id = :cid",
+                "ExpressionAttributeValues": to_dynamo_json({
+                    ":cid": chat_id
+                }),
+                "ProjectionExpression": "chat_id, ulid"
+            },
+            batch_size=25,
         ):
-            keys = []
-            
-            for item in page.get("Items", []):
-                keys.append(
-                    to_dynamo_json({
-                        "chat_id": chat_id,
-                        "ulid": from_dynamo_json(item)["ulid"]
-                    })
-                )
-                
-                if len(keys) == 25:
-                    await self.writer.delete_batch(TableName=self.table_name, Keys=keys)
-                    keys = [] # Reset
-            
-            if keys:
-                await self.writer.delete_batch(TableName=self.table_name, Keys=keys)
+            await self.writer.delete_batch(TableName=self.table_name, Keys=batch)

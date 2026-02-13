@@ -38,17 +38,17 @@ task test
 # Implementation Documentation
 
 ## Database
-We use DynamoDB as our primary database for storing user, chat metadata and chat history data.
+We use DynamoDB as our primary database for storing chat history data and user/chat metadata.
 
 ### Reasoning
 1. Dynamodb is suitable to store real time chat data due to its low latency and high scalability for small message record data model which doesn't require relational operations or complex transactions.
-2. User, Chat metadata is relational but can be easily modeled in a denormalized way in DynamoDB with proper partition keys, secondary indexes, and careful use of transactions which makes the implementation simpler and more efficient for our use case. 
+2. User/Chat metadata is relational but can be easily modeled in a denormalized way in DynamoDB with proper partition keys, secondary indexes, and careful use of transactions which makes the implementation simpler.
     - Although using a relational database is likely a better choice in a real production system.
+    - We also use Redis as a caching layer for metadata to optimize presence checks which are very frequent and latency sensitive, we rely on cache invalidation to get fast eventual consistency.
 
 ### Schema Design
 Because of these 2 different models we reason about the data access by whether we are accessing user/chat metadata or chat history data and use the appropriate access patterns for each:
-1. For user/chat metadata, we use 3 tables: Users, Chats, and UserChats. The Users table stores user information, the Chats table stores chat information, and the UserChats table models the many-to-many relationship between users and chats. 
-    - This allows us to efficiently query for a user's chats and a chat's users without needing complex joins and state updates are handled atomically with DynamoDB transactions.
+1. For user/chat metadata, we use 3 tables: Users, Chats, and UserChats. The Users table stores user information, the Chats table stores chat information, and the UserChats table models the many-to-many relationship between users and chats.
 2. For chat history data, we use a single ChatMessages table with a partition key of chat_id and a sort key of ulid. 
     - The ULID allows us to efficiently query for messages in a chat because it encodes a timestamp and ensures lexicographical ordering.
 
@@ -117,21 +117,33 @@ infra/config/tables.json:
 }
 ```
 
-### Data Access Patterns
-**Writes:**
-1. Transactions: We use DynamoDB transactions to ensure atomic creation of chats and the initial users within it.
-    - In the first case we atomically create a chat record, user-chat records for each user in the chat. 
-2. Asyncronous batch writes: For operations that can handle eventual consistency like adding users to an existing chat or deleting the history of a chat whose metadata is already deleted, we use asyncronous batch writes to update the relevant tables without blocking the main thread of execution.
-3. For user, chat metadata and users message writes we use conditional updates to ensure data integrity and handle concurrent updates:
-    - For example, when creating a user_id, chat_id, or chat_message_id (ulid) we use conditional writes to ensure uniqueness.
-    - When updating user or chat metadata we use conditional updates (user writes expect the user to not be marked as deletd) and chat writes expect the chat item to exist.
+### Metadata Access Patterns
+We rely on transaction condition checks in order to maintain consistency of metadata state while tolerating eventual consistency on the read path and relying on caching. 
 
-**Reads:**
-1. The main read operation we use is querying the ChatMessages table by chat_id to get messages in a chat ordered by timestamp.
-    - Since our read/write ratio is about equal we don't use DAX or any other caching layer for chat history data and rely on DynamoDB's low latency for these queries.
-    - We offer reads through either a pub/sub model and also have an optional request/response model (when scrolling through chat history).
-2. We also very frequently user presence in a chat before allowing chat operations to ensure proper access control.
-    - Because this is an extremely repetive check we use redis to cache user-chat membership data and rely on cache invalidation on updates to ensure we minimize latency for these checks while maintaining nearly immediate consistency (although technically a user can still read/write to a chat a bit after they are removed due to lag).
+**Writes:**
+1. **Condition Checks:** 
+    - When creating/updating/removing chats/users we use conditional updates to ensure that the relevant chat and user records exist and are not marked as deleted before allowing the update to go through.
+2. **Transactions:** 
+    - When adding or removing users from a chat we use conditional updates to ensure that the chat exists and the user is not marked as deleted (for adding) or is a member of the chat (for removing) before allowing the update to go through.
+
+**Reads: (Caching Layer)**
+- We frequently check user status, chat status, and user-chat membership before allowing chat operations to ensure proper access control. 
+- Because this is an extremely repetive check we use redis to cache user-chat membership data and rely on cache invalidation on updates to ensure we minimize latency for these checks while maintaining nearly immediate consistency (although technically a user can still read/write to a chat a bit after they are removed due to lag).
+
+### Chat History Access Patterns
+For chat history data we rely on DynamoDB's low latency for reads and writes and use a simple data model with a single table and efficient querying by chat_id and timestamp (ulid) for reads and conditional writes for ensuring data integrity on the write path.
+
+**No Caching Layer:**
+- We do not use a caching layer for chat history data because our read/write ratio is about equal and we want to ensure that users see new messages in a chat immediately without needing to worry about cache invalidation.
+
+**Chat Deletion:**
+- Chat deletetion is a metadata change that triggers an asynchronous task to delete the chat history data for that chat.
+- To do this keep a background worker that listens for chat deletion events and deletes the relevant chat history data and user-chat membership records in batches.
+
+**Eventual Consistency:**
+- We do not use transactional condition checks with the metadata tables (like checking a chat exists before writing to it) and instead rely on the fact that metadata is eventually consistent. 
+    - This means that in some edge cases we might write chat history data for a chat that has been deleted or for a user that has been removed from the chat, but we handle this gracefully on the read path by checking the metadata state before returning chat history data to the user.
+    - This also means there may be memory leaks in the ChatHistory table from deleted chats/users, this could be handled with a periodic cleanup job that deletes chat history data for chats that have been deleted and users that have been removed from all their chats but we have not implemented this for simplicity.
 
 ## API Design
 The API is made with FastAPI and designed as a RESTful API with the following endpoints:

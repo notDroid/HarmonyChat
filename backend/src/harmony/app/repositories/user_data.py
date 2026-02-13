@@ -34,5 +34,6 @@ class UserDataRepository(BaseRepository):
         }
         await self.writer.put_item(
             TableName=self.table_name,
-            Item=to_dynamo_json(tombstone_item)
+            Item=to_dynamo_json(tombstone_item),
+            ConditionExpression='attribute_not_exists(user_id)',
         )

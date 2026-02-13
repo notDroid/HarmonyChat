@@ -1,35 +1,18 @@
 from ulid import ULID
 from datetime import datetime, timezone
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from harmony.app.schemas import *
 from harmony.app.repositories import ChatHistoryRepository, UserChatRepository, ChatDataRepository
 from harmony.app.db import UnitOfWorkFactory
 from .user import UserService
 
+import asyncio
+
+MAX_USERS_PER_OPERATION = 10
 
 class ChatService:
     '''
-    Docstring for ChatService (Not fully implemented yet)
-
-    This service handles chat operations including creating chats, sending messages, and retrieving chat history.
-    It interacts with the ChatHistoryRepository, UserChatRepository, and ChatDataRepository to perform these operations.
-
-    CreateChat:
-        1. Validates that at least two users are provided.
-        2. Validate users exist.
-        3. Validate first user is friend with all other users.
-        4. Generates a unique chat ID using ULID.
-        5. Writes to the ChatData table and UserChat table within a transaction.
-
-    SendMessage:
-        1. Verifies that the user is a member of the chat.
-        2. Generates a unique ULID for the message.
-        3. Creates a ChatMessage item and stores it in the ChatHistory table.
-
-
-    GetChatHistory:
-        1. Verify user is member of chat.
-        2. Retrieves all messages for the specified chat ID from the ChatHistory table.
+    Handles chat-related operations including chat creation, message sending, and chat history retrieval.
     '''
 
     def __init__(
@@ -46,24 +29,49 @@ class ChatService:
         self.user_service = user_service
         self.uow_factory = unit_of_work
 
-    async def verify_user_in_chat(self, user_id: str, chat_id: str) -> bool | None:
-        user_in_chat = await self.user_service.verify_user_in_chat(user_id=user_id, chat_id=chat_id)
-        if not user_in_chat:
-            chat_exists = await self.chat_data_repository.chat_exists(chat_id)
-            if not chat_exists:
-                raise HTTPException(404, "Chat does not exist.")
-            raise HTTPException(403, "User is not a member of this chat.")
+    async def check_user_in_chat(self, user_id: str, chat_id: str) -> bool | None:
+        '''
+        Verifies that a user is a member of a chat. 
+        Used where eventual consistency is acceptable, such as sending messages or retrieving history.
 
-    async def create_chat(self, user_id_list: list[str]) -> str:
-        if len(user_id_list) < 2:
-            raise HTTPException(400, "A chat must have at least two users.")
+        This method performs two concurrent checks:
+            1. Verifies the user is in the chat via UserChatRepository.
+            2. Verifies the chat exists via ChatDataRepository.
+        '''
+        task1 = self.user_service.check_user_in_chat(user_id=user_id, chat_id=chat_id)
+        task2 = self.chat_data_repository.check_chat_exists(chat_id)
+
+        try:
+            user_in_chat, chat_exists = await asyncio.gather(task1, task2)
+        except Exception as e:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Failed to verify user in chat: {str(e)}")
+
+        if not chat_exists:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat does not exist.")
+        if not user_in_chat:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "User is not a member of this chat.")
+
+    async def create_chat(self, user_id: str, user_id_list: list[str]) -> str:
+        '''
+        Creates a new chat with a list of user IDs. The creator is automatically added to the chat.
+            Validations:
+                - A chat cannot be created with more than 10 users (including the creator).
+                - All user IDs must correspond to existing users.
+
+        The users and chat are created in a single transaction to ensure consistency. More users can be added later if needed.
+        '''
+        user_id_list = list(set(user_id_list + [user_id]))  # Ensure the creator is included and remove duplicates
+        if len(user_id_list) > MAX_USERS_PER_OPERATION:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"A chat cannot be created with more than {MAX_USERS_PER_OPERATION} users (add them later).")
         
         # Verify all users exist
-        for user_id in user_id_list:
-            user_exists = await self.user_service.user_exists(user_id)
-            if not user_exists:
-                raise HTTPException(404, f"User {user_id} does not exist.")
+        task_list = [self.user_service.check_user_exists(user_id) for user_id in user_id_list]
+        user_exists = await asyncio.gather(*task_list)
+        for user_id, exists in zip(user_id_list, user_exists):
+            if not exists:
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, f"User {user_id} does not exist.")
         
+        # Create chat item
         ulid_val = ULID()
         chat_id = str(ulid_val)
         timestamp = datetime.fromtimestamp(ulid_val.timestamp, timezone.utc).isoformat()
@@ -73,16 +81,48 @@ class ChatService:
             created_at=timestamp
         )
 
-        async with self.uow_factory() as uow:
-            await self.chat_data_repository.create_chat(chat_data_item)
-            await self.user_chat_repository.create_chat(chat_id=chat_id, user_id_list=user_id_list)
-            await uow.commit()
+        try: 
+            async with self.uow_factory() as uow:
+                await self.chat_data_repository.create_chat(chat_data_item)
+                await self.user_chat_repository.add_users_to_chat(chat_id=chat_id, user_id_list=user_id_list)
+                await uow.commit()
+        except Exception as e:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Failed to create chat: {str(e)}")
         return chat_id
+    
+    async def add_users_to_chat(self, user_id: str, chat_id: str, user_id_list: list[str]):
+        '''
+        Similar to create_chat, but for adding users to an existing chat. 
+        Validations are the same, except the chat must already exist and the requesting user must be a member of the chat.
+        '''
+
+        user_id_list = list(set(user_id_list))  # Remove duplicates
+        if len(user_id_list) > MAX_USERS_PER_OPERATION:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Cannot add more than {MAX_USERS_PER_OPERATION} users at once.")
+        if len(user_id_list) == 0:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "No users provided to add.")
+        
+        # Verify all users exist
+        task_list = [self.user_service.check_user_exists(user_id) for user_id in user_id_list]
+        user_exists = await asyncio.gather(*task_list)
+        for user_id, exists in zip(user_id_list, user_exists):
+            if not exists:
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, f"User {user_id} does not exist.")
+        
+        try: 
+            async with self.uow_factory() as uow:
+                await self.chat_data_repository.require_chat_exists(chat_id)
+                await self.user_chat_repository.require_user_in_chat(chat_id, user_id)
+                await self.user_chat_repository.add_users_to_chat(chat_id=chat_id, user_id_list=user_id_list)
+                await uow.commit()
+        except Exception as e:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Failed to add users to chat: {str(e)}")
 
     async def send_message(self, chat_id: str, user_id: str, content: str):
         # Verify user is in chat
-        await self.verify_user_in_chat(user_id, chat_id)
+        await self.check_user_in_chat(user_id, chat_id)
         
+        # Create message item
         ulid_val = ULID()
         ulid_str = str(ulid_val)
         timestamp = datetime.fromtimestamp(ulid_val.timestamp, timezone.utc).isoformat()
@@ -98,25 +138,41 @@ class ChatService:
         try:
             await self.chat_history_repository.create_message(msg)
         except Exception as e:
-            raise HTTPException(500, f"Failed to send message: {str(e)}")
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Failed to send message: {str(e)}")
 
         return timestamp
 
     async def get_chat_history(self, user_id: str, chat_id: str) -> list[ChatMessage]:
-        # Verify user is in chat
-        await self.verify_user_in_chat(user_id, chat_id)
+        await self.check_user_in_chat(user_id, chat_id)
         
-        messages = await self.chat_history_repository.get_chat_history(chat_id)
+        try:
+            messages = await self.chat_history_repository.get_chat_history(chat_id)
+        except Exception as e:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Failed to retrieve chat history: {str(e)}")
         return messages
     
+    async def leave_chat(self, user_id: str, chat_id: str):
+        try:
+            async with self.uow_factory() as uow:
+                await self.chat_data_repository.require_chat_exists(chat_id)
+                await self.user_chat_repository.require_user_in_chat(chat_id, user_id)
+                await self.user_chat_repository.remove_user_from_chat(chat_id=chat_id, user_id=user_id)
+                await uow.commit()
+        except Exception as e:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Failed to leave chat: {str(e)}")
+    
     async def delete_chat(self, user_id: str, chat_id: str):
-        await self.verify_user_in_chat(user_id, chat_id)
-        async with self.uow_factory() as uow:
-            await self.chat_data_repository.delete_chat(chat_id)
-            await self.user_chat_repository.delete_chat(chat_id)
-            # TODO: Add background task to delete chat history (this function can cause database memory leaks until then)
-            await uow.commit()
+        try:
+            async with self.uow_factory() as uow:
+                await self.chat_data_repository.require_chat_exists(chat_id)
+                await self.user_chat_repository.require_user_in_chat(user_id, chat_id)
+                await self.chat_data_repository.delete_chat(chat_id)
+                await uow.commit()
+        except Exception as e:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Failed to delete chat: {str(e)}")
 
     async def background_delete_chat_history(self, chat_id: str):
-        await self.chat_history_repository.delete_chat_history(chat_id)
-        
+        await asyncio.gather(
+            self.chat_history_repository.delete_chat_history(chat_id),
+            self.user_chat_repository.delete_chat(chat_id)
+        )        
