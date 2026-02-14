@@ -1,8 +1,27 @@
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request, status
 
+from fastapi.security import OAuth2PasswordBearer
 from harmony.app.repositories import ChatHistoryRepository, UserChatRepository, ChatDataRepository, UserDataRepository, EmailSetRepository
 from harmony.app.services import ChatService, UserService, AuthService
 from harmony.app.db import UnitOfWorkFactory
+from harmony.app.core import decode_token
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+) -> str:
+    payload = decode_token(token)
+    user_id: str = payload.get("sub")
+    
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    return user_id
 
 def get_dynamo_client(request: Request):
     return request.app.state.dynamodb

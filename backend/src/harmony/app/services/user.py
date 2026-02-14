@@ -33,7 +33,7 @@ class UserService:
         user_id = str(ulid_val)
         timestamp = datetime.fromtimestamp(ulid_val.timestamp, timezone.utc).isoformat()
         user_metadata = UserMetaData(
-            username=req.username,
+            username=req.username if req.username else user_id,
             created_at=timestamp
         )
 

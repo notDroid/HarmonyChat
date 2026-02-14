@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from pwdlib import PasswordHash
 from .settings import settings
+from fastapi import HTTPException, status
 
 password_hash = PasswordHash.recommended()
 
@@ -17,3 +18,20 @@ def create_token(data: dict, expires_delta: timedelta) -> str:
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
+
+def decode_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

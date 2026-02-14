@@ -2,16 +2,17 @@ from pydantic import BaseModel, EmailStr
 
 class UserMetaData(BaseModel):
     username: str
-    created_at: str | None
+    created_at: str
 
 class UserDataItem(BaseModel):
     user_id: str
     email: EmailStr
     tombstone: bool
-    hashed_password: str | None = None
+    hashed_password: str
     metadata: UserMetaData
 
 class UserCreate(BaseModel):
-    username: str | None 
-    email: EmailStr | None
-    password: str | None = None # Optional for third-party auth flows
+    username: str | None = None
+    email: EmailStr
+    password: str
+    hashed_password: str | None = None
