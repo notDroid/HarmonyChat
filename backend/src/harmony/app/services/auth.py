@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 
 from harmony.app.core import get_password_hash, verify_password, create_token, settings
 from .user import UserService
-from harmony.app.schemas import *
+from harmony.app.schemas import UserCreateRequest, Token
 
 class AuthService:
     '''
@@ -27,7 +27,7 @@ class AuthService:
     ):
         self.user_service = user_service
 
-    async def sign_up(self, user_create: UserCreate) -> str:
+    async def sign_up(self, user_create: UserCreateRequest) -> str:
         existing_user = await self.user_service.get_user_by_email(user_create.email)
         if existing_user:
             raise HTTPException(

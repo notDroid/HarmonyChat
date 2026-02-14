@@ -1,6 +1,6 @@
 from harmony.app.db import UnitOfWorkFactory
 from harmony.app.repositories import UserChatRepository, UserDataRepository, EmailSetRepository
-from harmony.app.schemas import UserDataItem, UserMetaData, UserCreate
+from harmony.app.schemas import UserDataItem, UserMetaData, UserCreateRequest
 
 from ulid import ULID
 from datetime import datetime, timezone
@@ -28,7 +28,7 @@ class UserService:
             return False
         return user_data is not None
     
-    async def create_user(self, req: UserCreate):
+    async def create_user(self, req: UserCreateRequest):
         ulid_val = ULID()
         user_id = str(ulid_val)
         timestamp = datetime.fromtimestamp(ulid_val.timestamp, timezone.utc).isoformat()

@@ -1,5 +1,22 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
+# --- Shared Properties ---
+class UserBase(BaseModel):
+    username: str
+    email: EmailStr
+
+# --- API Request Models (Input) ---
+class UserCreateRequest(UserBase):
+    password: str
+
+# --- API Response Models (Output) ---
+class UserResponse(BaseModel):
+    user_id: str
+
+class UserChatsResponse(BaseModel):
+    chat_id_list: list[str]
+
+# --- Database/Internal Models ---
 class UserMetaData(BaseModel):
     username: str
     created_at: str
@@ -7,12 +24,6 @@ class UserMetaData(BaseModel):
 class UserDataItem(BaseModel):
     user_id: str
     email: EmailStr
-    tombstone: bool
+    tombstone: bool = False
     hashed_password: str
     metadata: UserMetaData
-
-class UserCreate(BaseModel):
-    username: str | None = None
-    email: EmailStr
-    password: str
-    hashed_password: str | None = None

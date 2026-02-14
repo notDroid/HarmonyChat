@@ -131,7 +131,7 @@ class ChatService:
 
         await self.chat_history_repository.create_message(msg)
 
-        return timestamp
+        return msg
 
     async def get_chat_history(self, user_id: str, chat_id: str) -> list[ChatMessage]:
         await self.check_user_in_chat(user_id, chat_id)

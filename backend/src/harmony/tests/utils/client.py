@@ -1,6 +1,6 @@
 from httpx import AsyncClient, Response
 from typing import List, Optional
-from harmony.app.schemas import *
+from harmony.app.schemas import ChatMessage, ChatHistoryResponse
 from .data_gen import generate_user_data
 
 class AppClient:
@@ -50,7 +50,7 @@ class AppClient:
         res.raise_for_status()
         return res.json()["chat_id"]
 
-    async def send_message(self, chat_id: str, content: str, token: str) -> SendMessageResponse:
+    async def send_message(self, chat_id: str, content: str, token: str) -> ChatMessage:
         payload = {"content": content}
         res = await self.client.post(
             f"{self.prefix}/chats/{chat_id}", 
@@ -58,15 +58,15 @@ class AppClient:
             headers=self._headers(token)
         )
         res.raise_for_status()
-        return SendMessageResponse(**res.json())
+        return ChatMessage.model_validate(res.json())
 
-    async def get_chat_history(self, chat_id: str, token: str) -> GetChatHistoryResponse:
+    async def get_chat_history(self, chat_id: str, token: str) -> ChatHistoryResponse:
         res = await self.client.get(
             f"{self.prefix}/chats/{chat_id}", 
             headers=self._headers(token)
         )
         res.raise_for_status()
-        return GetChatHistoryResponse(**res.json())
+        return ChatHistoryResponse(**res.json())
 
     async def get_my_chats(self, token: str) -> List[str]:
         res = await self.client.get(

@@ -1,9 +1,17 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-class ChatDataItem(BaseModel):
+# --- API Request Models (Input) ---
+class ChatCreateRequest(BaseModel):
+    user_id_list: list[str] = Field(..., min_length=1, max_length=10)
+
+class MessageSendRequest(BaseModel):
+    content: str = Field(..., min_length=1)
+
+# --- API Response Models (Output) ---
+class ChatCreatedResponse(BaseModel):
     chat_id: str
-    created_at: str
 
+# --- Database/Internal Models (also used in responses) ---
 class ChatMessage(BaseModel):
     chat_id: str
     ulid: str
@@ -11,8 +19,12 @@ class ChatMessage(BaseModel):
     user_id: str
     content: str
 
-class ChatHistoryItem(ChatMessage):
-    pass
+class ChatHistoryResponse(BaseModel):
+    messages: list[ChatMessage]
+
+class ChatDataItem(BaseModel):
+    chat_id: str
+    created_at: str
 
 class UserChatItem(BaseModel):
     chat_id: str
