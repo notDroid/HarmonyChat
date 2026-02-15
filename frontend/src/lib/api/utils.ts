@@ -70,5 +70,9 @@ export async function fetchErrorWrapper<T>(url: string, options?: RequestInit): 
     return {} as T;
   }
 
-  return await res.json() as T;
+  return {
+    data: await res.json(),
+    status: res.status,
+    headers: res.headers,
+  } as T;
 }

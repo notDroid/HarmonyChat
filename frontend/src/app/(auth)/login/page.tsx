@@ -1,11 +1,5 @@
-'use client'
+import LoginPage from '@/features/auth/components/login';
 
-import { useActionState } from 'react'
-import { loginAction } from '@/features/auth/actions'
-
-export default function LoginPage() {
-  
-
-  return (
-  )
+export default function LoginRoute() {
+  return <LoginPage />;
 }

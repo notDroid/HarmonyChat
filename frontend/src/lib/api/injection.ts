@@ -29,8 +29,5 @@ export const inject = async <T>(
   
   url = injectUrl(url);
   options = await injectAuthHeaders(options);
-
-  const data = await fetchErrorWrapper(url, options);
-
-  return data as T;
+  return await fetchErrorWrapper<T>(url, options);
 };
