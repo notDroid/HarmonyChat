@@ -1,14 +1,12 @@
-// Thrown when the server responds with a 4xx or 5xx status code
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public data?: any) {
     super(message);
     this.name = 'ApiError';
   }
 }
 
-// Thrown when fetch fails completely (e.g., DNS issue, user offline)
 export class NetworkError extends Error {
-  constructor(message: string) {
+  constructor(message: string, public code: 'OFFLINE' | 'GATEWAY_TIMEOUT' | 'BAD_GATEWAY' = 'OFFLINE') {
     super(message);
     this.name = 'NetworkError';
   }
