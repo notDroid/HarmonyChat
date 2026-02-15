@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   output: 'standalone',
-  allowedDevOrigins: ["100.109.34.105", "macbook-pro", "walis-macbook-pro"],
+  allowedDevOrigins: ["macbook-pro", "walis-macbook-pro"],
 };
 
 export default nextConfig;
