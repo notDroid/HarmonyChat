@@ -1,4 +1,4 @@
-import ServerSidebarView from "@/features/server_sidebar/view/sidebar";
+import ServerSidebarView from "@/features/sidebar/view/sidebar";
 
 export default function ChatsLayout({
   children,
