@@ -6,7 +6,7 @@ const INTERNAL_API_URL = process.env.INTERNAL_API_URL;
 
 async function handler(request: NextRequest, { params }: { params: { path: string[] } }) {
   // 1. Reconstruct the actual path (e.g., /api/proxy/users/me -> users/me)
-  const path = params.path.join('/');
+  const path = (await params).path.join('/');
   const query = request.nextUrl.search; // Keep query parameters (e.g., ?limit=10)
   const targetUrl = `${INTERNAL_API_URL}/${path}${query}`;
 

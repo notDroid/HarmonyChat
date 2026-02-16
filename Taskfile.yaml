@@ -41,14 +41,32 @@ tasks:
       API_ENDPOINT: http://localhost:8000
     cmds:
       - pytest -m stress -s -v
+
+  schema:sync:
+    desc: "Sync OpenAPI schema from backend to frontend"
+    cmds:
+      - task schema:extract
+      - task schema:generate
   
-  openapi:extract:
+  schema:extract:
     desc: "Extract OpenAPI schema from FastAPI and save to frontend"
     cmds:
       - python backend/specs/extract_openapi.py > frontend/openapi.json
 
-  openapi:generate:
+  schema:generate:
     desc: "Generate API client from OpenAPI schema using Orval"
     dir: frontend
     cmds:
       - npx orval
+
+  test:generate:
+    desc: "Run the data generation script to populate the database with test data"
+    dir: backend/src/harmony/tests/tools
+    cmds:
+      - pytest generate.py -s
+
+  test:generate:clean:
+    desc: "Clean up generated test data from the database"
+    dir: backend/src/harmony/tests/tools
+    cmds:
+      - rm -f generated_data.json
