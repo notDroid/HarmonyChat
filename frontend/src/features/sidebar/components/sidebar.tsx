@@ -2,7 +2,7 @@
 
 import getMyChats from "../api/get_my_chats";
 
-import { NetworkError, ApiError, AuthRedirectError } from "@/lib/api/errors";
+import { NetworkError, ApiError, AuthRedirectError } from "@/lib/utils/errors";
 import ErrorScreen from "@/components/error";
 import LoadingScreen from "@/components/loading";
 import useSWR from "swr";

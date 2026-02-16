@@ -10,7 +10,7 @@ import type {
   Token,
 } from ".././model";
 
-import { inject } from ".././injection";
+import { inject } from "../../utils/injection";
 
 /**
  * **OAuth2 compatible token login.**

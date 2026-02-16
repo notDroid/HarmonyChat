@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { signUpApiV1UsersPost } from '@/lib/api/user/user'
 import { UserCreateRequest } from '@/lib/api/model/'
-import { NetworkError, ApiError } from '@/lib/api/errors';
+import { NetworkError, ApiError } from '@/lib/utils/errors';
 
 export type SignupState = {
   message: string;

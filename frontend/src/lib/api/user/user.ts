@@ -11,7 +11,7 @@ import type {
   UserResponse,
 } from ".././model";
 
-import { inject } from ".././injection";
+import { inject } from "../../utils/injection";
 
 /**
  * Registers a new user in the system.

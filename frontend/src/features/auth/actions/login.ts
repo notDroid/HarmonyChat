@@ -7,7 +7,7 @@ import { loginApiV1AuthTokenPost } from '@/lib/api/auth/auth'
 import { BodyLoginApiV1AuthTokenPost } from '@/lib/api/model/bodyLoginApiV1AuthTokenPost';
 import { Token } from '@/lib/api/model/token';
 
-import { NetworkError, ApiError } from '@/lib/api/errors';
+import { NetworkError, ApiError } from '@/lib/utils/errors';
 import { decodeJwt } from 'jose';
 
 export type LoginState = {

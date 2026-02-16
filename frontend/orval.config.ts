@@ -11,7 +11,7 @@ export default defineConfig({
 
       override: {
         mutator: {
-          path: './src/lib/api/injection.ts',
+          path: './src/lib/utils/injection.ts',
           name: 'inject',
         },
       },

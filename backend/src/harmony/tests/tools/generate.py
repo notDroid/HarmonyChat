@@ -14,9 +14,9 @@ from harmony.tests.utils.data_gen import generate_user_data, generate_chat_messa
 # ==========================================
 SEED_FILE = "generated_data.json"
 TARGET_USERS = 10
-TARGET_CHATS = 100
-LIVE_DELAY_MIN = 0.01
-LIVE_DELAY_MAX = 0.5
+TARGET_CHATS = 30
+LIVE_DELAY_MIN = 0.1*1e-3
+LIVE_DELAY_MAX = 1*1e-3
 
 logger = logging.getLogger(__name__)
 

@@ -13,7 +13,7 @@ import type {
   MessageSendRequest,
 } from ".././model";
 
-import { inject } from ".././injection";
+import { inject } from "../../utils/injection";
 
 /**
  * Creates a new chat room between the current user and a list of target users.

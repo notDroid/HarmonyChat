@@ -9,8 +9,8 @@ import ErrorChatPanel from "../ui/error";
 // API Functions
 import getChatHistory from "../api/get_chat_history";
 import { ChatMessage } from "@/lib/api/model";
-import { ApiError, NetworkError } from "@/lib/api/errors";
-import { isNextRedirect } from "@/lib/api/utils";
+import { ApiError, NetworkError } from "@/lib/utils/errors";
+import { isNextRedirect } from "@/lib/utils/utils";
 
 const refreshInterval = 1000;
 
@@ -25,7 +25,7 @@ export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
   
   } catch (error) {
     if (isNextRedirect(error)) throw error; 
-    
+
     console.log("Failed to fetch initial chat history:", error);
     // Throw the error page on API errors, for network errors fall back to the loading page.
     if (error instanceof ApiError) {

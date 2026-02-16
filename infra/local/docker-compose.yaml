@@ -1,14 +1,37 @@
 services:
-  loadbalancer:
+  apilb:
     image: nginx:alpine
-    container_name: lb
+    container_name: apilb
     ports:
       - "8000:80"
     volumes:
-      - ./infra/local/nginx.conf:/etc/nginx/nginx.conf:ro 
+      - ./infra/local/api_nginx.conf:/etc/nginx/nginx.conf:ro 
     depends_on:
       - api
 
   api:
     deploy:
       replicas: 4
+
+  frontendlb:
+    image: nginx:alpine
+    container_name: frontendlb
+    ports:
+      - "3000:80"
+    volumes:
+      - ./infra/local/frontend_nginx.conf:/etc/nginx/nginx.conf:ro 
+    depends_on:
+      - frontend
+
+  frontend:
+    build:
+      args:
+        - NODE_ENV=development
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+        - INTERNAL_API_URL=http://apilb:80
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - INTERNAL_API_URL=http://apilb:80
+    deploy:
+      replicas: 2

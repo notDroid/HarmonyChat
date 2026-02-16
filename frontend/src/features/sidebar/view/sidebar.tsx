@@ -1,5 +1,5 @@
-import { NetworkError, ApiError } from "@/lib/api/errors";
-import { isNextRedirect } from "@/lib/api/utils";
+import { NetworkError, ApiError } from "@/lib/utils/errors";
+import { isNextRedirect } from "@/lib/utils/utils";
 import ErrorScreen from "@/components/error";
 
 import ServerListWrapper from "../components/sidebar";

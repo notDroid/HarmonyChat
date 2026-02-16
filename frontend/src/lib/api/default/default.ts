@@ -4,7 +4,7 @@
  * FastAPI
  * OpenAPI spec version: 0.1.0
  */
-import { inject } from ".././injection";
+import { inject } from "../../utils/injection";
 
 /**
  * @summary Root
