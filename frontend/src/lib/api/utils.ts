@@ -28,13 +28,13 @@ async function handleAuthError(requestUrl: string) {
   // Ignore login endpoint failures
   if (requestUrl.includes('/auth')) return;
 
-  if (typeof window === 'undefined') {
+  if (isServer) {
     // SERVER SIDE: Use Next.js redirect (throws its own internal error)
-    redirect('/login');
+    redirect('/logout');
   } else {
     // CLIENT SIDE:
     // Force a hard navigation (clears memory/state)
-    window.location.href = '/login';
+    window.location.href = '/logout';
     
     // Throw specific error to halt the current function execution
     throw new AuthRedirectError();
