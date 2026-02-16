@@ -1,6 +1,12 @@
-import { ApiError, NetworkError } from './errors';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
+import { ApiError, NetworkError, AuthRedirectError } from './errors';
+import { redirect } from 'next/navigation';
 
 const isServer = typeof window === 'undefined';
+
+export function isNextRedirect(error: unknown) {
+  return isRedirectError(error);
+}
 
 export const getBaseUrl = () => {
   if (isServer) {
@@ -18,6 +24,23 @@ export async function getAuthHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+async function handleAuthError(requestUrl: string) {
+  // Ignore login endpoint failures
+  if (requestUrl.includes('/auth')) return;
+
+  if (typeof window === 'undefined') {
+    // SERVER SIDE: Use Next.js redirect (throws its own internal error)
+    redirect('/login');
+  } else {
+    // CLIENT SIDE:
+    // Force a hard navigation (clears memory/state)
+    window.location.href = '/login';
+    
+    // Throw specific error to halt the current function execution
+    throw new AuthRedirectError();
+  }
+}
+
 export async function fetchErrorWrapper<T>(url: string, options?: RequestInit): Promise<T> {
   let res: Response;
 
@@ -26,6 +49,11 @@ export async function fetchErrorWrapper<T>(url: string, options?: RequestInit): 
   } catch (error) {
     // This catches browser-level network failures (DNS, Offline, etc.)
     throw new NetworkError(`Unable to connect to server: ${error}`, 'OFFLINE');
+  }
+
+  // Handle 401 Unauthorized globally to trigger login redirect
+  if (res.status === 401) {
+    await handleAuthError(url); // throws AuthRedirectError or redirects
   }
 
   if (!res.ok) {

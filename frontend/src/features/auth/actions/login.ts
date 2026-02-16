@@ -8,6 +8,7 @@ import { BodyLoginApiV1AuthTokenPost } from '@/lib/api/model/bodyLoginApiV1AuthT
 import { Token } from '@/lib/api/model/token';
 
 import { NetworkError, ApiError } from '@/lib/api/errors';
+import { decodeJwt } from 'jose';
 
 export type LoginState = {
   message: string;
@@ -41,6 +42,10 @@ export async function loginAction(redirectPath: string | null, prevState: any, f
     return { message: 'Something went wrong. Please try again.' };
   }
   const token = (res.data as Token).access_token;
+  
+  // Decode the JWT to get the expiration time (if available) for setting cookie expiration
+  const payload = decodeJwt(token);
+  const expiresAt = payload.exp ? new Date(payload.exp * 1000) : undefined;
 
   // Set the Cookie
   const cookieStore = await cookies();
@@ -48,6 +53,7 @@ export async function loginAction(redirectPath: string | null, prevState: any, f
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     path: '/',
+    expires: expiresAt,
   });
 
   // Redirect to dashboard

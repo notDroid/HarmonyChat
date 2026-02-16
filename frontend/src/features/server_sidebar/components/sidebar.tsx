@@ -1,20 +1,13 @@
 "use client";
 
-import { getMyChatsApiV1UsersMeChatsGet } from "@/lib/api/user/user";
-import { UserChatsResponse } from "@/lib/api/model";
+import getMyChats from "../api/get_my_chats";
 
-import { NetworkError, ApiError } from "@/lib/api/errors";
+import { NetworkError, ApiError, AuthRedirectError } from "@/lib/api/errors";
 import ErrorScreen from "@/components/error";
 import LoadingScreen from "@/components/loading";
 import useSWR from "swr";
 
 import ServerList from "./serverlist";
-
-const fetcher = async (url: string) => {
-  const res = await getMyChatsApiV1UsersMeChatsGet()
-  const chat_id_list = (res.data as UserChatsResponse).chat_id_list || [];
-  return chat_id_list;
-};
 
 export default function ServerListWrapper(
   { initial_chat_id_list, children }: 
@@ -23,10 +16,14 @@ export default function ServerListWrapper(
 
   const { data, error, isLoading } = useSWR(
     '/api/user/me/chats', 
-    fetcher,
+    getMyChats,
     { 
       fallbackData: initial_chat_id_list, 
-      revalidateOnMount: initial_chat_id_list === undefined // Only fetch if we didn't get data from server
+      revalidateOnMount: initial_chat_id_list === undefined, // Only fetch if we didn't get data from server
+      onErrorRetry: (error, key, config, revalidate, { retryCount }) => {
+        if (error instanceof AuthRedirectError) return; // Don't retry on auth errors, just let the redirect happen
+        // fallback to default retry logic for other errors
+      }
     }
   );
 

@@ -1,4 +1,4 @@
-import LoadingChatWindowView from "@/features/chat/view/loading_window"
+import LoadingChatWindowView from "@/features/chat/view/loading"
 
 export default async function LoadingChatWindow() {
     return <LoadingChatWindowView />;

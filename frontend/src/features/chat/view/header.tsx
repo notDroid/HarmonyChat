@@ -1,4 +1,4 @@
-import ChatHeader from "../ui/chat_header";
+import ChatHeader from "../ui/header";
 
 export default function ChatHeaderView() {
     return (
