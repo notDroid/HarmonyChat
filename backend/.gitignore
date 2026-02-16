@@ -1,3 +1,6 @@
+# Ignore generated temporary files
+src/harmony/tests/tools/generated_data.json
+
 # ----------------------------- PYTHON GITIGNORE ----------------------------- #
 # Byte-compiled / optimized / DLL files
 __pycache__/
