@@ -12,10 +12,8 @@ export default async function ServerSidebarView( { children }: { children: React
     try {
         chat_id_list = await getMyChats();
     } catch (error) {
-        if (isNextRedirect(error)) {
-            throw error; // Let the redirect happen
-        }
-        
+        if (isNextRedirect(error)) throw error;
+
         if (error instanceof NetworkError) {
             // For network errors, we can treat it as "still loading" since it might be a temporary issue
             chat_id_list = undefined;

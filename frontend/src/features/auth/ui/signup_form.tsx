@@ -36,7 +36,8 @@ export function SignUpFormUI({ action, isPending, errorMessage }: SignUpFormUIPr
               id="username"
               name="username"
               type="text"
-              placeholder="johndoe"
+              placeholder="username"
+              autoComplete="nickname"
               required
               disabled={isPending}
               className="w-full rounded-md border border-app-outline bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-muted focus:border-brand focus:ring-1 focus:ring-brand focus:outline-none disabled:opacity-50"
@@ -56,6 +57,7 @@ export function SignUpFormUI({ action, isPending, errorMessage }: SignUpFormUIPr
               name="email"
               type="email"
               placeholder="name@example.com"
+              autoComplete="email"
               required
               disabled={isPending}
               className="w-full rounded-md border border-app-outline bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-muted focus:border-brand focus:ring-1 focus:ring-brand focus:outline-none disabled:opacity-50"
@@ -74,6 +76,7 @@ export function SignUpFormUI({ action, isPending, errorMessage }: SignUpFormUIPr
               id="password"
               name="password"
               type="password"
+              autoComplete="new-password"
               required
               disabled={isPending}
               className="w-full rounded-md border border-app-outline bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-muted focus:border-brand focus:ring-1 focus:ring-brand focus:outline-none disabled:opacity-50"

@@ -7,7 +7,7 @@ export default async function LoadingChatWindowView() {
     <div className="flex h-full w-full flex-col min-w-0">    
         <ChatHeaderView />  
         <LoadingChatPanel />
-        <ChatBar />
+        <ChatBar disabled />
     </div>
   );
 }
