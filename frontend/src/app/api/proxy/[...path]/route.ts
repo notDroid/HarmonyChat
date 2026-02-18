@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 // Your backend URL from env
-const INTERNAL_API_URL = process.env.INTERNAL_API_URL;
+const INTERNAL_API_ENDPOINT = process.env.INTERNAL_API_ENDPOINT;
 
 async function handler(request: NextRequest, { params }: { params: Promise<{ path: string[] }>}) {
   // 1. Reconstruct the actual path (e.g., /api/proxy/users/me -> users/me)
   const path = (await params).path.join('/');
   const query = request.nextUrl.search; // Keep query parameters (e.g., ?limit=10)
-  const targetUrl = `${INTERNAL_API_URL}/${path}${query}`;
+  const targetUrl = `${INTERNAL_API_ENDPOINT}/${path}${query}`;
 
   // 2. Prepare headers
   const headers = new Headers(request.headers);

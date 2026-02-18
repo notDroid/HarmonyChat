@@ -10,7 +10,7 @@ export function isNextRedirect(error: unknown) {
 
 export const getBaseUrl = () => {
   if (isServer) {
-    return process.env.INTERNAL_API_URL; 
+    return process.env.INTERNAL_API_ENDPOINT; 
   } else {
     return '/api/proxy'; 
   }

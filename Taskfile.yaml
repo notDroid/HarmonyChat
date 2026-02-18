@@ -1,72 +1,131 @@
 version: '3'  
 
+vars:
+  CONDA_ENV: harmony
+  PYTHON_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} python"
+  PYTEST_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} pytest"
+
 tasks:
   default:
     silent: true
     cmds:
-      - task --list
+      - task --list-all
+
+  # --------------------------------------------------------------------------
+  # 1. SETUP & CONFIGURATION
+  # --------------------------------------------------------------------------
+
+  setup:
+    desc: "🚀 SETUP: the development environment"
+    summary: |
+      1. Creates the 'harmony' Conda environment.
+      2. Installs the backend in editable mode.
+      3. Installs frontend Node modules.
+    cmds:
+      - task: setup:conda
+      - task: setup:backend
+      - task: setup:frontend
+    status:
+      - test -d frontend/node_modules
+      - conda env list | grep {{.CONDA_ENV}}
+
+  setup:conda:
+    internal: true
+    desc: "Create Conda environment"
+    cmds:
+      - conda env create -f environment.yaml || echo "Env likely exists, updating..."
+      - conda env update --name {{.CONDA_ENV}} --file environment.yaml --prune
+  
+  setup:backend:
+    internal: true
+    desc: "Install Backend Dependencies"
+    cmds:
+      - "{{.PYTHON_CMD}} -m pip install -e backend"
+
+  setup:frontend:
+    internal: true
+    desc: "Install Frontend Dependencies"
+    dir: frontend
+    cmds:
+      - npm install
+
+  # --------------------------------------------------------------------------
+  # 2. RUNNING THE APP
+  # --------------------------------------------------------------------------
+
+  run:dev:
+    desc: "▶️  START DEV: Runs the local dev environment"
+    cmds:
+      - docker compose up --build
+
+  run:sim:
+    desc: "▶️  START SIMULATION: Runs the Prod-mirror environment"
+    cmds:
+      - docker compose -f docker-compose.yaml -f infra/local/docker-compose.yaml up --build
+
+  clean:
+    desc: "🛑 STOP: Stops all containers and removes volumes"
+    cmds:
+      - docker compose down --volumes --remove-orphans
         
   build:
-    desc: "Build the docker compose environment"
+    desc: "🚀 BUILD: the docker compose environment"
     cmds:
       - docker compose build
 
-  run:local:
-    desc: "Run local docker compose in a simple development environment"
-    cmds:
-      - docker compose up
-
-  run:local:sim:
-    desc: "Run local docker compose environment mirroring production setup"
-    cmds:
-      - docker compose -f docker-compose.yaml -f infra/local/docker-compose.yaml up
-
-  clean:local:
-    desc: "Stop and remove local docker compose environment"
-    cmds:
-      - docker compose down --volumes --remove-orphans
+  # --------------------------------------------------------------------------
+  # 3. TESTING
+  # --------------------------------------------------------------------------
 
   test:integration:
-    desc: "Run tests against the server"
+    desc: "🧪 Run integration tests"
     dir: backend/src/harmony/tests
     env:
       API_ENDPOINT: http://localhost:8000
     cmds:
-      - pytest -m integration
+      - "{{.PYTEST_CMD}} -m integration"
 
   test:stress:
-    desc: "Run stress tests against the server"
+    desc: "🧪 Run stress tests"
     dir: backend/src/harmony/tests
     env:
       API_ENDPOINT: http://localhost:8000
     cmds:
-      - pytest -m stress -s -v
+      - "{{.PYTEST_CMD}} -m stress -s -v"
 
-  schema:sync:
-    desc: "Sync OpenAPI schema from backend to frontend"
-    cmds:
-      - task schema:extract
-      - task schema:generate
-  
-  schema:extract:
-    desc: "Extract OpenAPI schema from FastAPI and save to frontend"
-    cmds:
-      - python backend/specs/extract_openapi.py > frontend/openapi.json
-
-  schema:generate:
-    desc: "Generate API client from OpenAPI schema using Orval"
-    dir: frontend
-    cmds:
-      - npx orval
-
-  test:generate:
-    desc: "Run the data generation script to populate the database with test data"
+  data:generate:
+    desc: "🎲 GENERATE: dummy data for the DB"
     dir: backend/src/harmony/tests/tools
     cmds:
-      - pytest generate.py -s
+      - "{{.PYTEST_CMD}} generate.py -s"
 
-  test:generate:clean:
-    desc: "Clean up generated test data from the database"
+  data:clean:
+    desc: "🎲 CLEAN: up generated test data from the database"
     dir: backend/src/harmony/tests/tools
     cmds:
       - rm -f generated_data.json
+
+  # --------------------------------------------------------------------------
+  # 4. CODE GENERATION & SYNC
+  # --------------------------------------------------------------------------
+
+  schema:sync:
+    desc: "🔄 SYNC: Updates Frontend SDK based on Backend Code"
+    summary: |
+      Use this when you change the FastAPI Pydantic models.
+      1. Extracts OpenAPI JSON from Backend.
+      2. Generates TypeScript clients using Orval.
+    cmds:
+      - "{{.PYTHON_CMD}} backend/specs/extract_openapi.py > frontend/openapi.json"
+      - cd frontend && npx orval
+
+  env:freeze:
+    desc: "🔄 FREEZE: Update environment.yaml from current setup"
+    cmds:
+      - 'conda run -n {{.CONDA_ENV}} conda env export --no-builds | grep -v -e "prefix: " -e "harmony-chat-api" > environment.yaml'
+
+  env:compile:
+    desc: "🔄 COMPILE: generate requirements.txt from pyproject.toml"
+    dir: backend
+    cmds:
+      - pip-compile pyproject.toml --output-file requirements.txt

@@ -1,13 +1,16 @@
-from contextlib import asynccontextmanager
 import aioboto3
 import traceback
 import logging
+from scalar_fastapi import get_scalar_api_reference
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+
 from .core import settings
 from .api.v1 import router as api_v1_router
-from fastapi.middleware.cors import CORSMiddleware
-from scalar_fastapi import get_scalar_api_reference
+# from .services import WebSocketManager, RedisPubSubManager
 
 
 logging.basicConfig(level=logging.INFO)
@@ -15,9 +18,22 @@ logger = logging.getLogger(__name__)
 
 session = aioboto3.Session()
 
+# ws_manager = WebSocketManager()
+# redis_manager = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("\n\n\n------------------------------- Starting Up -------------------------------\n\n\n")
+
+    # # Initialize Redis Manager
+    # global redis_manager
+    # redis_manager = RedisPubSubManager(settings.REDIS_URL, ws_manager)
+    # await redis_manager.connect()
+    
+    # # Inject into app.state for dependencies
+    # app.state.redis_manager = redis_manager
+    # app.state.ws_manager = ws_manager
+
     try:
         async with session.client(
             'dynamodb',
@@ -27,7 +43,9 @@ async def lifespan(app: FastAPI):
             app.state.dynamodb = dynamodb
             yield
     finally:
-        print("\n\n\n------------------------------ Shutting Down ------------------------------\n\n\n")    
+        print("\n\n\n------------------------------ Shutting Down ------------------------------\n\n\n")
+        # if redis_manager:
+        #     await redis_manager.disconnect()
 
 app = FastAPI(lifespan=lifespan, debug=True)
 app.include_router(api_v1_router, prefix="/api/v1")

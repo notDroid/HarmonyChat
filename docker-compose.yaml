@@ -2,12 +2,15 @@ services:
   api:
     build: backend
     environment:
-      - API_PORT=8000
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
+      - REDIS_URL=redis://redis:6379/0
+
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=us-east-1
     depends_on:
+      # redis:
+      #   condition: service_healthy
       dynamodb:
         condition: service_started
       init:
@@ -23,6 +26,16 @@ services:
   dynamodb:
     image: amazon/dynamodb-local
     container_name: db
+
+  # redis:
+  #   image: redis:alpine
+  #   ports:
+  #     - "6379:6379"
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 5
 
   init:
     build: backend
