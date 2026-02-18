@@ -32,15 +32,18 @@ task
 ```
 
 ### TODO List
-- [ ] Implement authentication and authorization
+- [x] Implement dynamodb storage for real-time chat messages
+- [x] Implement fastapi backend with REST endpoints for chat and user management
+- [x] Implement next.js frontend for chat interface and user management
+- [x] Implement authentication
 - [ ] Implement pub/sub model for real-time chat updates
 - [ ] Implement request/response model for scrolling through chat history
+- [ ] Implement postgres storage for user and chat metadata
+- [ ] Implement kafka-based event sourcing for chat history and asynchronous event processing
 - [ ] Implement caching layer for user-chat membership data to optimize presence checks
 - [ ] Deploy app to AWS with terraform and set up CI/CD pipeline
 
-# Implementation Documentation
-
-## Design Decisions
+## Implementation Documentation
 
 ### Databases
 1. Dynamodb is suitable to store real time chat data due to its low latency and high scalability for small message record data model which doesn't require relational operations or complex transactions.

@@ -9,8 +9,8 @@ services:
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=us-east-1
     depends_on:
-      # redis:
-      #   condition: service_healthy
+      redis:
+        condition: service_healthy
       dynamodb:
         condition: service_started
       init:
@@ -27,15 +27,16 @@ services:
     image: amazon/dynamodb-local
     container_name: db
 
-  # redis:
-  #   image: redis:alpine
-  #   ports:
-  #     - "6379:6379"
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
-  #     interval: 5s
-  #     timeout: 3s
-  #     retries: 5
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   init:
     build: backend

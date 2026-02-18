@@ -1,4 +1,4 @@
-from fastapi import Depends, BackgroundTasks, APIRouter, status, HTTPException
+from fastapi import Depends, BackgroundTasks, APIRouter, status, HTTPException, Request
 from harmony.app.schemas import (
     ChatCreateRequest, 
     ChatCreatedResponse, 
@@ -58,6 +58,7 @@ async def create_chat(
 async def send_message(
     chat_id: str,
     data: MessageSendRequest, 
+    request: Request, # TODO: Refactor to avoid tight coupling with FastAPI request object
     user_id: str = Depends(get_current_user),
     chat_service = Depends(get_chat_service)
 ):
@@ -71,6 +72,11 @@ async def send_message(
         user_id=user_id, 
         content=data.content
     )
+
+    # TODO: Merge into chat service and use dependency injection for Redis manager to avoid tight coupling with FastAPI request
+    redis_manager = request.app.state.redis_manager
+    await redis_manager.publish(chat_id, msg.model_dump())
+
     return ChatMessage.model_validate(msg.model_dump())
 
 @router.get(
