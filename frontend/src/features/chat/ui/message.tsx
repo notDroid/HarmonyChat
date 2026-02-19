@@ -15,8 +15,8 @@ export default function Message({ message }: { message: ChatMessage }) {
   return (
     <div className="
     grid grid-cols-[auto_minmax(0,1fr)] 
-    gap-3 w-full px-3 py-4
-    text-sm hover:bg-app-hover transition-colors
+    gap-3 w-full px-3 py-3.5 mt-1
+    text-sm hover:bg-app-hover
     ">
       
       {/* Icon */}

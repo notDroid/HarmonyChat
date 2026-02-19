@@ -21,13 +21,14 @@ export default function ChatBarVisual({
       className="w-full"
     >
       <div className='bg-app-bg px-2 pb-3'>
-        <div className={`flex items-center gap-2 bg-app-chatbar rounded-lg outline-1 outline-app-outline shadow-xs px-4 py-2.5 ${loading || disabled ? 'opacity-50' : ''}`}>
+        <div className={`flex items-center gap-2 bg-app-chatbar rounded-lg outline-1 outline-app-outline shadow-xs px-4 py-2.5 transition-opacity duration-200 ${disabled ? 'opacity-50' : ''}`}>
             <input
               type="text"
               value={value}
               onChange={onChange}
-              placeholder={loading ? "Sending..." : "Type your message..."}
-              disabled={loading || disabled}
+              placeholder="Type your message..." // Kept static to prevent text flashing
+              disabled={disabled} // Only true hard-disable if the whole component is disabled
+              readOnly={loading} // readOnly prevents typing but preserves user focus
               className="flex-1 text-app-text outline-none bg-transparent"
             />
         </div>
