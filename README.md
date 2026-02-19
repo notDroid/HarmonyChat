@@ -44,6 +44,10 @@ task
 - [ ] Deploy app to AWS with terraform and set up CI/CD pipeline
 
 ## Implementation Documentation
+<img height="300" alt="chatapp-architecture-Page-1 drawio" src="https://github.com/user-attachments/assets/a3931d9f-5b2f-4276-a6c4-51f216de3f0e" /> <img height="300" alt="chatapp-architecture-Page-2 drawio" src="https://github.com/user-attachments/assets/e58d38a4-c38a-42c8-bb4e-c894bbd42327" /> 
+
+<img width="150" alt="chatapp-architecture-Page-3 drawio" src="https://github.com/user-attachments/assets/612cb4de-649e-459d-ac4e-42e14cf7c78a" />
+
 
 ### Databases
 1. Dynamodb is suitable to store real time chat data due to its low latency and high scalability for small message record data model which doesn't require relational operations or complex transactions.
