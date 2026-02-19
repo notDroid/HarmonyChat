@@ -8,6 +8,12 @@ class RedisOptions(BaseModel):
     retry_base: int = 1
 
 class Settings(BaseSettings):
+    ### Application Configuration
+    APP_ENV: str = "development"
+
+    # Chat Configuration
+    CHAT_MAX_USERS_PER_OPERATION: int = 10
+
     # AWS Configuration
     AWS_REGION: str = "us-east-1"
     AWS_DEFAULT_REGION: str = "us-east-1"

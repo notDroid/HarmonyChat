@@ -1,8 +1,8 @@
-import logging
 from typing import Dict, Set
 from fastapi import WebSocket
 
-logger = logging.getLogger(__name__)
+import structlog
+logger = structlog.get_logger(__name__)
 
 class WebSocketManager:
     """
@@ -17,7 +17,7 @@ class WebSocketManager:
         if chat_id not in self.active_connections:
             self.active_connections[chat_id] = set()
         self.active_connections[chat_id].add(websocket)
-        logger.info(f"WS Connected to {chat_id}. Local observers: {len(self.active_connections[chat_id])}")
+        logger.info("ws_connection_accepted", chat_id=chat_id, local_observers=len(self.active_connections[chat_id]))
 
     def disconnect(self, chat_id: str, websocket: WebSocket):
         if chat_id in self.active_connections:
@@ -39,7 +39,7 @@ class WebSocketManager:
                 # Fan out to all local WS connections for this chat_id
                 await connection.send_text(message)
             except Exception as e:
-                logger.error(f"Error sending to WS: {e}")
+                logger.exception("ws_broadcast_failed", chat_id=chat_id)
                 # The socket is dead, clean it up
                 self.disconnect(chat_id, connection)
 

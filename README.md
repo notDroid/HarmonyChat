@@ -36,7 +36,7 @@ task
 - [x] Implement fastapi backend with REST endpoints for chat and user management
 - [x] Implement next.js frontend for chat interface and user management
 - [x] Implement authentication
-- [ ] Implement pub/sub model for real-time chat updates
+- [x] Implement pub/sub model for real-time chat updates
 - [ ] Implement request/response model for scrolling through chat history
 - [ ] Implement postgres storage for user and chat metadata
 - [ ] Implement kafka-based event sourcing for chat history and asynchronous event processing

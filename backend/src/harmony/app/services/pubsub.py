@@ -13,8 +13,8 @@ from typing import Set
 
 from .websocket import WebSocketManager
 
-import logging
-logger = logging.getLogger(__name__)
+import structlog
+logger = structlog.get_logger(__name__)
 
 class RedisPubSubManager:
     """
@@ -57,17 +57,19 @@ class RedisPubSubManager:
                 **redis_kwargs
             )
             self.pubsub = self.redis.pubsub()
-
-            await self.pubsub.subscribe("system:dummy_keepalive")  # Dummy subscription to verify connection
-            logger.info("Redis: Connection established.")
+            
+            # Dummy subscription to avoid crashing redis on listen without any channels
+            # Also establishes connection (redis is lazy and won't connect until the first command is issued)
+            await self.pubsub.subscribe("system:dummy_keepalive")  
+            logger.info("redis_connection_established")
         except Exception as e:
-            logger.critical(f"Redis: Failed to connect: {e}")
+            logger.exception("redis_connection_failed")
             sys.exit(1)
         
     def start_listen(self):
         # Start the infinite listener loop
         self.listening_task = asyncio.create_task(self._listener_loop())
-        logger.info("Redis: Listener task started.")
+        logger.info("redis_listener_started")
 
     async def disconnect(self):
         if self.listening_task:
@@ -77,7 +79,7 @@ class RedisPubSubManager:
             except asyncio.CancelledError:
                 pass
         await self.redis.close()
-        logger.info("Redis: Disconnected.")
+        logger.info("redis_disconnected")
 
     async def subscribe_to_chat(self, chat_id: str):
         """
@@ -86,7 +88,7 @@ class RedisPubSubManager:
         async with self._subscription_lock[chat_id]:
             if chat_id in self._subscribed_channels: return
 
-            logger.info(f"Redis: Subscribing to channel {chat_id}")
+            logger.info("redis_channel_subscribed", chat_id=chat_id)
             await self.pubsub.subscribe(chat_id)
             self._subscribed_channels.add(chat_id)
 
@@ -97,7 +99,7 @@ class RedisPubSubManager:
         async with self._subscription_lock[chat_id]:
             if not (chat_id in self._subscribed_channels) or self.ws_manager.is_chat_active_locally(chat_id): return
             
-            logger.info(f"Redis: Unsubscribing from channel {chat_id}")
+            logger.info("redis_channel_unsubscribed", chat_id=chat_id)
             await self.pubsub.unsubscribe(chat_id)
             self._subscribed_channels.remove(chat_id)
 
@@ -105,7 +107,7 @@ class RedisPubSubManager:
         try:
             await self.redis.publish(chat_id, json.dumps(message))
         except (ConnectionError, TimeoutError) as e:
-            logger.error(f"Failed to publish to {chat_id} after retries: {e}")
+            logger.exception("redis_publish_failed", chat_id=chat_id)
             raise e
 
     async def _listener_loop(self):
@@ -116,14 +118,14 @@ class RedisPubSubManager:
             while True:
                 message = await self.pubsub.get_message(ignore_subscribe_messages=True, timeout=self.stall_timeout)
                 if not message: continue
-                # logger.info(f"Redis message received on channel {message['channel']}: {message['data']}")
+                # logger.debug("Redis message received", chat_id=message["channel"], payload_size=len(message["data"]))
                 if message["type"] == "message":
                     chat_id = message["channel"]
                     payload = message["data"]
                     # Pass the message to Layer 2 for local fan-out
                     await self.ws_manager.broadcast_local(chat_id, payload)
         except asyncio.CancelledError:
-            logger.info("Redis listener task cancelled.")
+            logger.info("redis_listener_cancelled")
         except Exception as e:
-            logger.critical(f"Redis listener error: {e}")
+            logger.exception("redis_listener_critical_error")
             sys.exit(1)  # Ensure the process exits if the listener loop ends unexpectedly

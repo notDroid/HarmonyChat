@@ -119,6 +119,8 @@ six==1.17.0
     # via python-dateutil
 starlette==0.52.1
     # via fastapi
+structlog==25.5.0
+    # via harmony-chat-api (pyproject.toml)
 typing-extensions==4.15.0
     # via
     #   aiosignal

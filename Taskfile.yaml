@@ -30,8 +30,7 @@ tasks:
       - conda env list | grep {{.CONDA_ENV}}
 
   setup:conda:
-    internal: false
-    desc: "Create Conda environment"
+    desc: "🚀 SETUP CONDA: Create/Sync Conda environment"
     cmds:
       - conda env create -f environment.yaml || echo "Env likely exists, updating..."
       - conda env update --name {{.CONDA_ENV}} --file environment.yaml --prune
