@@ -8,7 +8,7 @@ export default function ChatPanel({ messages }: { messages: ChatMessage[] }) {
         flex-1 overflow-y-auto pb-4 flex flex-col-reverse my-1
       ">   
       {[...messages].reverse().map((message: any, index: number) => (
-        <Message key={index} message={message} />
+        <Message key={message.ulid} message={message} />
       ))}
     </div>
   );

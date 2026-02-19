@@ -30,7 +30,7 @@ tasks:
       - conda env list | grep {{.CONDA_ENV}}
 
   setup:conda:
-    internal: true
+    internal: false
     desc: "Create Conda environment"
     cmds:
       - conda env create -f environment.yaml || echo "Env likely exists, updating..."

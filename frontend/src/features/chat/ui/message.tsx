@@ -1,15 +1,8 @@
-interface MessageProps {
-  message: {
-    user_id: string;
-    avatar_url?: string;
-    content: string;
-    timestamp: string;
-  };
-}
+import { ChatMessage } from "@/lib/api/model/chatMessage";
 
 const defaultIcon = "/assets/avatars/0.png";
 
-export default function Message({ message }: MessageProps) {
+export default function Message({ message }: { message: ChatMessage }) {
   const date = new Date(message.timestamp).toLocaleString("en-US", {
     year: "numeric",
     month: "short",
@@ -30,7 +23,7 @@ export default function Message({ message }: MessageProps) {
       <div className="cursor-pointer mt-0.5">
         <img 
             // 2. The Logic: Use the avatar_url OR (||) the defaultIcon
-            src={message.avatar_url || defaultIcon} 
+            src={defaultIcon} // Replace with message.avatar_url || defaultIcon after adding icons ---------------------------------------- TODO
             
             // Accessibility: Always include descriptive alt text
             alt={`${message.user_id}'s avatar`}

@@ -1,4 +1,11 @@
 from pydantic_settings import BaseSettings
+from pydantic import BaseModel
+
+class RedisOptions(BaseModel):
+    health_check_interval: int = 30
+    retry_retries: int = 3
+    retry_cap: int = 10
+    retry_base: int = 1
 
 class Settings(BaseSettings):
     # AWS Configuration
@@ -22,6 +29,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
 
     # Redis Configuration
+    REDIS_CONNECT: bool = True
+    REDIS_LISTEN: bool = True
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_STALL_TIMEOUT: float = 0.001 # Block for 1ms while stalling for messages.
+    redis_opts: RedisOptions = RedisOptions()
 
 settings = Settings()

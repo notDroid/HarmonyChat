@@ -18,21 +18,21 @@ logger = logging.getLogger(__name__)
 
 session = aioboto3.Session()
 
-ws_manager = WebSocketManager()
-redis_manager = None
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("\n\n\n------------------------------- Starting Up -------------------------------\n\n\n")
 
     # Initialize Redis Manager
-    global redis_manager
-    redis_manager = RedisPubSubManager(settings.REDIS_URL, ws_manager)
-    await redis_manager.connect()
+    if settings.REDIS_CONNECT:
+        ws_manager = WebSocketManager()
+        redis_manager = RedisPubSubManager(ws_manager)
+        await redis_manager.connect()
+        if settings.REDIS_LISTEN:
+            redis_manager.start_listen()
     
-    # Inject into app.state for dependencies
-    app.state.redis_manager = redis_manager
-    app.state.ws_manager = ws_manager
+        # Inject into app.state for dependencies
+        app.state.redis_manager = redis_manager
+        app.state.ws_manager = ws_manager
 
     try:
         async with session.client(
