@@ -17,17 +17,28 @@ class ChatHistoryRepository(BaseRepository):
             Item=dynamo_item,
             ConditionExpression='attribute_not_exists(chat_id)',
         )
+
+    async def get_chat_history(self, chat_id: str, limit: int = 50, cursor: str | None = None):
+        query_kwargs = {
+            "TableName": self.table_name,
+            "KeyConditionExpression": "chat_id = :cid",
+            "ExpressionAttributeValues": to_dynamo_json({":cid": chat_id}),
+            "Limit": limit,
+            "ScanIndexForward": False # Fetches newest messages (highest ULID) first
+        }
+        
+        if cursor:
+            query_kwargs["ExclusiveStartKey"] = to_dynamo_json({"chat_id": chat_id, "ulid": cursor})
             
-    # TODO: Switch to a paginated approach
-    async def get_chat_history(self, chat_id: str):
-        response = await self.client.query(
-            TableName=self.table_name,
-            KeyConditionExpression="chat_id = :cid",
-            ExpressionAttributeValues=to_dynamo_json({":cid": chat_id}),
-        )
+        response = await self.client.query(**query_kwargs)
         
         items = [from_dynamo_json(item) for item in response.get("Items", [])]
-        return [ChatMessage.model_validate(item) for item in items]
+        messages = [ChatMessage.model_validate(item) for item in items]
+        
+        last_evaluated_key = response.get("LastEvaluatedKey")
+        next_cursor = from_dynamo_json(last_evaluated_key).get("ulid") if last_evaluated_key else None
+        
+        return messages, next_cursor
 
     async def delete_chat_history(self, chat_id: str):
         async for batch in paginate_in_batches(

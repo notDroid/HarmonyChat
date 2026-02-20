@@ -21,6 +21,7 @@ class ChatMessage(BaseModel):
 
 class ChatHistoryResponse(BaseModel):
     messages: list[ChatMessage]
+    next_cursor: str | None = None
 
 class ChatDataItem(BaseModel):
     chat_id: str

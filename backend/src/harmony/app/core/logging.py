@@ -1,10 +1,11 @@
 import logging
+from logging.handlers import QueueHandler, QueueListener
 import queue
 import sys
 import structlog
 from structlog.types import Processor
 
-class ThreadSafeQueueHandler(logging.handlers.QueueHandler):
+class ThreadSafeQueueHandler(QueueHandler):
     """
     A custom QueueHandler that doesn't prematurely format the log record.
     This preserves the structlog dictionary for the StreamHandler's formatter.
@@ -59,7 +60,7 @@ def setup_logging(is_local_dev: bool = True):
     queue_handler = ThreadSafeQueueHandler(log_queue)
     
     # 3. Create a listener that writes from the queue to the stream in a background thread
-    listener = logging.handlers.QueueListener(log_queue, stream_handler, respect_handler_level=True)
+    listener = QueueListener(log_queue, stream_handler, respect_handler_level=True)
     listener.start()
 
     # 4. Attach ONLY the non-blocking queue handler to the root logger

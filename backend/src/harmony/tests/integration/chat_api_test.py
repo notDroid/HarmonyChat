@@ -22,9 +22,9 @@ async def test_chat_happy_path(app_client: AppClient):
     # 4. Verify History (Alice's perspective)
     alice_hist = await alice.get_history(chat_id)
     assert len(alice_hist) == 2
-    assert alice_hist[0].content == "Hello Bob!"
-    assert alice_hist[0].user_id == alice.user_id
-    assert alice_hist[1].content == "Hi Alice!"
+    assert alice_hist[1].content == "Hello Bob!"
+    assert alice_hist[1].user_id == alice.user_id
+    assert alice_hist[0].content == "Hi Alice!"
 
     # 5. Verify History (Bob's perspective)
     bob_hist = await bob.get_history(chat_id)

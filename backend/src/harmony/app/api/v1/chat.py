@@ -1,4 +1,6 @@
+import asyncio
 from fastapi import Depends, BackgroundTasks, APIRouter, status, HTTPException, Request
+from harmony.app.core import settings
 from harmony.app.schemas import (
     ChatCreateRequest, 
     ChatCreatedResponse, 
@@ -88,11 +90,15 @@ async def send_message(
 )
 async def get_chat_history(
     chat_id: str,
+    limit: int = settings.DEFAULT_PAGINATION_LIMIT,
+    cursor: str | None = None,
     user_id: str = Depends(get_current_user),
     chat_service = Depends(get_chat_service)
 ):
-    messages = await chat_service.get_chat_history(user_id=user_id, chat_id=chat_id)
-    return ChatHistoryResponse(messages=messages)
+    # Simulate timeout for testing purposes
+    await asyncio.sleep(5)
+    messages, next_cursor = await chat_service.get_chat_history(user_id=user_id, chat_id=chat_id, limit=limit, cursor=cursor)
+    return ChatHistoryResponse(messages=messages, next_cursor=next_cursor)
 
 @router.delete(
     "/{chat_id}", 

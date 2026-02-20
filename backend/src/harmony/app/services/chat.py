@@ -147,12 +147,12 @@ class ChatService:
 
         logger.info("message_sent", chat_id=chat_id, user_id=user_id, message_id=ulid_str)
         return msg
-
-    async def get_chat_history(self, user_id: str, chat_id: str) -> list[ChatMessage]:
+    
+    async def get_chat_history(self, user_id: str, chat_id: str, limit: int = 50, cursor: str | None = None) -> tuple[list[ChatMessage], str | None]:
         await self.check_user_in_chat(user_id, chat_id)
-        messages = await self.chat_history_repository.get_chat_history(chat_id)
+        messages, next_cursor = await self.chat_history_repository.get_chat_history(chat_id, limit, cursor)
         logger.debug("chat_history_retrieved", chat_id=chat_id, user_id=user_id, message_count=len(messages))
-        return messages
+        return messages, next_cursor
     
     async def leave_chat(self, user_id: str, chat_id: str):
         async with self.uow_factory() as uow:

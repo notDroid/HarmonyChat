@@ -5,8 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UserCreateRequest {
-  username: string;
-  email: string;
-  password: string;
-}
+export type GetChatHistoryApiV1ChatsChatIdGetParams = {
+  limit?: number;
+  cursor?: string | null;
+};

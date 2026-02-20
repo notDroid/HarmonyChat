@@ -13,28 +13,26 @@ import { isNextRedirect } from "@/lib/utils/utils";
 
 // React Query
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import { CHAT_PANEL_SETTINGS } from '@/settings/chat_panel';
 
 export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
-  // Initialize a request-scoped QueryClient for the Server Component
   const queryClient = new QueryClient();
 
   try {
-    // Attempt to prefetch the chat history on the server and populate the QueryClient cache
-    await queryClient.fetchQuery({
-      queryKey: ['chatHistory', chat_id],
-      queryFn: () => getChatHistory(chat_id),
+    // 1. Swap fetchQuery for prefetchInfiniteQuery
+    await queryClient.prefetchInfiniteQuery({
+      queryKey: [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id],
+      queryFn: () => getChatHistory(chat_id, 50), // Pass the initial limit
+      initialPageParam: undefined as string | undefined,
     });
-  
   } catch (error) {
     if (isNextRedirect(error)) throw error; 
 
     console.log("Failed to fetch initial chat history:", error);
-    
-    // Throw the error page on API errors
+
     if (error instanceof ApiError) {
       return <ErrorChatPanel message={`${error.message}`} />;
     } 
-    // Fallback to loading/empty state for network errors, throw otherwise
     else if (!(error instanceof NetworkError)) {
       throw error;
     }
