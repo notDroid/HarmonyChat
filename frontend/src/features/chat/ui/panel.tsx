@@ -1,10 +1,11 @@
 import { ChatMessage } from "@/lib/api/model/chatMessage";
 import Message from "./message"
 import LoadingChatPanel from "./loading";
+import { RefCallback } from "react";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
-  observerTarget?: React.RefObject<HTMLDivElement | null>;
+  observerTarget?: RefCallback<Element>;
   isFetchingNextPage?: boolean;
 }
 
@@ -18,9 +19,6 @@ export default function ChatPanel({ messages, observerTarget, isFetchingNextPage
       {/* Invisible anchor at the "top" of the scroll container to trigger pagination */}
       <div ref={observerTarget} className="mb-[-1]">
         {isFetchingNextPage && <LoadingChatPanel repeatCount={2} />}
-        {/* {isFetchingNextPage && (
-          <span className="text-xs text-app-muted animate-pulse">Loading older messages...</span>
-        )} */}
       </div>
     </div>
   );

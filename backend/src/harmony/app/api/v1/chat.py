@@ -96,7 +96,7 @@ async def get_chat_history(
     chat_service = Depends(get_chat_service)
 ):
     # Simulate timeout for testing purposes
-    await asyncio.sleep(5)
+    # await asyncio.sleep(5)
     messages, next_cursor = await chat_service.get_chat_history(user_id=user_id, chat_id=chat_id, limit=limit, cursor=cursor)
     return ChatHistoryResponse(messages=messages, next_cursor=next_cursor)
 

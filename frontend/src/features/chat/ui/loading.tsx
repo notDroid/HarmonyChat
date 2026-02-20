@@ -15,7 +15,7 @@ export default function LoadingChatPanel({
   pattern = [
     [65, 35],          // Two-line greeting
     [90, 85, 55],      // Long paragraph
-    [45, 20],          // Brief two-line acknowledgment
+    [45],          // Brief two-line acknowledgment
     [80, 60]           // Medium response
   ],
   baseColorClass = 'bg-app-loading', 

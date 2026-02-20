@@ -1,5 +1,5 @@
 // Views
-import ChatHeaderView from "./header";
+import ChatHeader from "../ui/header";
 import ChatPanelView from "../components/panel";
 import ChatBarView from "../components/bar";
 
@@ -19,10 +19,11 @@ export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
   const queryClient = new QueryClient();
 
   try {
-    // 1. Swap fetchQuery for prefetchInfiniteQuery
+    // fetch initial chat history to populate cache
     await queryClient.prefetchInfiniteQuery({
       queryKey: [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id],
-      queryFn: () => getChatHistory(chat_id, 50), // Pass the initial limit
+      queryFn: () => getChatHistory(chat_id, CHAT_PANEL_SETTINGS.PAGE_SIZE),
+      
       initialPageParam: undefined as string | undefined,
     });
   } catch (error) {
@@ -40,7 +41,7 @@ export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
 
   return (
     <div className="flex h-full w-full flex-col min-w-0">
-      <ChatHeaderView />
+      <ChatHeader />
         <HydrationBoundary state={dehydrate(queryClient)}>
             <ChatPanelView chat_id={chat_id} />
         </HydrationBoundary>

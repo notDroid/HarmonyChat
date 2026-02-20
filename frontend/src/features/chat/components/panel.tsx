@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback } from 'react';
 import { useInfiniteQuery, useQueryClient, InfiniteData } from '@tanstack/react-query';
+import { useInView } from 'react-intersection-observer';
 
 import getChatHistory from "../api/get_chat_history";
 import { useChatSocket } from '../api/websocket';
@@ -17,8 +18,8 @@ export default function ChatPanelView(
   { chat_id: string }
 ) {
   const queryClient = useQueryClient();
-  const observerTarget = useRef<HTMLDivElement>(null);
 
+  // Infinite Query for chat history with pagination
   const { 
     data, 
     isLoading, 
@@ -27,9 +28,11 @@ export default function ChatPanelView(
     isFetchingNextPage 
   } = useInfiniteQuery({
     queryKey: [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id],
-    queryFn: ({ pageParam }) => getChatHistory(chat_id, 50, pageParam),
+    queryFn: ({ pageParam }) => getChatHistory(chat_id, CHAT_PANEL_SETTINGS.PAGE_SIZE, pageParam),
+
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.next_cursor || undefined,
+
     refetchOnWindowFocus: false,
   });
 
@@ -37,15 +40,17 @@ export default function ChatPanelView(
   const messages = data?.pages.flatMap(page => page.messages) || [];
   const sortedMessages = [...messages].sort((a, b) => a.ulid.localeCompare(b.ulid));
 
+  // Handler for incoming WebSocket messages
   const handleNewMessage = useCallback((newMessage: ChatMessage) => {
     console.log("Received new message via WebSocket:", newMessage);
     
     queryClient.setQueryData<InfiniteData<ChatHistoryResponse>>(
       [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id], 
       (oldData) => {
+        // If we don't have any data yet, we can't really insert the message, so we return the old data.
         if (!oldData) return oldData;
         
-        // Check if message already exists across any page
+        // Check if message already exists across any page, to prevent duplicates
         const exists = oldData.pages.some(page => 
           page.messages.some(m => m.ulid === newMessage.ulid)
         );
@@ -66,23 +71,17 @@ export default function ChatPanelView(
 
   useChatSocket(chat_id, handleNewMessage);
 
-  // Intersection Observer for infinite scrolling
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  // Observer for infinite scrolling - triggers fetchNextPage when the target comes into view
+  const { ref: observerTarget } = useInView({
+    threshold: 1.0,
+    onChange: (inView) => {
+      // If the target comes into view and we have more pages to load 
+      // and we're not already loading, fetch the next page
+      if (inView && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+  });
 
   if (isLoading) {
     return <LoadingChatPanel />;
