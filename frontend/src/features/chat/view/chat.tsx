@@ -8,38 +8,44 @@ import ErrorChatPanel from "../ui/error";
 
 // API Functions
 import getChatHistory from "../api/get_chat_history";
-import { ChatMessage } from "@/lib/api/model";
 import { ApiError, NetworkError } from "@/lib/utils/errors";
 import { isNextRedirect } from "@/lib/utils/utils";
 
-const refreshInterval = 1000;
+// React Query
+import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 
 export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
-  let initial_messages: ChatMessage[] = [];
-  let loaded = false;
+  // Initialize a request-scoped QueryClient for the Server Component
+  const queryClient = new QueryClient();
 
   try {
-    // await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate loading delay
-    initial_messages = await getChatHistory(chat_id);
-    loaded = true;
+    // Attempt to prefetch the chat history on the server and populate the QueryClient cache
+    await queryClient.fetchQuery({
+      queryKey: ['chatHistory', chat_id],
+      queryFn: () => getChatHistory(chat_id),
+    });
   
   } catch (error) {
     if (isNextRedirect(error)) throw error; 
 
     console.log("Failed to fetch initial chat history:", error);
-    // Throw the error page on API errors, for network errors fall back to the loading page.
+    
+    // Throw the error page on API errors
     if (error instanceof ApiError) {
       return <ErrorChatPanel message={`${error.message}`} />;
-    } else if (!(error instanceof NetworkError)) {
+    } 
+    // Fallback to loading/empty state for network errors, throw otherwise
+    else if (!(error instanceof NetworkError)) {
       throw error;
     }
-
   }
 
   return (
     <div className="flex h-full w-full flex-col min-w-0">
       <ChatHeaderView />
-      <ChatPanelView chat_id={chat_id} refreshInterval={refreshInterval} initial_messages={initial_messages} loaded={loaded} />
+        <HydrationBoundary state={dehydrate(queryClient)}>
+            <ChatPanelView chat_id={chat_id} />
+        </HydrationBoundary>
       <ChatBarView chat_id={chat_id} />
     </div>
   );

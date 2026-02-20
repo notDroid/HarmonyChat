@@ -26,6 +26,9 @@ services:
   dynamodb:
     image: amazon/dynamodb-local
     container_name: db
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    volumes:
+      - ./volumes/dynamodb:/home/dynamodblocal/data
 
   redis:
     image: redis:alpine

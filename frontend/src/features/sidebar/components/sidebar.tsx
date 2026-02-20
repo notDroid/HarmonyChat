@@ -1,42 +1,38 @@
 "use client";
 
 import getMyChats from "../api/get_my_chats";
-import { NetworkError, ApiError, AuthRedirectError } from "@/lib/utils/errors";
+import { AuthRedirectError } from "@/lib/utils/errors";
 import ErrorScreen from "@/components/error";
 import LoadingScreen from "@/components/loading";
 import { useQuery } from "@tanstack/react-query";
 
 import ServerList from "./serverlist";
 
-export default function ServerListWrapper(
-  { initial_chat_id_list, children }: 
-  { initial_chat_id_list: string[] | undefined, children: React.ReactNode }
-) {
+import { SIDEBAR_SETTINGS } from '@/settings/sidebar';
 
-  const { data, error, isLoading } = useQuery({
-    queryKey: ['myChats'],
+export default function ServerListWrapper({ children }: { children: React.ReactNode }) {
+  const { data, error, isPending, isError } = useQuery({
+    queryKey: [SIDEBAR_SETTINGS.QUERY_KEY],
     queryFn: getMyChats,
-    initialData: initial_chat_id_list, // Uses server-fetched data as fallback
+    
+    staleTime: SIDEBAR_SETTINGS.QUERY_STALE_TIME,
     retry: (failureCount, err) => {
-      if (err instanceof AuthRedirectError) return false; // Don't retry on auth errors
-      return failureCount < 3; // Fallback to 3 retries for other errors
+      if (err instanceof AuthRedirectError) return false; 
+      return failureCount < SIDEBAR_SETTINGS.QUERY_N_RETRIES; 
     }
   });
 
-  if (!data && error) {
-    if (error instanceof NetworkError) {
-      return <LoadingScreen />;
-    }
-    return <ErrorScreen message={error.message || 'Failed to load server list'} />;
+  if (isPending) {
+    return <LoadingScreen />;
   }
 
-  if (!data && isLoading) {
-    return <LoadingScreen />;
+  if (isError) {
+    return <ErrorScreen message={error?.message || 'Failed to load server list'} />;
   }
   
   return (
     <div className="fixed flex h-screen w-full">
-      <ServerList chat_id_list={data || []} />
+      <ServerList chat_id_list={data} />
       {children}
     </div>
   )

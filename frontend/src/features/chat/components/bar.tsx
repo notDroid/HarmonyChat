@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import sendMessage from "../api/send_message";
-import ChatBar from "../ui/bar_form";
+import ChatBar from "./bar_form";
 
 export default function ChatBarComponent({ chat_id }: { chat_id: string }) {
     // useTransition allows us to mark the server action as a "transition"

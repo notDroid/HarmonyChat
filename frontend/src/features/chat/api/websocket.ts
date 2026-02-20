@@ -23,7 +23,6 @@ export function useChatSocket(chat_id: string, onMessage: OnMessageCallback) {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        // We assume the backend sends a JSON object matching ChatMessage
         onMessage(data);
       } catch (err) {
         console.error("[WS] Failed to parse message", err);

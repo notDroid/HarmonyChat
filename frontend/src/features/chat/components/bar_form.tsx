@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type SyntheticEvent } from 'react';
-import ChatBarVisual from './bar';
+import ChatBarVisual from '../ui/bar';
 
 interface ChatBarProps {
   onSendMessage: (message: string) => void;
