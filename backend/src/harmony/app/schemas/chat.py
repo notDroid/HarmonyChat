@@ -6,6 +6,7 @@ class ChatCreateRequest(BaseModel):
 
 class MessageSendRequest(BaseModel):
     content: str = Field(..., min_length=1)
+    client_uuid: str | None = None
 
 # --- API Response Models (Output) ---
 class ChatCreatedResponse(BaseModel):
@@ -15,6 +16,7 @@ class ChatCreatedResponse(BaseModel):
 class ChatMessage(BaseModel):
     chat_id: str
     ulid: str
+    client_uuid: str | None = None
     timestamp: str
     user_id: str
     content: str

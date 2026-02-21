@@ -1,26 +1,26 @@
 "use client";
 
 import { useState, type SyntheticEvent } from 'react';
-import ChatBarVisual from '../ui/bar';
+import ChatBarUI from '../ui/bar';
 
 interface ChatBarProps {
   onSendMessage: (message: string) => void;
   loading?: boolean;
 }
 
-export default function ChatBar({ onSendMessage, loading = false }: ChatBarProps) {
+export default function ChatBarForm({ onSendMessage, loading = false }: ChatBarProps) {
   const [message, setMessage] = useState("");
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
-    if (!message.trim() || loading) return;
+    if (!message.trim()) return;
 
     onSendMessage(message);
     setMessage("");
   };
 
   return (
-    <ChatBarVisual 
+    <ChatBarUI 
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onSubmit={handleSubmit}

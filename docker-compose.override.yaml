@@ -3,16 +3,16 @@ services:
     container_name: backend
     ports:
       - "8000:8000"
-  frontend:
-    container_name: frontend
-    build:
-      args:
-        - NODE_ENV=development
-        - NEXT_PUBLIC_API_ENDPOINT=http://localhost:8000
-        - INTERNAL_API_ENDPOINT=http://api:8000
-    environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_ENDPOINT=http://localhost:8000
-      - INTERNAL_API_ENDPOINT=http://api:8000
-    ports:
-      - "3000:3000"
+  # frontend:
+  #   container_name: frontend
+  #   build:
+  #     args:
+  #       - NODE_ENV=development
+  #       - NEXT_PUBLIC_API_ENDPOINT=http://localhost:8000
+  #       - INTERNAL_API_ENDPOINT=http://api:8000
+  #   environment:
+  #     - NODE_ENV=development
+  #     - NEXT_PUBLIC_API_ENDPOINT=http://localhost:8000
+  #     - INTERNAL_API_ENDPOINT=http://api:8000
+  #   ports:
+  #     - "3000:3000"

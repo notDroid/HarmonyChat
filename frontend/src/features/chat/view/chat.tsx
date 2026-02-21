@@ -1,10 +1,10 @@
 // Views
 import ChatHeader from "../ui/header";
-import ChatPanelView from "../components/panel";
-import ChatBarView from "../components/bar";
+import ChatPanel from "../components/panel";
 
 // UI Components
 import ErrorChatPanel from "../ui/error";
+import ChatBar from "../components/bar";
 
 // API Functions
 import getChatHistory from "../api/get_chat_history";
@@ -23,7 +23,7 @@ export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
     await queryClient.prefetchInfiniteQuery({
       queryKey: [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id],
       queryFn: () => getChatHistory(chat_id, CHAT_PANEL_SETTINGS.PAGE_SIZE),
-      
+
       initialPageParam: undefined as string | undefined,
     });
   } catch (error) {
@@ -43,9 +43,9 @@ export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
     <div className="flex h-full w-full flex-col min-w-0">
       <ChatHeader />
         <HydrationBoundary state={dehydrate(queryClient)}>
-            <ChatPanelView chat_id={chat_id} />
+            <ChatPanel chat_id={chat_id} />
         </HydrationBoundary>
-      <ChatBarView chat_id={chat_id} />
+      <ChatBar chat_id={chat_id} />
     </div>
   );
 }

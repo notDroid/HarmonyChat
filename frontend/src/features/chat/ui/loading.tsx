@@ -1,7 +1,5 @@
 "use client"
 
-import React from 'react';
-
 interface ChatSkeletonProps {
   repeatCount?: number;
   pattern?: number[][];

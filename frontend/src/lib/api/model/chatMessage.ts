@@ -8,6 +8,7 @@
 export interface ChatMessage {
   chat_id: string;
   ulid: string;
+  client_uuid?: string | null;
   timestamp: string;
   user_id: string;
   content: string;

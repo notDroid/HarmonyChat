@@ -126,7 +126,7 @@ class ChatService:
             await uow.commit()
         logger.info("users_added_to_chat", chat_id=chat_id, requesting_user_id=user_id, added_count=len(user_id_list))
 
-    async def send_message(self, chat_id: str, user_id: str, content: str):
+    async def send_message(self, chat_id: str, user_id: str, content: str, client_uuid: str | None = None) -> ChatMessage:
         # Verify user is in chat
         await self.check_user_in_chat(user_id, chat_id)
         
@@ -140,12 +140,13 @@ class ChatService:
             ulid=ulid_str,
             timestamp=timestamp,
             user_id=user_id,
-            content=content
+            content=content,
+            client_uuid=client_uuid
         )
 
         await self.chat_history_repository.create_message(msg)
 
-        logger.info("message_sent", chat_id=chat_id, user_id=user_id, message_id=ulid_str)
+        logger.info("message_sent", chat_id=chat_id, user_id=user_id, message_id=ulid_str, client_uuid=client_uuid)
         return msg
     
     async def get_chat_history(self, user_id: str, chat_id: str, limit: int = 50, cursor: str | None = None) -> tuple[list[ChatMessage], str | None]:

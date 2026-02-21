@@ -72,9 +72,12 @@ async def send_message(
     msg = await chat_service.send_message(
         chat_id=chat_id, 
         user_id=user_id, 
-        content=data.content
+        content=data.content,
+        client_uuid=data.client_uuid
     )
 
+    # Simulate timeout for testing purposes
+    # await asyncio.sleep(5)
     # TODO: Merge into chat service and use dependency injection for Redis manager to avoid tight coupling with FastAPI request
     redis_manager = request.app.state.redis_manager
     await redis_manager.publish(chat_id, msg.model_dump())

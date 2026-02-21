@@ -560,6 +560,17 @@
             "type": "string",
             "title": "Ulid"
           },
+          "client_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Uuid"
+          },
           "timestamp": {
             "type": "string",
             "title": "Timestamp"
@@ -602,6 +613,17 @@
             "type": "string",
             "minLength": 1,
             "title": "Content"
+          },
+          "client_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Uuid"
           }
         },
         "type": "object",

@@ -1,6 +1,6 @@
-import LoadingChatPanel from "../ui/loading"
-import ChatBar from "../ui/bar"
-import ChatHeader from "../ui/header";
+import LoadingChatPanel from "./loading"
+import ChatBar from "./bar"
+import ChatHeader from "./header";
 
 export default async function LoadingChatWindowView() {
   return (

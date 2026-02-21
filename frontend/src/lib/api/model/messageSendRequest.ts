@@ -8,4 +8,5 @@
 export interface MessageSendRequest {
   /** @minLength 1 */
   content: string;
+  client_uuid?: string | null;
 }

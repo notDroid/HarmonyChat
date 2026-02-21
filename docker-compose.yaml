@@ -16,12 +16,12 @@ services:
       init:
         condition: service_completed_successfully
 
-  frontend:
-    build: 
-      context: frontend
-    depends_on:
-      api:
-        condition: service_started
+  # frontend:
+  #   build: 
+  #     context: frontend
+  #   depends_on:
+  #     api:
+  #       condition: service_started
 
   dynamodb:
     image: amazon/dynamodb-local

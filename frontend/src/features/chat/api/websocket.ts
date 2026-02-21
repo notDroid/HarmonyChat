@@ -1,47 +1,31 @@
-import { useEffect, useRef } from "react";
+import useWebSocket from "react-use-websocket";
 import { getWebSocketUrl } from "@/lib/api/ws/utils";
 import { ChatMessage } from "@/lib/api/model";
 
 type OnMessageCallback = (message: ChatMessage) => void;
 
-export function useChatSocket(chat_id: string, onMessage: OnMessageCallback) {
-  const socketRef = useRef<WebSocket | null>(null);
+export function useChatWebSocket(chat_id: string, onMessage: OnMessageCallback) {
+  const url = getWebSocketUrl(chat_id);
 
-  useEffect(() => {
-    // 1. Construct URL
-    const url = getWebSocketUrl(chat_id);
-
-    // 2. Initialize Connection
-    const ws = new WebSocket(url);
-    socketRef.current = ws;
-
-    // 3. Event Handlers
-    ws.onopen = () => {
-      console.log(`[WS] Connected to chat ${chat_id}`);
-    };
-
-    ws.onmessage = (event) => {
+  useWebSocket(url, {
+    // Handle incoming messages
+    onMessage: (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const data: ChatMessage = JSON.parse(event.data);
         onMessage(data);
       } catch (err) {
         console.error("[WS] Failed to parse message", err);
       }
-    };
+    },
+    
+    // Log connection status for debugging
+    onOpen: () => console.log(`[WS] Connected to chat ${chat_id}`),
+    onClose: () => console.log(`[WS] Disconnected from chat ${chat_id}`),
+    onError: (event) => console.error("[WS] Error", event),
 
-    ws.onerror = (error) => {
-      console.error("[WS] Error", error);
-    };
-
-    ws.onclose = () => {
-      console.log(`[WS] Disconnected from chat ${chat_id}`);
-    };
-
-    // 4. Cleanup on Unmount or chat_id change
-    return () => {
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-        ws.close();
-      }
-    };
-  }, [chat_id, onMessage]);
+    // Reconnection settings
+    shouldReconnect: (closeEvent) => true,
+    reconnectAttempts: 10,
+    reconnectInterval: 3000,
+  });
 }

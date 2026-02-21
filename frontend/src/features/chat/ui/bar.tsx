@@ -8,7 +8,7 @@ interface ChatBarBaseProps {
   disabled?: boolean;
 }
 
-export default function ChatBarVisual({ 
+export default function ChatBarUI({ 
   value = "", 
   onChange, 
   onSubmit, 
@@ -28,7 +28,6 @@ export default function ChatBarVisual({
               onChange={onChange}
               placeholder="Type your message..." // Kept static to prevent text flashing
               disabled={disabled} // Only true hard-disable if the whole component is disabled
-              readOnly={loading} // readOnly prevents typing but preserves user focus
               className="flex-1 text-app-text outline-none bg-transparent"
             />
         </div>
