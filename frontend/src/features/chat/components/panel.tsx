@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
-import { useInfiniteQuery, useQueryClient, InfiniteData } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useInView } from 'react-intersection-observer';
 
 import getChatHistory from "../api/get_chat_history";
@@ -12,15 +11,13 @@ import ChatPanel from "../ui/panel";
 import LoadingChatPanel from "../ui/loading";
 import { UIMessage } from '../ui/message';
 
-import { ChatMessage, ChatHistoryResponse } from "@/lib/api/model";
 import { CHAT_PANEL_SETTINGS } from '@/settings/chat_panel';
 
 export default function ChatPanelComponent(
   { chat_id }: 
   { chat_id: string }
 ) {
-  const queryClient = useQueryClient();
-
+  
   // Infinite Query for chat history with pagination
   const { 
     data, 
@@ -72,7 +69,7 @@ export default function ChatPanelComponent(
   // Retry logic for failed messages
   const { mutate: retrySend } = useSendMessage(chat_id);
   const handleRetry = (msg: UIMessage) => {
-    retrySend(msg.content);
+    retrySend({ content: msg.content, client_uuid: msg.client_uuid! });
   };
 
   return (

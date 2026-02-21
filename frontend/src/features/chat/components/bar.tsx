@@ -6,7 +6,8 @@ export default function ChatBarComponent({ chat_id }: { chat_id: string }) {
     const { mutate: send, isPending } = useSendMessage(chat_id);
 
     const handleSendMessage = (messageContent: string) => {
-        send(messageContent);
+        const client_uuid = crypto.randomUUID();
+        send({ content: messageContent, client_uuid });
     };
 
     return (
