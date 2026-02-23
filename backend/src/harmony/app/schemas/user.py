@@ -19,11 +19,3 @@ class UserChatsResponse(BaseModel):
 # --- Database/Internal Models ---
 class UserMetaData(BaseModel):
     username: str
-    created_at: str
-
-class UserDataItem(BaseModel):
-    user_id: str
-    email: EmailStr
-    tombstone: bool = False
-    hashed_password: str
-    metadata: UserMetaData

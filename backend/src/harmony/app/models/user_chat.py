@@ -9,11 +9,11 @@ from .base import Base
 
 class UserChat(Base):
     __tablename__ = "user_chats"
-    
+
     user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True
+        ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True, index=True
     )
     chat_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("chats.chat_id", ondelete="CASCADE"), primary_key=True
+        ForeignKey("chats.chat_id", ondelete="CASCADE"), primary_key=True, index=True
     )
     joined_at: Mapped[datetime] = mapped_column(server_default=func.now())
