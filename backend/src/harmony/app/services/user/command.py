@@ -22,12 +22,13 @@ class UserCommands(Command):
         self.user_chat_repo = user_chat_repository
 
     async def create_user(self, req: UserCreateRequest, hashed_password: str) -> uuid.UUID:
-        async with self.transaction_handler("create_user", email=req.email):
-            
-            metadata = UserMetaData(
-                username=req.username if req.username else req.email,
-            )
-            
+        # 1. Handle request->metadata transformation
+        metadata = UserMetaData(
+            username=req.username if req.username else req.email,
+        )
+
+        # 2. Create user (and validate email uniqueness)
+        async with self.transaction_handler("create_user", email=req.email):    
             user = await self.user_data_repo.create_user(
                 email=req.email,
                 hashed_password=hashed_password,
@@ -37,7 +38,7 @@ class UserCommands(Command):
             await self.session.flush()
 
         logger.info("user_created", user_id=str(user.user_id), email=req.email)
-        return user.user_id
+        return user
 
     async def delete_user(self, user_id: uuid.UUID):
         async with self.transaction_handler("delete_user", user_id=user_id):

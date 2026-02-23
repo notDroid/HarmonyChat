@@ -3,12 +3,12 @@ from fastapi import Depends, BackgroundTasks, APIRouter, status, HTTPException, 
 from harmony.app.core import settings
 from harmony.app.schemas import (
     ChatCreateRequest, 
-    ChatCreatedResponse, 
+    ChatResponse, 
     MessageSendRequest, 
     ChatMessage, 
     ChatHistoryResponse
 )
-from .dependencies import get_current_user, get_chat_commands, get_chat_queries
+from .dependencies import get_current_user, get_chat_commands, get_chat_queries, get_message_commands
 
 # common error responses
 common_chat_errors = {
@@ -21,7 +21,7 @@ router = APIRouter()
 
 @router.post(
     "/", 
-    response_model=ChatCreatedResponse, 
+    response_model=ChatResponse, 
     status_code=status.HTTP_201_CREATED,
     summary="Create a new chat",
     responses={
@@ -39,16 +39,12 @@ async def create_chat(
     Creates a new chat room between the current user and a list of target users.
     
     - **user_id_list**: A list of user_ids for the users to include.
-    - **Constraints**: 
-        - Max 10 users per chat (initially, you can add more later).
-        - You cannot create a chat with non-existent users.
-        - The creator is automatically added to the chat.
     """
-    chat_id = await chat_service.create_chat(
+    chat = await chat_service.create_chat(
         user_id=user_id,
-        user_id_list=data.user_id_list,
+        data=data
     )
-    return ChatCreatedResponse(chat_id=chat_id)
+    return chat
 
 @router.post(
     "/{chat_id}", 
@@ -79,7 +75,7 @@ async def send_message(
         client_uuid=data.client_uuid
     )
 
-    return ChatMessage.model_validate(msg.model_dump())
+    return msg
 
 @router.get(
     "/{chat_id}", 
@@ -111,6 +107,7 @@ async def delete_chat(
     background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user),
     chat_service = Depends(get_chat_commands),
+    message_service = Depends(get_message_commands)
 ):
     """
     **Hard deletes** a chat and all its associated history.
@@ -120,4 +117,4 @@ async def delete_chat(
       to prevent the API from hanging.
     """
     await chat_service.delete_chat(user_id=user_id, chat_id=chat_id)
-    background_tasks.add_task(chat_service.background_delete_chat_history, chat_id=chat_id)
+    background_tasks.add_task(message_service.background_delete_chat_history, chat_id=chat_id)

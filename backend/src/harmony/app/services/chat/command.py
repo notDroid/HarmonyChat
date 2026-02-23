@@ -5,7 +5,7 @@ import structlog
 
 from harmony.app.repositories import ChatDataRepository, UserChatRepository
 from harmony.app.core import settings
-from harmony.app.schemas import ChatMetaData
+from harmony.app.schemas import ChatMetaData, ChatCreateRequest, ChatResponse
 from ..command import Command
 
 logger = structlog.get_logger(__name__)
@@ -29,21 +29,27 @@ class ChatCommands(Command):
             logger.warning("action_denied_not_a_member", chat_id=chat_id, user_id=user_id)
             raise HTTPException(status.HTTP_403_FORBIDDEN, "You must be a member of the chat to perform this action.")
 
-    async def create_chat(self, creator_id: uuid.UUID, target_user_ids: list[uuid.UUID], metadata: ChatMetaData | None = None) -> uuid.UUID:
+    async def create_chat(self, creator_id: uuid.UUID, data: ChatCreateRequest) -> ChatResponse:
         # 1. Validate
-        user_id_list = list(set(target_user_ids + [creator_id]))
+        user_id_list = list(set(data.user_id_list + [creator_id]))
         if len(user_id_list) > self.MAX_USERS:
             logger.warning("create_chat_exceeds_max_users", creator_id=creator_id, requested_count=len(user_id_list))
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Limit of {self.MAX_USERS} users exceeded.")
+        
+        # 2. Parse metadata
+        metadata = ChatMetaData(
+            title=data.title, 
+            description=data.description
+        )
 
-        # 2. Create
-        async with self.transaction_handler("create_chat", creator_id=creator_id, target_users=len(target_user_ids)):
+        # 3. Create
+        async with self.transaction_handler("create_chat", creator_id=creator_id, target_users=len(user_id_list)):
             chat = await self.chat_data_repo.create_chat(metadata=metadata) 
             await self.session.flush() # Ensure chat.chat_id is populated
             await self.user_chat_repo.add_users_to_chat(chat_id=chat.chat_id, user_id_list=user_id_list)
             
         logger.info("chat_created", chat_id=chat.chat_id, creator_id=creator_id)
-        return chat.chat_id
+        return chat
         
     async def add_users_to_chat(self, chat_id: uuid.UUID, user_id: uuid.UUID, user_id_list: list[uuid.UUID]):
         # 1. Validate

@@ -17,7 +17,9 @@ class ChatDataRepository:
     async def create_chat(self, metadata: ChatMetaData | None = None) -> Chat:
         chat = Chat()
         if metadata:
-            chat.meta = metadata.model_dump() if metadata else {}
+            chat.meta = metadata.model_dump(exclude_none=True)
+        else:
+            chat.meta = {}
             
         self.session.add(chat)
         return chat
