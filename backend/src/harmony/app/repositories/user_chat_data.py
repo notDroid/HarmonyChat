@@ -25,13 +25,16 @@ class UserChatRepository:
         )
         await self.session.execute(stmt)
 
-    async def check_user_in_chat(self, chat_id: uuid.UUID, user_id: uuid.UUID) -> bool:
-        stmt = select(exists().where(
+    async def check_user_in_chat(self, chat_id: uuid.UUID, user_id: uuid.UUID, lock: bool = False) -> bool:
+        stmt = select(UserChat.user_id).where(
             UserChat.chat_id == chat_id, 
             UserChat.user_id == user_id
-        ))
+        )
+        if lock:
+            stmt = stmt.with_for_update(read=True)
+
         result = await self.session.execute(stmt)
-        return result.scalar()
+        return result.first() is not None
 
     async def get_user_chats(self, user_id: uuid.UUID) -> List[uuid.UUID]:
         stmt = select(UserChat.chat_id).where(UserChat.user_id == user_id)

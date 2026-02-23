@@ -6,6 +6,7 @@ import structlog
 
 from harmony.app.repositories import ChatDataRepository, UserChatRepository
 from harmony.app.core import settings
+from .queries import ChatQueries
 
 logger = structlog.get_logger(__name__)
 
@@ -56,9 +57,18 @@ class ChatCommands:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Limit of {self.MAX_USERS} users exceeded.")
 
         try:
+            # Do 2 network trips here for simplicity, but we could optimize by doing a single query
+            is_member = await self.user_chat_repo.check_user_in_chat(chat_id=chat_id, user_id=user_id, lock=True)
+            if not is_member:
+                logger.warning("add_users_to_chat_not_a_member", chat_id=chat_id, user_id=user_id)
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "You must be a member of the chat to add users.")
+            
             await self.user_chat_repo.add_users_to_chat(chat_id=chat_id, user_id_list=user_id_list)
             await self.session.commit()
             logger.info("users_added_to_chat", chat_id=chat_id, added_user_count=len(user_id_list))
+        except HTTPException:
+            await self.session.rollback()
+            raise
         except Exception as e:
             await self.session.rollback()
             logger.exception("add_users_to_chat_failed", chat_id=chat_id)
