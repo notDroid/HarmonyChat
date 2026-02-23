@@ -42,4 +42,7 @@ class Settings(BaseSettings):
     REDIS_STALL_TIMEOUT: float = 0.001 # Block for 1ms while stalling for messages.
     redis_opts: RedisOptions = RedisOptions()
 
+    # Postgres Configuration
+    POSTGRES_URL: str = "postgresql+asyncpg://user:password@localhost:5432/harmony"
+
 settings = Settings()

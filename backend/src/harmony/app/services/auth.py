@@ -2,7 +2,7 @@ from datetime import timedelta
 from fastapi import HTTPException, status
 
 from harmony.app.core import get_password_hash, verify_password, create_token, settings
-from .user import UserService
+from .user import UserCommands, UserQueries
 from harmony.app.schemas import UserCreateRequest, Token
 
 class AuthService:
@@ -23,12 +23,14 @@ class AuthService:
 
     def __init__(
             self,
-            user_service: UserService
+            user_commands: UserCommands,
+            user_queries: UserQueries,
     ):
-        self.user_service = user_service
+        self.user_commands = user_commands
+        self.user_queries = user_queries
 
     async def sign_up(self, user_create: UserCreateRequest) -> str:
-        existing_user = await self.user_service.get_user_by_email(user_create.email)
+        existing_user = await self.user_queries.get_user_by_email(user_create.email)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -37,7 +39,7 @@ class AuthService:
 
         hashed_pw = get_password_hash(user_create.password)
 
-        user_id = await self.user_service.create_user(
+        user_id = await self.user_commands.create_user(
             req=user_create,
             hashed_password=hashed_pw,
         )
@@ -45,7 +47,7 @@ class AuthService:
         return user_id
 
     async def authenticate_user(self, email: str, password: str) -> Token:
-        user = await self.user_service.get_user_by_email(email)
+        user = await self.user_queries.get_user_by_email(email)
         
         if not user or getattr(user, "tombstone", False):
             raise HTTPException(

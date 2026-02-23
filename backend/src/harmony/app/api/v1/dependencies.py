@@ -1,13 +1,20 @@
 from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi.security import OAuth2PasswordBearer
-from harmony.app.repositories import ChatHistoryRepository, UserChatRepository, ChatDataRepository, UserDataRepository, EmailSetRepository
-from harmony.app.services import ChatService, UserService, AuthService
-from harmony.app.db import UnitOfWorkFactory
+
+from harmony.app.repositories import ChatHistoryRepository, UserChatRepository, ChatDataRepository, UserDataRepository
+from harmony.app.services import (
+    AuthService, 
+    StreamService, 
+    UserCommands, UserQueries, 
+    ChatCommands, ChatQueries,
+    MessageCommands, MessageQueries,
+)
 from harmony.app.core import decode_token
 
+# ------------------------- Authentication Dependency ------------------------ #
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
-
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
 ) -> str:
@@ -23,57 +30,90 @@ async def get_current_user(
         
     return user_id
 
+# --------------------------- Database Dependencies -------------------------- #
 def get_dynamo_client(request: Request):
     return request.app.state.dynamodb
+
+async def get_db_session(request: Request):
+    async with request.app.state.SessionLocal() as session:
+        yield session
+
+# -------------------------- Repository Dependencies ------------------------- #
+def get_chat_history_repository(dynamodb = Depends(get_dynamo_client)) -> ChatHistoryRepository:
+    return ChatHistoryRepository(dynamodb)
 
 def get_chat_history_repository(dynamodb = Depends(get_dynamo_client)) -> ChatHistoryRepository:
     return ChatHistoryRepository(dynamodb)
 
-def get_chat_data_repository(dynamodb = Depends(get_dynamo_client)) -> ChatDataRepository:
-    return ChatDataRepository(dynamodb)
+def get_chat_data_repository(session: AsyncSession = Depends(get_db_session)) -> ChatDataRepository:
+    return ChatDataRepository(session)
 
-def get_user_data_repository(dynamodb = Depends(get_dynamo_client)) -> UserDataRepository:
-    return UserDataRepository(dynamodb)
+def get_user_data_repository(session: AsyncSession = Depends(get_db_session)) -> UserDataRepository:
+    return UserDataRepository(session)
 
-def get_user_chat_repository(dynamodb = Depends(get_dynamo_client)) -> UserChatRepository:
-    return UserChatRepository(dynamodb)
+def get_user_chat_repository(session: AsyncSession = Depends(get_db_session)) -> UserChatRepository:
+    return UserChatRepository(session)
 
-def get_email_set_repository(dynamodb = Depends(get_dynamo_client)) -> EmailSetRepository:
-    return EmailSetRepository(dynamodb)
+# ---------------------------- Stream Dependencies --------------------------- #
+def get_redis_manager(request: Request):
+    return request.app.state.redis_manager
 
-def get_unit_of_work(dynamodb = Depends(get_dynamo_client)):
-    return UnitOfWorkFactory(dynamodb)
+def get_ws_manager(request: Request):
+    return request.app.state.ws_manager
 
-def get_user_service(
-    user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
+# --------------------------- Service Dependencies --------------------------- #
+def get_user_queries(
+    session: AsyncSession = Depends(get_db_session),
     user_data_repository: UserDataRepository = Depends(get_user_data_repository),
-    email_set_repository: EmailSetRepository = Depends(get_email_set_repository),
-    unit_of_work: UnitOfWorkFactory = Depends(get_unit_of_work)
-):
-    return UserService(
-        user_chat_repository=user_chat_repository, 
-        user_data_repository=user_data_repository, 
-        email_set_repository=email_set_repository,
-        unit_of_work=unit_of_work
-    )
-
-def get_chat_service(
-    chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
-    chat_data_repository: ChatDataRepository = Depends(get_chat_data_repository),
-    user_service: UserService = Depends(get_user_service),
-    unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work),
+) -> UserQueries:
+    return UserQueries(session, user_data_repository, user_chat_repository)
 
-) -> ChatService:
-    return ChatService(
-        chat_history_repository=chat_history_repository, 
-        user_chat_repository=user_chat_repository, 
-        chat_data_repository=chat_data_repository, 
-        user_service=user_service, 
-        unit_of_work=unit_of_work_factory
-    )
+def get_chat_queries(
+    session: AsyncSession = Depends(get_db_session),
+    chat_data_repository: ChatDataRepository = Depends(get_chat_data_repository),
+    user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
+) -> ChatQueries:
+    return ChatQueries(session, chat_data_repository, user_chat_repository)
+
+def get_message_queries(
+    chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
+    chat_queries: ChatQueries = Depends(get_chat_queries),
+) -> MessageQueries:
+    return MessageQueries(chat_history_repository, chat_queries)
+
+from harmony.app.services import UserCommands, ChatCommands, MessageCommands
+
+def get_user_commands(
+    session: AsyncSession = Depends(get_db_session),
+    user_data_repository: UserDataRepository = Depends(get_user_data_repository),
+    user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
+) -> UserCommands:
+    return UserCommands(session, user_data_repository, user_chat_repository)
+
+def get_chat_commands(
+    session: AsyncSession = Depends(get_db_session),
+    chat_data_repository: ChatDataRepository = Depends(get_chat_data_repository),
+    user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
+) -> ChatCommands:
+    return ChatCommands(session, chat_data_repository, user_chat_repository)
+
+def get_message_commands(
+    chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
+    chat_queries: ChatQueries = Depends(get_chat_queries),
+    event_publisher = Depends(get_redis_manager),
+) -> MessageCommands:
+    return MessageCommands(chat_history_repository, chat_queries, event_publisher)
 
 def get_auth_service(
-    user_service: UserService = Depends(get_user_service)
-):
-    return AuthService(user_service=user_service)
+    user_commands: UserCommands = Depends(get_user_commands),
+    user_queries: UserQueries = Depends(get_user_queries),
+) -> AuthService:
+    return AuthService(user_commands=user_commands, user_queries=user_queries) 
+
+def get_stream_service(
+    ws_manager = Depends(get_ws_manager),
+    redis_manager = Depends(get_redis_manager),
+    chat_queries: ChatQueries = Depends(get_chat_queries),
+) -> StreamService:
+    return StreamService(ws_manager, redis_manager, chat_queries)

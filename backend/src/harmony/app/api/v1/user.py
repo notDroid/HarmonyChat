@@ -4,7 +4,7 @@ from harmony.app.schemas import (
     UserResponse, 
     UserChatsResponse
 )
-from .dependencies import get_auth_service, get_current_user, get_user_service
+from .dependencies import get_auth_service, get_current_user, get_user_commands, get_user_queries
 
 router = APIRouter()
 
@@ -48,7 +48,7 @@ async def sign_up(
 )
 async def get_my_chats(
     user_id: str = Depends(get_current_user),
-    user_service = Depends(get_user_service)
+    user_service = Depends(get_user_queries)
 ):
     """
     Retrieves a list of Chat IDs that the currently logged-in user participates in.
@@ -66,7 +66,7 @@ async def get_my_chats(
 )
 async def delete_me(
     user_id: str = Depends(get_current_user),
-    user_service = Depends(get_user_service)
+    user_service = Depends(get_user_commands)
 ):
     """
     **Soft delete** the current user.

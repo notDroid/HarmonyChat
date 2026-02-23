@@ -8,9 +8,9 @@ from harmony.app.schemas import (
     ChatMessage, 
     ChatHistoryResponse
 )
-from .dependencies import get_chat_service, get_current_user
+from .dependencies import get_current_user, get_chat_commands, get_chat_queries
 
-# 1. We define common error responses once to keep code clean
+# common error responses
 common_chat_errors = {
     401: {"description": "Authentication credentials were not provided or are invalid."},
     404: {"description": "Chat not found"},
@@ -33,7 +33,7 @@ router = APIRouter()
 async def create_chat(
     data: ChatCreateRequest,
     user_id: str = Depends(get_current_user),
-    chat_service = Depends(get_chat_service)
+    chat_service = Depends(get_chat_commands)
 ):
     """
     Creates a new chat room between the current user and a list of target users.
@@ -60,27 +60,24 @@ async def create_chat(
 async def send_message(
     chat_id: str,
     data: MessageSendRequest, 
-    request: Request, # TODO: Refactor to avoid tight coupling with FastAPI request object
     user_id: str = Depends(get_current_user),
-    chat_service = Depends(get_chat_service)
+    chat_service = Depends(get_chat_commands)
 ):
     """
     Persist a message to the database for a specific chat.
     
     Returns the message details including the generated ULID and timestamp.
     """
+
+    # Simulate timeout for testing purposes
+    await asyncio.sleep(5)
+
     msg = await chat_service.send_message(
         chat_id=chat_id, 
         user_id=user_id, 
         content=data.content,
         client_uuid=data.client_uuid
     )
-
-    # Simulate timeout for testing purposes
-    await asyncio.sleep(5)
-    # TODO: Merge into chat service and use dependency injection for Redis manager to avoid tight coupling with FastAPI request
-    redis_manager = request.app.state.redis_manager
-    await redis_manager.publish(chat_id, msg.model_dump())
 
     return ChatMessage.model_validate(msg.model_dump())
 
@@ -96,7 +93,7 @@ async def get_chat_history(
     limit: int = settings.DEFAULT_PAGINATION_LIMIT,
     cursor: str | None = None,
     user_id: str = Depends(get_current_user),
-    chat_service = Depends(get_chat_service)
+    chat_service = Depends(get_chat_queries)
 ):
     # Simulate timeout for testing purposes
     # await asyncio.sleep(5)
@@ -113,7 +110,7 @@ async def delete_chat(
     chat_id: str,
     background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user),
-    chat_service = Depends(get_chat_service),
+    chat_service = Depends(get_chat_commands),
 ):
     """
     **Hard deletes** a chat and all its associated history.
