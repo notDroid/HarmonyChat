@@ -1,50 +1,36 @@
-from harmony.app.core import settings
-from harmony.app.db import to_dynamo_json, from_dynamo_json
-from harmony.app.schemas import UserDataItem
-from .base_repo import BaseRepository
+import uuid
+from typing import Any, Optional
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
-class UserDataRepository(BaseRepository):
-    table_name = settings.USER_DATA_TABLE_NAME
-    
-    def __init__(self, client):
-        super().__init__(client)
+from harmony.app.models import User 
 
-    async def create_user(self, item: UserDataItem):
-        await self.writer.put_item(
-            TableName=self.table_name,
-            Item=to_dynamo_json(item.model_dump()),
-            ConditionExpression='attribute_not_exists(user_id)',
-        )
+class UserDataRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
 
-    async def get_user_by_id(self, user_id: str) -> UserDataItem | None:
-        response = await self.client.get_item(
-            TableName=self.table_name,
-            Key=to_dynamo_json({"user_id": user_id})
+    async def create_user(self, email: str, hashed_password: str, metadata: dict[str, Any] = None) -> User:
+        user = User(
+            email=email,
+            hashed_password=hashed_password,
+            metadata=metadata or {}
         )
-        item = response.get("Item")
-        if not item:
-            return None
-        user_data = from_dynamo_json(item)
-        return UserDataItem.model_validate(user_data)
-    
-    async def get_user_by_email(self, email: str) -> UserDataItem | None:
-        response = await self.client.query(
-            TableName=self.table_name,
-            IndexName="EmailIndex",
-            KeyConditionExpression="email = :e",
-            ExpressionAttributeValues=to_dynamo_json({":e": email}),
-        )
-        items = response.get("Items", [])
-        if not items:
-            return None
-        user_data = from_dynamo_json(items[0])
-        return UserDataItem.model_validate(user_data)
+        self.session.add(user)
+        await self.session.flush() 
+        return user
 
-    async def make_user_tombstone(self, user_id: str):
-        await self.writer.update_item(
-            TableName=self.table_name,
-            Key=to_dynamo_json({"user_id": user_id}), 
-            UpdateExpression="SET tombstone = :t",
-            ConditionExpression="attribute_exists(user_id)",
-            ExpressionAttributeValues=to_dynamo_json({":t": True}) 
+    async def get_user_by_id(self, user_id: uuid.UUID) -> Optional[User]:
+        return await self.session.get(User, user_id)
+
+    async def get_user_by_email(self, email: str) -> Optional[User]:
+        stmt = select(User).where(User.email == email)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def make_user_tombstone(self, user_id: uuid.UUID):
+        stmt = (
+            update(User)
+            .where(User.user_id == user_id)
+            .values(tombstone=True)
         )
+        await self.session.execute(stmt)

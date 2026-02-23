@@ -16,7 +16,7 @@ export default function ChatPanel({ messages, observerTarget, isFetchingNextPage
         <Message key={message.ulid} message={message} onRetry={onRetry} />
       ))}
       
-      Invisible anchor at the "top" of the scroll container to trigger pagination
+      {/* Invisible anchor at the "top" of the scroll container to trigger pagination */}
       <div ref={observerTarget} className="mb-[-1]">
         {isFetchingNextPage && <LoadingChatPanel repeatCount={2} />}
       </div>

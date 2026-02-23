@@ -1,6 +1,9 @@
 import asyncio
+from typing import Protocol, List, Any
 from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
 
+
+# ------------------------------- DynamoDB JSON Conversion ------------------------------ #
 serializer = TypeSerializer()
 deserializer = TypeDeserializer()
 
@@ -10,6 +13,7 @@ def to_dynamo_json(python_dict: dict) -> dict:
 def from_dynamo_json(dynamo_dict: dict) -> dict:
     return {k: deserializer.deserialize(v) for k, v in dynamo_dict.items()}
 
+# ------------------------------ Batch Requests ------------------------------ #
 async def process_batch(client, table_name, batch, max_retries: int = 0):
     response = await client.batch_write_item(
         RequestItems={
@@ -38,7 +42,14 @@ async def batch_request(client, table_name, write_requests, chunk_size: int = 25
     
     await asyncio.gather(*tasks)
 
+# Convenience functions
+async def put_batch(client, TableName: str, Items: List[dict], **kwargs):
+    await batch_request(client, TableName, [{"PutRequest": {"Item": item}} for item in Items], **kwargs)
 
+async def delete_batch(client, TableName: str, Keys: List[dict], **kwargs):
+    await batch_request(client, TableName, [{"DeleteRequest": {"Key": key}} for key in Keys], **kwargs)
+
+# ----------------------------- Pagination Helper ---------------------------- #
 async def paginate_in_batches(client, query_kwargs: dict, batch_size: int = 25):
     paginator = client.get_paginator('query')
     batch = []

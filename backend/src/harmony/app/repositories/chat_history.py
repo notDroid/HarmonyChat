@@ -1,18 +1,23 @@
 from harmony.app.core import settings
 from harmony.app.schemas import ChatMessage
-from harmony.app.db import to_dynamo_json, from_dynamo_json, paginate_in_batches
-from .base_repo import BaseRepository
+from harmony.app.db import to_dynamo_json, from_dynamo_json, paginate_in_batches, delete_batch
 
-class ChatHistoryRepository(BaseRepository):
+class ChatHistoryRepository:
     table_name = settings.CHAT_HISTORY_TABLE_NAME
+
+    '''
+    Key:
+        - Partition Key: chat_id (string)
+        - Sort Key: ulid (string, ULID timestamp for ordering)
+    '''
     
     def __init__(self, client):
-        super().__init__(client)
+        self.client = client
 
     async def create_message(self, item: ChatMessage):
         dynamo_item = to_dynamo_json(item.model_dump())
         
-        await self.writer.put_item(
+        await self.client.put_item(
             TableName=self.table_name,
             Item=dynamo_item,
             ConditionExpression='attribute_not_exists(chat_id)',
@@ -53,4 +58,4 @@ class ChatHistoryRepository(BaseRepository):
             },
             batch_size=25,
         ):
-            await self.writer.delete_batch(TableName=self.table_name, Keys=batch)
+            await delete_batch(self.client, TableName=self.table_name, Keys=batch)
