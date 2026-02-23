@@ -14,7 +14,7 @@ class UserCommands(Command):
     def __init__(
         self, 
         session: AsyncSession,
-        user_data_repository: UserDataRepository, # Corrected type hint
+        user_data_repository: UserDataRepository,
         user_chat_repository: UserChatRepository,
     ):
         super().__init__(session, logger)
