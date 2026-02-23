@@ -1,7 +1,5 @@
 import uuid
-import aioboto3
 import traceback
-import logging
 from scalar_fastapi import get_scalar_api_reference
 import structlog
 from structlog.contextvars import bind_contextvars, clear_contextvars
@@ -9,48 +7,16 @@ from structlog.contextvars import bind_contextvars, clear_contextvars
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 
-from .core import settings, setup_logging
+from .core import settings, setup_logging, lifespan
 from .api.v1 import router as api_v1_router
-from .services import WebSocketManager, RedisPubSubManager
 
 # Initialize logging
 setup_logging(is_local_dev=(settings.APP_ENV == "development"))
 logger = structlog.get_logger(__name__)
 
-session = aioboto3.Session()
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("\n\n\n------------------------------- Starting Up -------------------------------\n\n\n")
-
-    # Initialize Redis Manager
-    if settings.REDIS_CONNECT:
-        ws_manager = WebSocketManager()
-        redis_manager = RedisPubSubManager(ws_manager)
-        await redis_manager.connect()
-        if settings.REDIS_LISTEN:
-            redis_manager.start_listen()
-    
-        # Inject into app.state for dependencies
-        app.state.redis_manager = redis_manager
-        app.state.ws_manager = ws_manager
-
-    try:
-        async with session.client(
-            'dynamodb',
-            endpoint_url=settings.DYNAMODB_ENDPOINT,
-            region_name=settings.AWS_REGION,
-        ) as dynamodb:  
-            app.state.dynamodb = dynamodb
-            yield
-    finally:
-        print("\n\n\n------------------------------ Shutting Down ------------------------------\n\n\n")
-        if redis_manager:
-            await redis_manager.disconnect()
-
-app = FastAPI(lifespan=lifespan, debug=True)
+# Initialize FastAPI app with lifespan for resource management
+app = FastAPI(lifespan=lifespan, debug=(settings.APP_ENV == "development"))
 app.include_router(api_v1_router, prefix="/api/v1")
 
 # CORS Middleware (allow all for simplicity)

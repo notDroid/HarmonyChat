@@ -25,7 +25,7 @@ class User(Base):
     )
     tombstone: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 
-    metadata: Mapped[dict[str, Any]] = mapped_column(
+    meta: Mapped[dict[str, Any]] = mapped_column(
         JSONB, 
         server_default=text("'{}'::jsonb")
     )

@@ -25,8 +25,8 @@ class UserCommands(Command):
         async with self.transaction_handler("create_user", email=req.email):
             
             metadata = UserMetaData(
-                username=req.username if req.username else req.email
-            ).model_dump()
+                username=req.username if req.username else req.email,
+            )
             
             user = await self.user_data_repo.create_user(
                 email=req.email,

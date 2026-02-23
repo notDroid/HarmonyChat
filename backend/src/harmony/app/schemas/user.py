@@ -15,7 +15,3 @@ class UserResponse(BaseModel):
 
 class UserChatsResponse(BaseModel):
     chat_id_list: list[str]
-
-# --- Database/Internal Models ---
-class UserMetaData(BaseModel):
-    username: str

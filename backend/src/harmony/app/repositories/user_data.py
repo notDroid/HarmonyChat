@@ -3,17 +3,18 @@ from typing import Any, Optional
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from harmony.app.models import User 
+from harmony.app.models import User
+from harmony.app.schemas import UserMetaData
 
 class UserDataRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_user(self, email: str, hashed_password: str, metadata: dict[str, Any] = None) -> User:
+    async def create_user(self, email: str, hashed_password: str, metadata: UserMetaData | None = None) -> User:
         user = User(
             email=email,
             hashed_password=hashed_password,
-            metadata=metadata or {}
+            meta=metadata.model_dump() if metadata else {}
         )
         self.session.add(user)
         return user

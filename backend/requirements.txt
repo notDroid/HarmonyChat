@@ -34,6 +34,8 @@ argon2-cffi==25.1.0
     # via pwdlib
 argon2-cffi-bindings==25.1.0
     # via argon2-cffi
+asyncpg==0.31.0
+    # via harmony-chat-api (pyproject.toml)
 attrs==25.4.0
     # via aiohttp
 boto3==1.40.61
@@ -117,6 +119,8 @@ scalar-fastapi==1.6.2
     # via harmony-chat-api (pyproject.toml)
 six==1.17.0
     # via python-dateutil
+sqlalchemy==2.0.46
+    # via harmony-chat-api (pyproject.toml)
 starlette==0.52.1
     # via fastapi
 structlog==25.5.0
@@ -128,6 +132,7 @@ typing-extensions==4.15.0
     #   fastapi
     #   pydantic
     #   pydantic-core
+    #   sqlalchemy
     #   starlette
     #   typing-inspection
 typing-inspection==0.4.2

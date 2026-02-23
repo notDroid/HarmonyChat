@@ -3,6 +3,15 @@ services:
     container_name: backend
     ports:
       - "8000:8000"
+
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
   # frontend:
   #   container_name: frontend
   #   build:

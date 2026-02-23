@@ -22,7 +22,7 @@ class Chat(Base):
         server_default=func.now()
     )
 
-    metadata: Mapped[dict[str, Any]] = mapped_column(
+    meta: Mapped[dict[str, Any]] = mapped_column(
         JSONB, 
         server_default=text("'{}'::jsonb")
     )

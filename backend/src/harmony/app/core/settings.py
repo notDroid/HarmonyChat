@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     ### Application Configuration
     APP_ENV: str = "development"
 
+    # Feature Toggles
+    ENABLE_POSTGRES:     bool = True
+    ENABLE_DYNAMODB:     bool = True
+    ENABLE_REDIS:        bool = True
+    ENABLE_REDIS_LISTEN: bool = True
+
     # Chat Configuration
     CHAT_MAX_USERS_PER_OPERATION: int = 10
     DEFAULT_PAGINATION_LIMIT: int = 50
@@ -36,8 +42,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
 
     # Redis Configuration
-    REDIS_CONNECT: bool = True
-    REDIS_LISTEN: bool = True
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_STALL_TIMEOUT: float = 0.001 # Block for 1ms while stalling for messages.
     redis_opts: RedisOptions = RedisOptions()

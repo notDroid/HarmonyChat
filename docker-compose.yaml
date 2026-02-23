@@ -1,18 +1,31 @@
 services:
   api:
     build: backend
+    container_name: backend
     environment:
+      # --- Feature Flags ---
+      - ENABLE_POSTGRES=True
+      - ENABLE_DYNAMODB=True
+      - ENABLE_REDIS=True
+      - ENABLE_REDIS_LISTEN=True
+
+      # --- Connection Strings ---
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
       - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
 
+      # --- AWS Config ---
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=us-east-1
+      - AWS_REGION=us-east-1
     depends_on:
       redis:
         condition: service_healthy
       dynamodb:
         condition: service_started
+      postgres:
+        condition: service_healthy
       init:
         condition: service_completed_successfully
 
@@ -23,18 +36,36 @@ services:
   #     api:
   #       condition: service_started
 
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=harmony
+      - POSTGRES_PASSWORD=harmony
+      - POSTGRES_DB=harmony
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harmony -d harmony"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   dynamodb:
     image: amazon/dynamodb-local
-    container_name: db
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    container_name: dynamodb
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data -cors *"
     volumes:
       - ./volumes/dynamodb:/home/dynamodblocal/data
+    healthcheck:
+       test: ["CMD-SHELL", "curl -f http://localhost:8000 || exit 1"]
+       interval: 5s
+       timeout: 5s
+       retries: 5
 
   redis:
     image: redis:alpine
     container_name: redis
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -46,11 +77,14 @@ services:
     container_name: init
     environment:
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
+      - POSTGRES_URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=us-east-1
+      - AWS_REGION=us-east-1
     depends_on:
       - dynamodb
+      - postgres
     volumes:
       - ./infra/:/app/infra/:ro
     command: python infra/local/init_db.py --table-file infra/config/tables.json

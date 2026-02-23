@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from .message import ChatMessage
 
 # --- API Request Models (Input) ---
 class ChatCreateRequest(BaseModel):
@@ -12,23 +13,6 @@ class MessageSendRequest(BaseModel):
 class ChatCreatedResponse(BaseModel):
     chat_id: str
 
-# --- Database/Internal Models (also used in responses) ---
-class ChatMessage(BaseModel):
-    chat_id: str
-    ulid: str
-    client_uuid: str | None = None
-    timestamp: str
-    user_id: str
-    content: str
-
 class ChatHistoryResponse(BaseModel):
     messages: list[ChatMessage]
     next_cursor: str | None = None
-
-class ChatDataItem(BaseModel):
-    chat_id: str
-    created_at: str
-
-class UserChatItem(BaseModel):
-    chat_id: str
-    user_id: str

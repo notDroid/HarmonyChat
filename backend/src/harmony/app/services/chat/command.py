@@ -5,6 +5,7 @@ import structlog
 
 from harmony.app.repositories import ChatDataRepository, UserChatRepository
 from harmony.app.core import settings
+from harmony.app.schemas import ChatMetaData
 from ..command import Command
 
 logger = structlog.get_logger(__name__)
@@ -28,7 +29,7 @@ class ChatCommands(Command):
             logger.warning("action_denied_not_a_member", chat_id=chat_id, user_id=user_id)
             raise HTTPException(status.HTTP_403_FORBIDDEN, "You must be a member of the chat to perform this action.")
 
-    async def create_chat(self, creator_id: uuid.UUID, target_user_ids: list[uuid.UUID]) -> uuid.UUID:
+    async def create_chat(self, creator_id: uuid.UUID, target_user_ids: list[uuid.UUID], metadata: ChatMetaData | None = None) -> uuid.UUID:
         # 1. Validate
         user_id_list = list(set(target_user_ids + [creator_id]))
         if len(user_id_list) > self.MAX_USERS:
@@ -37,7 +38,7 @@ class ChatCommands(Command):
 
         # 2. Create
         async with self.transaction_handler("create_chat", creator_id=creator_id, target_users=len(target_user_ids)):
-            chat = await self.chat_data_repo.create_chat() 
+            chat = await self.chat_data_repo.create_chat(metadata=metadata) 
             await self.session.flush() # Ensure chat.chat_id is populated
             await self.user_chat_repo.add_users_to_chat(chat_id=chat.chat_id, user_id_list=user_id_list)
             

@@ -35,7 +35,7 @@ def get_dynamo_client(request: Request):
     return request.app.state.dynamodb
 
 async def get_db_session(request: Request):
-    async with request.app.state.SessionLocal() as session:
+    async with request.app.state.session_factory() as session:
         yield session
 
 # -------------------------- Repository Dependencies ------------------------- #
