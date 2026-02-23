@@ -19,7 +19,6 @@ class ChatDataRepository:
             chat.metadata = initial_metadata
             
         self.session.add(chat)
-        await self.session.flush() 
         return chat
 
     async def get_chat(self, chat_id: uuid.UUID) -> Chat | None:
