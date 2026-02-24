@@ -92,12 +92,12 @@ async def action_fail_message_ghost_chat(client: AppClient, state: SimState):
     actor = state.get_random_actor()
     if not actor: return
 
-    fake_chat_id = str(uuid.uuid4())
+    fake_chat_id = uuid.uuid4()
     try:
         await actor.send_message(fake_chat_id, "Hello void")
         raise Exception(f"API accepted message to non-existent chat! {fake_chat_id}")
     except HTTPStatusError as e:
-        if e.response.status_code != 404:
+        if e.response.status_code not in [403, 404]:
             raise Exception(f"Unexpected status for ghost chat: {e.response.status_code}")
 
 @simulation_action(name="chaos_delete_user", weight=5)

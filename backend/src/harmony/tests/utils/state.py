@@ -1,3 +1,4 @@
+import uuid
 import random
 from collections import defaultdict
 from dataclasses import dataclass
@@ -29,16 +30,16 @@ class SimState:
         if actor.user_id in self._user_memberships:
             del self._user_memberships[actor.user_id]
 
-    def register_chat(self, chat_id: str, participant_ids: List[str]):
+    def register_chat(self, chat_id: uuid.UUID, participant_ids: List[uuid.UUID]):
         for uid in participant_ids:
             self._user_memberships[uid].append(chat_id)
 
-    def deregister_chat(self, chat_id: str):
+    def deregister_chat(self, chat_id: uuid.UUID):
         for uid, chats in self._user_memberships.items():
             if chat_id in chats:
                 chats.remove(chat_id)
     
-    def remove_chat_from_user(self, user_id: str, chat_id: str):
+    def remove_chat_from_user(self, user_id: uuid.UUID, chat_id: uuid.UUID):
         """Specific cleanup if a user leaves a chat or it becomes invalid for them."""
         if chat_id in self._user_memberships[user_id]:
             self._user_memberships[user_id].remove(chat_id)
@@ -59,15 +60,15 @@ class SimState:
         safe_count = min(len(self._actors), count)
         return random.sample(self._actors, safe_count)
 
-    def get_chat_for_user(self, user_id: str) -> Optional[str]:
+    def get_chat_for_user(self, user_id: uuid.UUID) -> Optional[uuid.UUID]:
         chats = self._user_memberships.get(user_id, [])
         return random.choice(chats) if chats else None
 
-    def get_known_chats_for_user(self, user_id: str) -> Set[str]:
+    def get_known_chats_for_user(self, user_id: uuid.UUID) -> Set[uuid.UUID]:
         """Return the set of chat IDs the simulation thinks this user has."""
         return set(self._user_memberships.get(user_id, []))
 
-    def get_chat_user_is_NOT_in(self, user_id: str) -> Optional[str]:
+    def get_chat_user_is_NOT_in(self, user_id: uuid.UUID) -> Optional[uuid.UUID]:
         """
         Find a chat ID that exists in the system but does NOT belong 
         to the specified user_id.

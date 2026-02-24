@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 from .message import ChatMessage
 from .metadata import ChatMetaData
@@ -11,12 +12,12 @@ class ChatCreateRequest(BaseModel):
 
 class MessageSendRequest(BaseModel):
     content: str = Field(..., min_length=1)
-    client_uuid: str | None = None
+    client_uuid: uuid.UUID | None = None
 
 # --- API Response Models (Output) ---
 class ChatResponse(BaseModel):
-    chat_id: str
-    created_at: str
+    chat_id: uuid.UUID
+    created_at: datetime
     
     meta: ChatMetaData 
     model_config = ConfigDict(from_attributes=True)

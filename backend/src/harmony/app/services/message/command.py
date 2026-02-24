@@ -48,7 +48,7 @@ class MessageCommands:
             await self.chat_history_repo.create_message(msg)
             
             # 4. Publish to Redis Pub/Sub
-            await self.event_publisher.publish(str(chat_id), msg.model_dump())
+            await self.event_publisher.publish(str(chat_id), msg.model_dump(mode="json"))
             
             logger.info("message_sent", chat_id=str(chat_id), user_id=str(user_id), message_id=ulid_str)
             return msg

@@ -39,12 +39,12 @@ class AuthService:
 
         hashed_pw = get_password_hash(user_create.password)
 
-        user_id = await self.user_commands.create_user(
+        user = await self.user_commands.create_user(
             req=user_create,
             hashed_password=hashed_pw,
         )
         
-        return user_id
+        return user
 
     async def authenticate_user(self, email: str, password: str) -> Token:
         user = await self.user_queries.get_user_by_email(email)
@@ -65,7 +65,7 @@ class AuthService:
 
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_token(
-            data={"sub": user.user_id}, 
+            data={"sub": str(user.user_id)}, 
             expires_delta=access_token_expires
         )
 

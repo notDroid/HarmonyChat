@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from fastapi import Depends, BackgroundTasks, APIRouter, status, HTTPException, Request
 from harmony.app.core import settings
 from harmony.app.schemas import (
@@ -8,7 +9,7 @@ from harmony.app.schemas import (
     ChatMessage, 
     ChatHistoryResponse
 )
-from .dependencies import get_current_user, get_chat_commands, get_chat_queries, get_message_commands
+from .dependencies import get_current_user, get_chat_commands, get_chat_queries, get_message_commands, get_message_queries
 
 # common error responses
 common_chat_errors = {
@@ -33,15 +34,15 @@ router = APIRouter()
 async def create_chat(
     data: ChatCreateRequest,
     user_id: str = Depends(get_current_user),
-    chat_service = Depends(get_chat_commands)
+    chat_command_service = Depends(get_chat_commands)
 ):
     """
     Creates a new chat room between the current user and a list of target users.
     
     - **user_id_list**: A list of user_ids for the users to include.
     """
-    chat = await chat_service.create_chat(
-        user_id=user_id,
+    chat = await chat_command_service.create_chat(
+        creator_id=uuid.UUID(user_id),
         data=data
     )
     return chat
@@ -57,7 +58,7 @@ async def send_message(
     chat_id: str,
     data: MessageSendRequest, 
     user_id: str = Depends(get_current_user),
-    chat_service = Depends(get_chat_commands)
+    message_command_service = Depends(get_message_commands)
 ):
     """
     Persist a message to the database for a specific chat.
@@ -66,11 +67,11 @@ async def send_message(
     """
 
     # Simulate timeout for testing purposes
-    await asyncio.sleep(5)
+    # await asyncio.sleep(5)
 
-    msg = await chat_service.send_message(
-        chat_id=chat_id, 
-        user_id=user_id, 
+    msg = await message_command_service.send_message(
+        chat_id=uuid.UUID(chat_id), 
+        user_id=uuid.UUID(user_id), 
         content=data.content,
         client_uuid=data.client_uuid
     )
@@ -89,11 +90,16 @@ async def get_chat_history(
     limit: int = settings.DEFAULT_PAGINATION_LIMIT,
     cursor: str | None = None,
     user_id: str = Depends(get_current_user),
-    chat_service = Depends(get_chat_queries)
+    message_queries_service = Depends(get_message_queries)
 ):
     # Simulate timeout for testing purposes
     # await asyncio.sleep(5)
-    messages, next_cursor = await chat_service.get_chat_history(user_id=user_id, chat_id=chat_id, limit=limit, cursor=cursor)
+    messages, next_cursor = await message_queries_service.get_chat_history(
+        user_id=uuid.UUID(user_id), 
+        chat_id=uuid.UUID(chat_id), 
+        limit=limit, 
+        cursor=cursor
+    )
     return ChatHistoryResponse(messages=messages, next_cursor=next_cursor)
 
 @router.delete(
@@ -106,8 +112,8 @@ async def delete_chat(
     chat_id: str,
     background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user),
-    chat_service = Depends(get_chat_commands),
-    message_service = Depends(get_message_commands)
+    chat_command_service = Depends(get_chat_commands),
+    message_command_service = Depends(get_message_commands)
 ):
     """
     **Hard deletes** a chat and all its associated history.
@@ -116,5 +122,5 @@ async def delete_chat(
     - The actual deletion of thousands of messages happens in a **Background Task** 
       to prevent the API from hanging.
     """
-    await chat_service.delete_chat(user_id=user_id, chat_id=chat_id)
-    background_tasks.add_task(message_service.background_delete_chat_history, chat_id=chat_id)
+    await chat_command_service.delete_chat(user_id=uuid.UUID(user_id), chat_id=uuid.UUID(chat_id))
+    background_tasks.add_task(message_command_service.background_delete_chat_history, chat_id=uuid.UUID(chat_id))

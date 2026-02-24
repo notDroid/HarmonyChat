@@ -1,3 +1,4 @@
+import uuid
 from harmony.app.core import settings
 from harmony.app.schemas import ChatMessage
 from harmony.app.db import to_dynamo_json, from_dynamo_json, paginate_in_batches, delete_batch
@@ -15,7 +16,7 @@ class ChatHistoryRepository:
         self.client = client
 
     async def create_message(self, item: ChatMessage):
-        dynamo_item = to_dynamo_json(item.model_dump())
+        dynamo_item = to_dynamo_json(item.model_dump(mode="json"))
         
         await self.client.put_item(
             TableName=self.table_name,
@@ -23,7 +24,9 @@ class ChatHistoryRepository:
             ConditionExpression='attribute_not_exists(chat_id)',
         )
 
-    async def get_chat_history(self, chat_id: str, limit: int = 50, cursor: str | None = None):
+    async def get_chat_history(self, chat_id: uuid.UUID, limit: int = 50, cursor: str | None = None):
+        chat_id = str(chat_id) # Ensure chat_id is a string for DynamoDB
+        
         query_kwargs = {
             "TableName": self.table_name,
             "KeyConditionExpression": "chat_id = :cid",
