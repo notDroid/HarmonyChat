@@ -94,6 +94,7 @@ async def get_chat_history(
 ):
     # Simulate timeout for testing purposes
     # await asyncio.sleep(5)
+
     messages, next_cursor = await message_queries_service.get_chat_history(
         user_id=uuid.UUID(user_id), 
         chat_id=uuid.UUID(chat_id), 

@@ -24,9 +24,8 @@ export default function LoadingChatPanel({
   const skeletonMessages = Array.from({ length: repeatCount }).flatMap(() => pattern);
 
   return (
-    // RESTORED: grow, h-full, and overflow-hidden
     <div 
-      className="grow h-full flex flex-col w-full overflow-hidden"
+      className="grow h-full flex flex-col w-full overflow-hidden my-3"
       role="status"
       aria-label="Loading chat history"
     >

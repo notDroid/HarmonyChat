@@ -1,11 +1,29 @@
 'use client';
 
+import { ApiError } from '@/lib/utils/errors';
+import { isNextRedirect } from '@/lib/utils/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 
+const DEFAULT_RETRY_COUNT = 3;
+
 export default function Providers({ children }: { children: React.ReactNode }) {
   // Use useState to ensure the QueryClient is only initialized once per session
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: (failureCount, error) => {
+          if (isNextRedirect(error)) throw error;
+
+          if (error instanceof ApiError) {
+            return false; 
+          }
+          
+          return failureCount < DEFAULT_RETRY_COUNT;
+        },
+      },
+    },
+  }));
 
   return (
     <QueryClientProvider client={queryClient}>

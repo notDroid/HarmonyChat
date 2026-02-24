@@ -37,8 +37,8 @@ task
 - [x] Implement next.js frontend for chat interface and user management
 - [x] Implement authentication
 - [x] Implement pub/sub model for real-time chat updates
-- [ ] Implement request/response model for scrolling through chat history
-- [ ] Implement postgres storage for user and chat metadata
+- [x] Implement request/response model for scrolling through chat history
+- [x] Implement postgres storage for user and chat metadata
 - [ ] Implement kafka-based event sourcing for chat history and asynchronous event processing
 - [ ] Implement caching layer for user-chat membership data to optimize presence checks
 - [ ] Deploy app to AWS with terraform and set up CI/CD pipeline

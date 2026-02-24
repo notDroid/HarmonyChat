@@ -9,7 +9,11 @@ import useSendMessage from "../api/use_send_message";
 
 import ChatPanel from "../ui/panel";
 import LoadingChatPanel from "../ui/loading";
+import ErrorChatPanel from "../ui/error";
 import { UIMessage } from '../ui/message';
+
+import { NetworkError, ApiError } from "@/lib/utils/errors";
+
 
 import { CHAT_PANEL_SETTINGS } from '@/settings/chat_panel';
 
@@ -17,14 +21,17 @@ export default function ChatPanelComponent(
   { chat_id }: 
   { chat_id: string }
 ) {
-  
+
   // Infinite Query for chat history with pagination
   const { 
     data, 
     isLoading, 
     fetchNextPage, 
     hasNextPage, 
-    isFetchingNextPage 
+    isFetchingNextPage,
+    isError,
+    error,
+
   } = useInfiniteQuery({
     queryKey: [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id],
     queryFn: ({ pageParam }) => getChatHistory(chat_id, CHAT_PANEL_SETTINGS.PAGE_SIZE, pageParam),
@@ -62,15 +69,25 @@ export default function ChatPanelComponent(
     },
   });
 
-  if (isLoading) {
-    return <LoadingChatPanel />;
-  }
-
   // Retry logic for failed messages
   const { mutate: retrySend } = useSendMessage(chat_id);
   const handleRetry = (msg: UIMessage) => {
     retrySend({ content: msg.content, client_uuid: msg.client_uuid! });
   };
+
+  if (isLoading) {
+    return <LoadingChatPanel />;
+  }
+
+  if (isError) {
+    if (error instanceof NetworkError) {
+      return <ErrorChatPanel message={ error?.message || 'Unable to connect. Check your internet.'} />;
+    }
+    if (error instanceof ApiError) {
+      return <ErrorChatPanel message={ error?.message || 'Unable to load chat messages.'} />;
+    }
+    return <ErrorChatPanel message={ error?.message || 'Something went wrong. Please try again.'} />;
+  }
 
   return (
     <ChatPanel 
