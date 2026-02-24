@@ -1,3 +1,4 @@
+from starlette.requests import HTTPConnection
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,17 +32,14 @@ async def get_current_user(
     return user_id
 
 # --------------------------- Database Dependencies -------------------------- #
-def get_dynamo_client(request: Request):
-    return request.app.state.dynamodb
+def get_dynamo_client(conn: HTTPConnection):
+    return conn.app.state.dynamodb
 
-async def get_db_session(request: Request):
-    async with request.app.state.session_factory() as session:
+async def get_db_session(conn: HTTPConnection):
+    async with conn.app.state.session_factory() as session:
         yield session
 
 # -------------------------- Repository Dependencies ------------------------- #
-def get_chat_history_repository(dynamodb = Depends(get_dynamo_client)) -> ChatHistoryRepository:
-    return ChatHistoryRepository(dynamodb)
-
 def get_chat_history_repository(dynamodb = Depends(get_dynamo_client)) -> ChatHistoryRepository:
     return ChatHistoryRepository(dynamodb)
 
@@ -55,11 +53,11 @@ def get_user_chat_repository(session: AsyncSession = Depends(get_db_session)) ->
     return UserChatRepository(session)
 
 # ---------------------------- Stream Dependencies --------------------------- #
-def get_redis_manager(request: Request):
-    return request.app.state.redis_manager
+def get_redis_manager(conn: HTTPConnection):
+    return conn.app.state.redis_manager
 
-def get_ws_manager(request: Request):
-    return request.app.state.ws_manager
+def get_ws_manager(conn: HTTPConnection):
+    return conn.app.state.ws_manager
 
 # --------------------------- Service Dependencies --------------------------- #
 def get_user_queries(

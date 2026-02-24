@@ -11,4 +11,4 @@ async def chat_websocket(
     chat_id: str,
     stream_service: StreamService = Depends(get_stream_service),
 ):
-    stream_service.handle_chat_connection(websocket=websocket, chat_id=chat_id)
+    await stream_service.handle_chat_connection(websocket=websocket, chat_id=chat_id)

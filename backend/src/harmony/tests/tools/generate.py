@@ -2,6 +2,7 @@ import pytest
 import asyncio
 import json
 import os
+import uuid
 import random
 import logging
 from typing import List, Dict
@@ -27,7 +28,7 @@ class PersistentSimManager:
     def __init__(self, client: AppClient):
         self.client = client
         self.actors: List[SimulationActor] = []
-        self.chats: List[Dict] = [] # List of {"chat_id": str, "participants": [uid, uid]}
+        self.chats: List[Dict] = [] # List of {"chat_id": uuid.UUID, "participants": [uid, uid]}
 
     def load_state(self):
         if not os.path.exists(SEED_FILE):
@@ -43,7 +44,7 @@ class PersistentSimManager:
             # Recreate Actor objects (tokens are fetched separately)
             for u in data['users']:
                 actor = SimulationActor(
-                    user_id=u['user_id'],
+                    user_id=uuid.UUID(u['user_id']),
                     username=u['username'],
                     email=u['email'],
                     password=u['password'],
@@ -70,7 +71,7 @@ class PersistentSimManager:
             "chats": self.chats
         }
         with open(SEED_FILE, 'w') as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=2, default=str)
         print(f"State saved to {os.path.abspath(SEED_FILE)}")
 
     async def rehydrate_actors(self):
@@ -141,8 +142,9 @@ class PersistentSimManager:
         
         self.save_state()
 
-    def get_chats_for_actor(self, actor_id: str) -> List[str]:
-        return [c['chat_id'] for c in self.chats if actor_id in c['participant_ids']]
+    def get_chats_for_actor(self, actor_id: uuid.UUID) -> List[uuid.UUID]:
+        actor_str = str(actor_id)
+        return [c['chat_id'] for c in self.chats if actor_str in [str(p) for p in c['participant_ids']]]
 
 
 # ==========================================
@@ -172,7 +174,7 @@ async def live_chatter(manager: PersistentSimManager):
                 
                 try:
                     await actor.send_message(chat_id, content)
-                    print(f"[{actor.username}] sent msg to [{chat_id[:8]}]: {content[:30]}...")
+                    print(f"[{actor.username}] sent msg to [{str(chat_id)[:8]}]: {content[:30]}...")
                 except Exception as e:
                     print(f"Error sending message: {e}")
             
