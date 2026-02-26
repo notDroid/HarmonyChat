@@ -14,8 +14,7 @@ import { UIMessage } from '../ui/message';
 
 import { NetworkError, ApiError } from "@/lib/utils/errors";
 
-
-import { CHAT_PANEL_SETTINGS } from '@/settings/chat_panel';
+import { useChatHistory } from '../api/cache';
 
 export default function ChatPanelComponent(
   { chat_id }: 
@@ -32,15 +31,7 @@ export default function ChatPanelComponent(
     isError,
     error,
 
-  } = useInfiniteQuery({
-    queryKey: [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id],
-    queryFn: ({ pageParam }) => getChatHistory(chat_id, CHAT_PANEL_SETTINGS.PAGE_SIZE, pageParam),
-
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.next_cursor || undefined,
-
-    refetchOnWindowFocus: false,
-  });
+  } = useChatHistory(chat_id);
 
   // Flatten pages and apply your sorting logic to ensure chronological order
   const messages = data?.pages.flatMap(page => page.messages) || [];

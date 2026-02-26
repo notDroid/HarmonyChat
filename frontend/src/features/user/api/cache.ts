@@ -1,42 +1,42 @@
-// frontend/src/features/user/api/cache.ts
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import getCurrentUser from './get_user';
 import { USER_SETTINGS } from '@/settings/user';
-import { getCurrentUserDetailsApiV1UsersMeGet } from '@/lib/api/user/user';
 import { UserResponse as User } from '@/lib/api/model';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+
+export const userQueryOptions = {
+  queryKey: [USER_SETTINGS.QUERY_KEY],
+  queryFn: async () => await getCurrentUser(),
+  staleTime: USER_SETTINGS.QUERY_STALE_TIME, 
+};
+
+export const prefetchCurrentUser = async (queryClient: QueryClient) => {
+  return await queryClient.fetchQuery(userQueryOptions);
+};
 
 export function useUserCache() {
   const queryClient = useQueryClient();
-  const queryKey = [USER_SETTINGS.QUERY_KEY];
 
-  // 1. Hook for React Components to subscribe to user data
-  const useCurrentUser = () => {
-    return useQuery({
-        queryKey: [USER_SETTINGS.QUERY_KEY],
-        queryFn: async () => {
-          const res = await getCurrentUserDetailsApiV1UsersMeGet();
-          return res.data as User;
-        },
-        staleTime: USER_SETTINGS.QUERY_STALE_TIME, // Long time or Infinity to cache for the session
-      });
+  const useCurrentUser = () => useQuery(userQueryOptions);
+
+  const getCurrentUser = async (): Promise<User> => {
+    return await queryClient.ensureQueryData(userQueryOptions);
   };
 
-  // 2. Synchronous getter for non-reactive functions (like onMutate)
-  const getCurrentUserSync = (): User | undefined => {
-    return queryClient.getQueryData<User>(queryKey);
-  };
-
-  // 3. Setter for manually updating the cache (e.g., after a profile edit)
   const updateCurrentUser = (partialUser: Partial<User>) => {
-    queryClient.setQueryData<User>(queryKey, (oldData) => {
+    queryClient.setQueryData<User>(userQueryOptions.queryKey, (oldData) => {
       if (!oldData) return undefined;
       return { ...oldData, ...partialUser };
     });
   };
 
+  const clearUserCache = () => {
+    queryClient.removeQueries({ queryKey: userQueryOptions.queryKey });
+  };
+
   return {
     useCurrentUser,
-    getCurrentUserSync,
+    getCurrentUser,
     updateCurrentUser,
-    queryKey,
+    clearUserCache,
   };
 }

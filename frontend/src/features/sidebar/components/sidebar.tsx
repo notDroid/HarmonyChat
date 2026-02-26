@@ -1,28 +1,16 @@
 "use client";
 
-import getMyChats from "../api/get_my_chats";
 import { AuthRedirectError } from "@/lib/utils/errors";
 import ErrorScreen from "@/components/error";
 import LoadingScreen from "@/components/loading";
-import { useQuery } from "@tanstack/react-query";
 import { NetworkError, ApiError } from "@/lib/utils/errors";
 
 import ServerList from "./serverlist";
 
-import { SIDEBAR_SETTINGS } from '@/settings/sidebar';
+import { useSidebarChats } from "../api/cache";
 
 export default function ServerListWrapper({ children }: { children: React.ReactNode }) {
-  const { data, error, isPending, isError } = useQuery({
-    queryKey: [SIDEBAR_SETTINGS.QUERY_KEY],
-    queryFn: getMyChats,
-
-    staleTime: SIDEBAR_SETTINGS.QUERY_STALE_TIME,
-    retry: (failureCount, err) => {
-      if (err instanceof AuthRedirectError) return false; 
-      if (err instanceof ApiError) return false;
-      return failureCount < SIDEBAR_SETTINGS.QUERY_N_RETRIES; 
-    }
-  });
+  const { data, error, isPending, isError } = useSidebarChats();
 
   if (isPending) {
     return <LoadingScreen />;

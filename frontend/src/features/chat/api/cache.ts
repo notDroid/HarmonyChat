@@ -1,7 +1,26 @@
-import { useQueryClient, InfiniteData } from '@tanstack/react-query';
+import { useQueryClient, InfiniteData, useInfiniteQuery, infiniteQueryOptions, QueryClient } from '@tanstack/react-query';
 import { CHAT_PANEL_SETTINGS } from '@/settings/chat_panel';
 import { ChatHistoryResponse } from "@/lib/api/model";
 import { UIMessage } from "../ui/message";
+
+import getChatHistory from './get_chat_history';
+
+export const chatHistoryQueryOptions = (chat_id: string) => infiniteQueryOptions({
+  queryKey: [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id],
+  queryFn: ({ pageParam }) => getChatHistory(chat_id, CHAT_PANEL_SETTINGS.PAGE_SIZE, pageParam),
+
+  initialPageParam: undefined as string | undefined,
+  getNextPageParam: (lastPage) => lastPage.next_cursor || undefined,
+  refetchOnWindowFocus: false,
+});
+
+export function useChatHistory(chat_id: string) {
+  return useInfiniteQuery(chatHistoryQueryOptions(chat_id));
+}
+
+export const prefetchChatHistory = async (queryClient: QueryClient, chat_id: string) => {
+  return await queryClient.prefetchInfiniteQuery(chatHistoryQueryOptions(chat_id));
+};
 
 export function useChatCache(chat_id: string) {
   const queryClient = useQueryClient();
@@ -69,10 +88,19 @@ export function useChatCache(chat_id: string) {
     });
   };
 
+  const invalidateChatCache = () => {
+    queryClient.invalidateQueries({ queryKey });
+  }
+
+  const snapshotChatCache = async () => {
+    await queryClient.cancelQueries({ queryKey });
+    return queryClient.getQueryData<InfiniteData<ChatHistoryResponse>>(queryKey);
+  }
+
   return {
-    queryKey,
-    queryClient,
     insertOrUpdateMessage,
-    updateMessageStatus
+    updateMessageStatus,
+    invalidateChatCache,
+    snapshotChatCache,
   };
 }

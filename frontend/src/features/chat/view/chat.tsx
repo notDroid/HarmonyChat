@@ -27,8 +27,7 @@ export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
     });
   } catch (error) {
     if (isNextRedirect(error)) throw error; 
-
-    console.log("Failed to fetch initial chat history:", error);
+    if (error instanceof NetworkError) 
 
     if (error instanceof ApiError) {
       return <ErrorChatPanel message={`${error.message}`} />;

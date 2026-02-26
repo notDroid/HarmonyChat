@@ -1,13 +1,13 @@
-import { useMutation, InfiniteData } from '@tanstack/react-query';
-import { ChatHistoryResponse } from '@/lib/api/model';
+import { useMutation } from '@tanstack/react-query';
 import { sendMessageApiV1ChatsChatIdPost } from '@/lib/api/chat/chat';
 import { UIMessage } from '../ui/message';
 import { useChatCache } from './cache';
 import { useUserCache } from '@/features/user/api/cache';
+import { UserResponse } from '@/lib/api/model';
 
 export default function useSendMessage(chat_id: string) {
-  const { queryClient, queryKey, insertOrUpdateMessage, updateMessageStatus } = useChatCache(chat_id);
-  const { getCurrentUserSync } = useUserCache();
+  const { insertOrUpdateMessage, updateMessageStatus, snapshotChatCache } = useChatCache(chat_id);
+  const { getCurrentUser } = useUserCache();
 
   return useMutation({
     mutationFn: async ({ content, client_uuid }: { content: string, client_uuid: string }) => {
@@ -17,8 +17,9 @@ export default function useSendMessage(chat_id: string) {
     
     onMutate: async ({ content, client_uuid }) => {
       // Stop background fetches and take a snapshot of the current cache state for this chat
-      await queryClient.cancelQueries({ queryKey });
-      const previousData = queryClient.getQueryData<InfiniteData<ChatHistoryResponse>>(queryKey);
+      const previousData = await snapshotChatCache();
+
+      const currentUser: UserResponse = await getCurrentUser();
 
       insertOrUpdateMessage({
         chat_id,
@@ -26,11 +27,11 @@ export default function useSendMessage(chat_id: string) {
         ulid: client_uuid,
         client_uuid,
         timestamp: new Date().toISOString(),
-        user_id: "me", 
+        user_id: currentUser.user_id, 
         status: 'pending',
 
         author_metadata: {
-          username: "You",
+          username: currentUser.meta.username || "You",
         }
       } as UIMessage);
 

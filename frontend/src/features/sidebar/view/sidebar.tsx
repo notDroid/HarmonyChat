@@ -3,26 +3,20 @@ import { NetworkError, ApiError, isNextRedirect } from "@/lib/utils/errors";
 import ErrorScreen from "@/components/error";
 
 import ServerListWrapper from "../components/sidebar";
-import getMyChats from "../api/get_my_chats";
 
-import { SIDEBAR_SETTINGS } from '@/settings/sidebar';
+import { prefetchSidebarChats } from '../api/cache';
 
 export default async function ServerSidebarView({ children }: { children: React.ReactNode }) {
     const queryClient = new QueryClient();
 
     try {
-        // Attempt to Prefetch the "myChats" query on the server
-        await queryClient.fetchQuery({
-            queryKey: [SIDEBAR_SETTINGS.QUERY_KEY],
-            queryFn: getMyChats,
-        });
+        // Attempt to Prefetch the sidebar chats to populate the cache
+        await prefetchSidebarChats(queryClient);
     } catch (error) {
         if (isNextRedirect(error)) throw error;
-
+        
         if (error instanceof NetworkError) {
-            // If it's a network error, we do nothing. 
-            // The queryClient cache remains empty. When we pass it to the client, 
-            // the client will see no data and naturally try to fetch it itself.
+            // Retry on the client side
         }
         else if (error instanceof ApiError) {
             return <ErrorScreen message={error.message || 'Unable to load chats.'} />;
