@@ -3,7 +3,7 @@ export default function ErrorScreen({ message="" }: { message: string }) {
     message = "An error occurred";
   }
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full p-4 text-center">
+    <div className="flex flex-col items-center justify-center h-screen w-full p-4 text-center">
       <h2 className="text-2xl font-bold mb-4">An Error Occurred</h2>
       <p className="mb-4">{message}</p>
       <p className="mb-4">Please try the following steps to resolve the issue:</p>

@@ -1,18 +1,13 @@
 'use client';
 
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useInView } from 'react-intersection-observer';
 
-import getChatHistory from "../api/get_chat_history";
 import { useChatQuerySync } from '../api/chatsocket';
 import useSendMessage from "../api/use_send_message";
 
 import ChatPanel from "../ui/panel";
 import LoadingChatPanel from "../ui/loading";
-import ErrorChatPanel from "../ui/error";
 import { UIMessage } from '../ui/message';
-
-import { NetworkError, ApiError } from "@/lib/utils/errors";
 
 import { useChatHistory } from '../api/cache';
 
@@ -71,13 +66,7 @@ export default function ChatPanelComponent(
   }
 
   if (isError) {
-    if (error instanceof NetworkError) {
-      return <ErrorChatPanel message={ error?.message || 'Unable to connect. Check your internet.'} />;
-    }
-    if (error instanceof ApiError) {
-      return <ErrorChatPanel message={ error?.message || 'Unable to load chat messages.'} />;
-    }
-    return <ErrorChatPanel message={ error?.message || 'Something went wrong. Please try again.'} />;
+    throw error;
   }
 
   return (

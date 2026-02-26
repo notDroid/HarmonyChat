@@ -14,8 +14,7 @@ export class NetworkError extends Error {
   }
 }
 
-// Custom error to signal that we need to redirect to login
-// We need to be careful to catch this on the client side and not treat it as a generic error
+// thrown on the client when we detect a 401 response, to trigger the auth error handling flow
 export class AuthRedirectError extends Error {
   constructor() {
     super('Redirecting to login...');
@@ -23,6 +22,7 @@ export class AuthRedirectError extends Error {
   }
 }
 
+// Utility function to detect if an error is a Next.js redirect (used in server components)
 export function isNextRedirect(error: unknown) {
   return isRedirectError(error);
 }

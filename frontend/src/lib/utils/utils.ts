@@ -1,4 +1,7 @@
-import { ApiError, NetworkError, AuthRedirectError } from './errors';
+import { ApiError, NetworkError } from './errors';
+import handleServerAuthError from './server_auth_error';
+import handleClientAuthError from './client_auth_error';
+
 
 const isServer = typeof window === 'undefined';
 
@@ -18,25 +21,6 @@ export async function getAuthHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function handleAuthError(requestUrl: string) {
-  // Ignore login endpoint failures
-  if (requestUrl.includes('/login') || requestUrl.includes('/logout') || requestUrl.includes('/signup')) return;
-
-  if (isServer) {
-    // SERVER SIDE: clear session and redirect to login
-    const { clearSession } = await import('@/features/auth/utils/session');
-    const { redirect } = await import('next/navigation');
-    
-    await clearSession();
-    redirect('/login');
-  } else {
-    // CLIENT SIDE: Ask server to drop cookie
-    await fetch('/logout', { method: 'POST' });
-    window.location.href = '/login';
-    throw new AuthRedirectError();
-  }
-}
-
 export async function fetchErrorWrapper<T>(url: string, options?: RequestInit): Promise<T> {
   let res: Response;
 
@@ -49,7 +33,11 @@ export async function fetchErrorWrapper<T>(url: string, options?: RequestInit): 
 
   // Handle 401 Unauthorized globally to trigger login redirect
   if (res.status === 401) {
-    await handleAuthError(url); // throws AuthRedirectError or redirects
+    if (isServer) {
+      await handleServerAuthError();
+    } else {
+      handleClientAuthError();
+    }
   }
 
   if (!res.ok) {

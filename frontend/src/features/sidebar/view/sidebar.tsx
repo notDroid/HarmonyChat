@@ -1,6 +1,5 @@
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { NetworkError, ApiError, isNextRedirect } from "@/lib/utils/errors";
-import ErrorScreen from "@/components/error";
+import { NetworkError } from "@/lib/utils/errors";
 
 import ServerListWrapper from "../components/sidebar";
 
@@ -13,17 +12,10 @@ export default async function ServerSidebarView({ children }: { children: React.
         // Attempt to Prefetch the sidebar chats to populate the cache
         await prefetchSidebarChats(queryClient);
     } catch (error) {
-        if (isNextRedirect(error)) throw error;
-        
-        if (error instanceof NetworkError) {
-            // Retry on the client side
+        if (!(error instanceof NetworkError)) {
+            throw error;
         }
-        else if (error instanceof ApiError) {
-            return <ErrorScreen message={error.message || 'Unable to load chats.'} />;
-        }
-        else {
-            return <ErrorScreen message={'Something went wrong. Please try again later.'} />;
-        }
+        // Let client render sidebar and handle the error gracefully
     }
 
     // Dehydrate the queryClient state and pass it into the HydrationBoundary
