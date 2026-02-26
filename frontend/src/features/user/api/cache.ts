@@ -1,4 +1,4 @@
-import getCurrentUser from './get_user';
+import { getCurrentUser } from './get_user';
 import { USER_SETTINGS } from '@/settings/user';
 import { UserResponse as User } from '@/lib/api/model';
 import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';

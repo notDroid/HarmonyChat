@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  GetUserDetailsByEmailApiV1UsersLookupGetParams,
   HTTPValidationError,
   UserChatsResponse,
   UserCreateRequest,
@@ -189,6 +190,122 @@ export const deleteMeApiV1UsersMeDelete = async (
     {
       ...options,
       method: "DELETE",
+    },
+  );
+};
+
+/**
+ * Retrieves the details of a specific user given their ID.
+ * @summary Get a users details by ID
+ */
+export type getUserDetailsByIdApiV1UsersUserIdGetResponse200 = {
+  data: UserResponse;
+  status: 200;
+};
+
+export type getUserDetailsByIdApiV1UsersUserIdGetResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type getUserDetailsByIdApiV1UsersUserIdGetResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type getUserDetailsByIdApiV1UsersUserIdGetResponseSuccess =
+  getUserDetailsByIdApiV1UsersUserIdGetResponse200 & {
+    headers: Headers;
+  };
+export type getUserDetailsByIdApiV1UsersUserIdGetResponseError = (
+  | getUserDetailsByIdApiV1UsersUserIdGetResponse404
+  | getUserDetailsByIdApiV1UsersUserIdGetResponse422
+) & {
+  headers: Headers;
+};
+
+export type getUserDetailsByIdApiV1UsersUserIdGetResponse =
+  | getUserDetailsByIdApiV1UsersUserIdGetResponseSuccess
+  | getUserDetailsByIdApiV1UsersUserIdGetResponseError;
+
+export const getGetUserDetailsByIdApiV1UsersUserIdGetUrl = (userId: string) => {
+  return `/api/v1/users/${userId}`;
+};
+
+export const getUserDetailsByIdApiV1UsersUserIdGet = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<getUserDetailsByIdApiV1UsersUserIdGetResponse> => {
+  return inject<getUserDetailsByIdApiV1UsersUserIdGetResponse>(
+    getGetUserDetailsByIdApiV1UsersUserIdGetUrl(userId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * Retrieves the details of a specific user given their email.
+ * @summary Get a users details by email
+ */
+export type getUserDetailsByEmailApiV1UsersLookupGetResponse200 = {
+  data: UserResponse;
+  status: 200;
+};
+
+export type getUserDetailsByEmailApiV1UsersLookupGetResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type getUserDetailsByEmailApiV1UsersLookupGetResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type getUserDetailsByEmailApiV1UsersLookupGetResponseSuccess =
+  getUserDetailsByEmailApiV1UsersLookupGetResponse200 & {
+    headers: Headers;
+  };
+export type getUserDetailsByEmailApiV1UsersLookupGetResponseError = (
+  | getUserDetailsByEmailApiV1UsersLookupGetResponse404
+  | getUserDetailsByEmailApiV1UsersLookupGetResponse422
+) & {
+  headers: Headers;
+};
+
+export type getUserDetailsByEmailApiV1UsersLookupGetResponse =
+  | getUserDetailsByEmailApiV1UsersLookupGetResponseSuccess
+  | getUserDetailsByEmailApiV1UsersLookupGetResponseError;
+
+export const getGetUserDetailsByEmailApiV1UsersLookupGetUrl = (
+  params: GetUserDetailsByEmailApiV1UsersLookupGetParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/users/lookup/?${stringifiedParams}`
+    : `/api/v1/users/lookup/`;
+};
+
+export const getUserDetailsByEmailApiV1UsersLookupGet = async (
+  params: GetUserDetailsByEmailApiV1UsersLookupGetParams,
+  options?: RequestInit,
+): Promise<getUserDetailsByEmailApiV1UsersLookupGetResponse> => {
+  return inject<getUserDetailsByEmailApiV1UsersLookupGetResponse>(
+    getGetUserDetailsByEmailApiV1UsersLookupGetUrl(params),
+    {
+      ...options,
+      method: "GET",
     },
   );
 };

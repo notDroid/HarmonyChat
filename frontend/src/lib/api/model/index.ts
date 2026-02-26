@@ -14,6 +14,7 @@ export * from "./chatMessageResponse";
 export * from "./chatMetaData";
 export * from "./chatResponse";
 export * from "./getChatHistoryApiV1ChatsChatIdGetParams";
+export * from "./getUserDetailsByEmailApiV1UsersLookupGetParams";
 export * from "./hTTPValidationError";
 export * from "./messageSendRequest";
 export * from "./token";

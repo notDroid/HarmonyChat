@@ -4,12 +4,22 @@ import { ServerIcon, ServerIconProps } from "../ui/icon";
 import ServerSidebar from "../ui/sidebar";
 
 import { UserChatsResponse } from "@/lib/api/model";
+import CreateChatButtonComponent from "./create_button";
+import CreateChatModalComponent from "./create_chat_modal";
+
+import { useState } from "react";
 
 export default function ServerList({ chats }: UserChatsResponse) {
   const pathname = usePathname();
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <ServerSidebar>
+      { /* Create Chat Button at the top of the sidebar */ }
+      <CreateChatButtonComponent onClick={() => setIsModalOpen(true)} />
+
+      { /* List of User Chats */ }
       {chats.map((chat) => {
         const is_active = pathname === `/chats/${chat.chat_id}`;
         
@@ -29,6 +39,12 @@ export default function ServerList({ chats }: UserChatsResponse) {
           </Link>
         );
       })}
+
+      { /* Create Chat Modal Component */ }
+      <CreateChatModalComponent 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </ServerSidebar>
   );
 }

@@ -6,6 +6,7 @@ from harmony.app.schemas import (
     UserResponse, 
     UserChatsResponse
 )
+from pydantic import EmailStr
 from .dependencies import get_auth_service, get_current_user, get_user_commands, get_user_queries
 
 router = APIRouter()
@@ -96,3 +97,39 @@ async def get_current_user_details(
     Retrieves the details of the currently logged-in user.
     """
     return await user_query_service.get_user_by_id(user_id=user_id)
+
+@router.get(
+    "/{user_id}", 
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get a users details by ID",
+    responses={
+        404: {"description": "User not found."}
+        }
+)
+async def get_user_details_by_id(
+    user_id: uuid.UUID,
+    user_query_service = Depends(get_user_queries)
+):
+    """
+    Retrieves the details of a specific user given their ID.
+    """
+    return await user_query_service.get_user_by_id(user_id=user_id)
+
+@router.get(
+    "/lookup/", 
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get a users details by email",
+    responses={
+        404: {"description": "User not found."}
+        }
+)
+async def get_user_details_by_email(
+    email: EmailStr,
+    user_query_service = Depends(get_user_queries)
+):
+    """
+    Retrieves the details of a specific user given their email.
+    """
+    return await user_query_service.get_user_by_email(email=str(email))
