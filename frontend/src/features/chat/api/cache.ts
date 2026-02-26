@@ -8,8 +8,17 @@ export function useChatCache(chat_id: string) {
   const queryKey = [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id];
 
   const insertOrUpdateMessage = (newMessage: UIMessage) => {
+    // If the cache is empty, we cannot safely append without breaking pagination.
+    // In this case, we should invalidate the cache, which occurs when a websocket message arrives while we have no messages loaded.
+    const currentData = queryClient.getQueryData<InfiniteData<ChatHistoryResponse>>(queryKey);
+    if (!currentData || !currentData.pages || currentData.pages.length === 0) {
+      console.log("[Cache] Deferring WS message and forcing refetch...");
+      queryClient.invalidateQueries({ queryKey });
+      return; 
+    }
+
     queryClient.setQueryData<InfiniteData<ChatHistoryResponse>>(queryKey, (oldData) => {
-      if (!oldData) return oldData;
+      if (!oldData) return oldData; // This should not happen due to the check above 
 
       let messageReplaced = false;
 			
