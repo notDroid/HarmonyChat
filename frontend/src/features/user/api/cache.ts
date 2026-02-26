@@ -18,7 +18,7 @@ export function useUserCache() {
 
   const useCurrentUser = () => useQuery(userQueryOptions);
 
-  const getCurrentUser = async (): Promise<User> => {
+  const getCurrentUserQuery = async (): Promise<User> => {
     return await queryClient.ensureQueryData(userQueryOptions);
   };
 
@@ -35,7 +35,7 @@ export function useUserCache() {
 
   return {
     useCurrentUser,
-    getCurrentUser,
+    getCurrentUserQuery,
     updateCurrentUser,
     clearUserCache,
   };

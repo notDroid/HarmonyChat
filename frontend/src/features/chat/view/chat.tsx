@@ -7,33 +7,28 @@ import ErrorChatPanel from "../ui/error";
 import ChatBar from "../components/bar";
 
 // API Functions
-import getChatHistory from "../api/get_chat_history";
 import { ApiError, NetworkError, isNextRedirect } from "@/lib/utils/errors";
 
 // React Query
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
-import { CHAT_PANEL_SETTINGS } from '@/settings/chat_panel';
+import { prefetchChatHistory } from "../api/cache";
 
 export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
   const queryClient = new QueryClient();
 
   try {
-    // fetch initial chat history to populate cache
-    await queryClient.prefetchInfiniteQuery({
-      queryKey: [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id],
-      queryFn: () => getChatHistory(chat_id, CHAT_PANEL_SETTINGS.PAGE_SIZE),
-
-      initialPageParam: undefined as string | undefined,
-    });
+    await prefetchChatHistory(queryClient, chat_id);
   } catch (error) {
     if (isNextRedirect(error)) throw error; 
-    if (error instanceof NetworkError) 
-
-    if (error instanceof ApiError) {
+    
+    if (error instanceof NetworkError) {
+      // Gracefully fail and let client render page
+    }
+    else if (error instanceof ApiError) {
       return <ErrorChatPanel message={`${error.message}`} />;
     } 
-    else if (!(error instanceof NetworkError)) {
-      throw error;
+    else {
+      return <ErrorChatPanel message={'Unable to load chat. Please try again later.'} />;
     }
   }
 
