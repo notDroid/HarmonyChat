@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
-from .message import ChatMessage
+from .message import ChatMessageResponse
 from .metadata import ChatMetaData
 
 # --- API Request Models (Input) ---
@@ -23,5 +23,5 @@ class ChatResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class ChatHistoryResponse(BaseModel):
-    messages: list[ChatMessage]
+    messages: list[ChatMessageResponse]
     next_cursor: str | None = None

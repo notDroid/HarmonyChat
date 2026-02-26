@@ -21,6 +21,12 @@ class UserDataRepository:
 
     async def get_user_by_id(self, user_id: uuid.UUID) -> Optional[User]:
         return await self.session.get(User, user_id)
+    
+    async def get_users_by_ids(self, user_ids: list[uuid.UUID]) -> dict[uuid.UUID, User]:
+        if not user_ids: return {}
+        stmt = select(User).where(User.user_id.in_(user_ids))
+        result = await self.session.execute(stmt)
+        return {u.user_id: u for u in result.scalars().all()}
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
         stmt = select(User).where(User.email == email)

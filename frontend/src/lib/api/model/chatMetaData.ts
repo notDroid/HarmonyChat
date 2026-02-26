@@ -5,12 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ChatCreateRequest {
+export interface ChatMetaData {
   title?: string | null;
   description?: string | null;
-  /**
-   * @minItems 1
-   * @maxItems 10
-   */
-  user_id_list: string[];
 }

@@ -4,7 +4,10 @@
  * FastAPI
  * OpenAPI spec version: 0.1.0
  */
+import type { UserMetaData } from "./userMetaData";
 
 export interface UserResponse {
   user_id: string;
+  email: string;
+  meta: UserMetaData;
 }

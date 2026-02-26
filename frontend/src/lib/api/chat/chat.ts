@@ -6,9 +6,9 @@
  */
 import type {
   ChatCreateRequest,
-  ChatCreatedResponse,
   ChatHistoryResponse,
   ChatMessage,
+  ChatResponse,
   GetChatHistoryApiV1ChatsChatIdGetParams,
   HTTPValidationError,
   MessageSendRequest,
@@ -20,14 +20,10 @@ import { inject } from "../../utils/injection";
  * Creates a new chat room between the current user and a list of target users.
 
 - **user_id_list**: A list of user_ids for the users to include.
-- **Constraints**: 
-    - Max 10 users per chat (initially, you can add more later).
-    - You cannot create a chat with non-existent users.
-    - The creator is automatically added to the chat.
  * @summary Create a new chat
  */
 export type createChatApiV1ChatsPostResponse201 = {
-  data: ChatCreatedResponse;
+  data: ChatResponse;
   status: 201;
 };
 

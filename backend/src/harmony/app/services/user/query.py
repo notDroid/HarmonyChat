@@ -53,3 +53,6 @@ class UserQueries:
                 status.HTTP_500_INTERNAL_SERVER_ERROR, 
                 "An unexpected error occurred while fetching user chats."
             )
+        
+    async def get_users_dict(self, user_ids: list[uuid.UUID]) -> dict[uuid.UUID, User]:
+        return await self.user_data_repo.get_users_by_ids(user_ids)

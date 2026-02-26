@@ -4,9 +4,9 @@
  * FastAPI
  * OpenAPI spec version: 0.1.0
  */
-import type { ChatMessage } from "./chatMessage";
+import type { ChatMessageResponse } from "./chatMessageResponse";
 
 export interface ChatHistoryResponse {
-  messages: ChatMessage[];
+  messages: ChatMessageResponse[];
   next_cursor?: string | null;
 }

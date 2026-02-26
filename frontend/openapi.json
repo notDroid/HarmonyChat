@@ -11,7 +11,7 @@
           "chat"
         ],
         "summary": "Create a new chat",
-        "description": "Creates a new chat room between the current user and a list of target users.\n\n- **user_id_list**: A list of user_ids for the users to include.\n- **Constraints**: \n    - Max 10 users per chat (initially, you can add more later).\n    - You cannot create a chat with non-existent users.\n    - The creator is automatically added to the chat.",
+        "description": "Creates a new chat room between the current user and a list of target users.\n\n- **user_id_list**: A list of user_ids for the users to include.",
         "operationId": "create_chat_api_v1_chats__post",
         "requestBody": {
           "content": {
@@ -29,7 +29,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChatCreatedResponse"
+                  "$ref": "#/components/schemas/ChatResponse"
                 }
               }
             }
@@ -494,9 +494,35 @@
       },
       "ChatCreateRequest": {
         "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
           "user_id_list": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             },
             "type": "array",
             "maxItems": 10,
@@ -510,24 +536,11 @@
         ],
         "title": "ChatCreateRequest"
       },
-      "ChatCreatedResponse": {
-        "properties": {
-          "chat_id": {
-            "type": "string",
-            "title": "Chat Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "chat_id"
-        ],
-        "title": "ChatCreatedResponse"
-      },
       "ChatHistoryResponse": {
         "properties": {
           "messages": {
             "items": {
-              "$ref": "#/components/schemas/ChatMessage"
+              "$ref": "#/components/schemas/ChatMessageResponse"
             },
             "type": "array",
             "title": "Messages"
@@ -554,6 +567,7 @@
         "properties": {
           "chat_id": {
             "type": "string",
+            "format": "uuid",
             "title": "Chat Id"
           },
           "ulid": {
@@ -563,7 +577,8 @@
           "client_uuid": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -573,10 +588,12 @@
           },
           "timestamp": {
             "type": "string",
+            "format": "date-time",
             "title": "Timestamp"
           },
           "user_id": {
             "type": "string",
+            "format": "uuid",
             "title": "User Id"
           },
           "content": {
@@ -593,6 +610,118 @@
           "content"
         ],
         "title": "ChatMessage"
+      },
+      "ChatMessageResponse": {
+        "properties": {
+          "chat_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Chat Id"
+          },
+          "ulid": {
+            "type": "string",
+            "title": "Ulid"
+          },
+          "client_uuid": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Uuid"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "author_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserMetaData"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "chat_id",
+          "ulid",
+          "timestamp",
+          "user_id",
+          "content"
+        ],
+        "title": "ChatMessageResponse"
+      },
+      "ChatMetaData": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "ChatMetaData"
+      },
+      "ChatResponse": {
+        "properties": {
+          "chat_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Chat Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ChatMetaData"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chat_id",
+          "created_at",
+          "meta"
+        ],
+        "title": "ChatResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -617,7 +746,8 @@
           "client_uuid": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -654,7 +784,8 @@
         "properties": {
           "chat_id_list": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             },
             "type": "array",
             "title": "Chat Id List"
@@ -690,16 +821,40 @@
         ],
         "title": "UserCreateRequest"
       },
-      "UserResponse": {
+      "UserMetaData": {
         "properties": {
-          "user_id": {
+          "username": {
             "type": "string",
-            "title": "User Id"
+            "title": "Username"
           }
         },
         "type": "object",
         "required": [
-          "user_id"
+          "username"
+        ],
+        "title": "UserMetaData"
+      },
+      "UserResponse": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/UserMetaData"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "meta"
         ],
         "title": "UserResponse"
       },

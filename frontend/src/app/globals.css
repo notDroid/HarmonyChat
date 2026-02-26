@@ -38,6 +38,7 @@
   --color-app-chatbar: var(--bg-secondary);
   --color-app-outline: var(--outline-primary);
   --color-app-loading: var(--bg-tertiary);
+  --color-app-error: var(--color-red);
 
   /* Layout Spacing */
   --spacing-sidebar: 4.5rem;

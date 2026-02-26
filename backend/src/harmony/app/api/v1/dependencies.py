@@ -77,10 +77,9 @@ def get_chat_queries(
 def get_message_queries(
     chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
     chat_queries: ChatQueries = Depends(get_chat_queries),
+    user_queries: UserQueries = Depends(get_user_queries),
 ) -> MessageQueries:
-    return MessageQueries(chat_history_repository, chat_queries)
-
-from harmony.app.services import UserCommands, ChatCommands, MessageCommands
+    return MessageQueries(chat_history_repository, chat_queries, user_queries)
 
 def get_user_commands(
     session: AsyncSession = Depends(get_db_session),
@@ -99,9 +98,10 @@ def get_chat_commands(
 def get_message_commands(
     chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
     chat_queries: ChatQueries = Depends(get_chat_queries),
+    user_queries: UserQueries = Depends(get_user_queries),
     event_publisher = Depends(get_redis_manager),
 ) -> MessageCommands:
-    return MessageCommands(chat_history_repository, chat_queries, event_publisher)
+    return MessageCommands(chat_history_repository, chat_queries, user_queries, event_publisher)
 
 def get_auth_service(
     user_commands: UserCommands = Depends(get_user_commands),
