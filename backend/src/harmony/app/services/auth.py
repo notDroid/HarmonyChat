@@ -30,7 +30,12 @@ class AuthService:
         self.user_queries = user_queries
 
     async def sign_up(self, user_create: UserCreateRequest) -> str:
-        existing_user = await self.user_queries.get_user_by_email(user_create.email)
+        try:
+            existing_user = await self.user_queries.get_user_by_email(user_create.email)
+        except HTTPException:
+            # If get_user_by_email raises an exception (e.g., 404), it means the user doesn't exist
+            existing_user = None
+
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -47,9 +52,15 @@ class AuthService:
         return user
 
     async def authenticate_user(self, email: str, password: str) -> Token:
-        user = await self.user_queries.get_user_by_email(email)
-        
-        if not user or getattr(user, "tombstone", False):
+        try:
+            user = await self.user_queries.get_user_by_email(email)
+        except HTTPException:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not user or user.tombstone:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password.",
