@@ -92,15 +92,9 @@ export function useChatCache(chat_id: string) {
     queryClient.invalidateQueries({ queryKey });
   }
 
-  const snapshotChatCache = async () => {
-    await queryClient.cancelQueries({ queryKey });
-    return queryClient.getQueryData<InfiniteData<ChatHistoryResponse>>(queryKey);
-  }
-
   return {
     insertOrUpdateMessage,
     updateMessageStatus,
     invalidateChatCache,
-    snapshotChatCache,
   };
 }

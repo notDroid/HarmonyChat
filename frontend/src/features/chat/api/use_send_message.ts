@@ -6,7 +6,7 @@ import { useUserCache } from '@/features/user/api/cache';
 import { UserResponse } from '@/lib/api/model';
 
 export default function useSendMessage(chat_id: string) {
-  const { insertOrUpdateMessage, updateMessageStatus, snapshotChatCache } = useChatCache(chat_id);
+  const { insertOrUpdateMessage, updateMessageStatus } = useChatCache(chat_id);
   const { getCurrentUserQuery } = useUserCache();
 
   return useMutation({
@@ -16,15 +16,12 @@ export default function useSendMessage(chat_id: string) {
     },
     
     onMutate: async ({ content, client_uuid }) => {
-      // Stop background fetches and take a snapshot of the current cache state for this chat
-      const previousData = await snapshotChatCache();
-
       const currentUser: UserResponse = await getCurrentUserQuery();
 
       insertOrUpdateMessage({
         chat_id,
         content,
-        ulid: client_uuid,
+        ulid: client_uuid, // Use client_uuid as a temporary identifier
         client_uuid,
         timestamp: new Date().toISOString(),
         user_id: currentUser.user_id, 
@@ -36,7 +33,7 @@ export default function useSendMessage(chat_id: string) {
       } as UIMessage);
 
       // Return context with the previous data and client_uuid for potential rollback or error handling
-      return { previousData, client_uuid };
+      return { client_uuid };
     },
 
     onError: (err, variables, context) => {
