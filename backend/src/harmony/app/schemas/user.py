@@ -1,6 +1,6 @@
 import uuid
 from pydantic import BaseModel, EmailStr, ConfigDict
-from .metadata import UserMetaData
+from .metadata import ChatMetaData, UserMetaData
 
 # --- API Request Models (Input) ---
 class UserCreateRequest(BaseModel):
@@ -16,5 +16,9 @@ class UserResponse(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
 
+class UserChatItem(BaseModel):
+    chat_id: uuid.UUID
+    meta: ChatMetaData  # A different approach may only fetch minimal metadata (e.g. title) and fetch the rest when the user clicks into the chat.
+
 class UserChatsResponse(BaseModel):
-    chat_id_list: list[uuid.UUID]
+    chats: list[UserChatItem]

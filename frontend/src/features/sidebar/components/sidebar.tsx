@@ -19,7 +19,7 @@ export default function ServerListWrapper({ children }: { children: React.ReactN
   
   return (
     <div className="fixed flex h-screen w-full">
-      <ServerList chat_id_list={data} />
+      <ServerList chat_id_list={data.map(chat => chat.chat_id)} />
       {children}
     </div>
   );

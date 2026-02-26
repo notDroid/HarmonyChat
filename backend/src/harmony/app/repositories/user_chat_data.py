@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import select, delete, exists, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from harmony.app.models import UserChat
+from harmony.app.models import UserChat, Chat
 
 class UserChatRepository:
     def __init__(self, session: AsyncSession):
@@ -37,9 +37,13 @@ class UserChatRepository:
         return result.first() is not None
 
     async def get_user_chats(self, user_id: uuid.UUID) -> List[uuid.UUID]:
-        stmt = select(UserChat.chat_id).where(UserChat.user_id == user_id)
+        stmt = (
+            select(Chat.chat_id, Chat.meta)
+            .join(UserChat, UserChat.chat_id == Chat.chat_id)
+            .where(UserChat.user_id == user_id)
+        )
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        return result.all()
     
     async def get_chat_users(self, chat_id: uuid.UUID) -> List[uuid.UUID]:
         stmt = select(UserChat.user_id).where(UserChat.chat_id == chat_id)

@@ -53,7 +53,7 @@ async def get_my_chats(
     Retrieves a list of Chat IDs that the currently logged-in user participates in.
     """
     chats = await user_query_service.get_user_chats(user_id=user_id)
-    return UserChatsResponse(chat_id_list=chats)
+    return UserChatsResponse(chats=chats)
 
 @router.delete(
     "/me", 

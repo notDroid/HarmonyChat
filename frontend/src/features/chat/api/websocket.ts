@@ -30,7 +30,7 @@ export function useChatWebSocket(chat_id: string, onMessage: OnMessageCallback, 
 
     // Reconnection settings
     shouldReconnect: (closeEvent) => true,
-    reconnectAttempts: Infinity,
+    reconnectAttempts: 5,
     reconnectInterval: CHAT_PANEL_SETTINGS.WS_RECONNECT_INTERVAL_MS,
   });
 }

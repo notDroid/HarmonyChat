@@ -808,20 +808,37 @@
         ],
         "title": "Token"
       },
-      "UserChatsResponse": {
+      "UserChatItem": {
         "properties": {
-          "chat_id_list": {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array",
-            "title": "Chat Id List"
+          "chat_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Chat Id"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ChatMetaData"
           }
         },
         "type": "object",
         "required": [
-          "chat_id_list"
+          "chat_id",
+          "meta"
+        ],
+        "title": "UserChatItem"
+      },
+      "UserChatsResponse": {
+        "properties": {
+          "chats": {
+            "items": {
+              "$ref": "#/components/schemas/UserChatItem"
+            },
+            "type": "array",
+            "title": "Chats"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chats"
         ],
         "title": "UserChatsResponse"
       },

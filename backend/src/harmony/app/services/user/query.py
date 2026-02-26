@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
 from harmony.app.repositories import UserDataRepository, UserChatRepository
-from harmony.app.models import User 
+from harmony.app.models import User
+from harmony.app.schemas import UserChatItem
 
 logger = structlog.get_logger(__name__)
 
@@ -44,9 +45,10 @@ class UserQueries:
             return False
         return user is not None
 
-    async def get_user_chats(self, user_id: uuid.UUID) -> List[uuid.UUID]:
+    async def get_user_chats(self, user_id: uuid.UUID) -> List[UserChatItem]:
         try:
-            return await self.user_chat_repo.get_user_chats(user_id=user_id)
+            rows = await self.user_chat_repo.get_user_chats(user_id=user_id)
+            return [UserChatItem(chat_id=row.chat_id, meta=row.meta) for row in rows]
         except Exception as e:
             logger.exception("get_user_chats_failed", user_id=str(user_id))
             raise HTTPException(

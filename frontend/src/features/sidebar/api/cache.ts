@@ -1,17 +1,11 @@
 import { useQuery, queryOptions, QueryClient } from '@tanstack/react-query';
 import { SIDEBAR_SETTINGS } from '@/settings/sidebar';
 import getMyChats from './get_my_chats';
-import { ApiError, AuthRedirectError } from '@/lib/utils/errors';
 
 export const sidebarQueryOptions = queryOptions({
   queryKey: [SIDEBAR_SETTINGS.QUERY_KEY],
   queryFn: getMyChats,
   staleTime: SIDEBAR_SETTINGS.QUERY_STALE_TIME,
-  retry: (failureCount, err) => {
-    if (err instanceof AuthRedirectError) return false; 
-    if (err instanceof ApiError) return false;
-    return failureCount < SIDEBAR_SETTINGS.QUERY_N_RETRIES; 
-  }
 });
 
 export const prefetchSidebarChats = async (queryClient: QueryClient) => {
@@ -20,4 +14,12 @@ export const prefetchSidebarChats = async (queryClient: QueryClient) => {
 
 export function useSidebarChats() {
   return useQuery(sidebarQueryOptions);
+}
+
+export function useChatMetadata(chat_id: string) {
+  return useQuery({
+    ...sidebarQueryOptions,
+    // Select the metadata for the specific chat_id from the list of chats in the cache
+    select: (chats) => chats?.find(c => c.chat_id === chat_id)?.meta
+  });
 }

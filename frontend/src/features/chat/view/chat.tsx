@@ -1,5 +1,5 @@
 // Views
-import ChatHeader from "../ui/header";
+import ChatHeaderComponent from "../components/header";
 import ChatPanel from "../components/panel";
 
 // UI Components
@@ -26,7 +26,7 @@ export default async function ChatWindowView({ chat_id }: { chat_id: string }) {
 
   return (
     <div className="flex h-full w-full flex-col min-w-0">
-      <ChatHeader />
+      <ChatHeaderComponent chat_id={chat_id} />
         <HydrationBoundary state={dehydrate(queryClient)}>
             <ChatPanel chat_id={chat_id} />
         </HydrationBoundary>

@@ -2,7 +2,7 @@ import uuid
 from httpx import AsyncClient, Response
 from typing import List, Optional
 from harmony.app.schemas import ChatMessage, ChatHistoryResponse
-from .data_gen import generate_user_data
+from .data_gen import generate_user_data, generate_chat_metadata
 
 class AppClient:
     """
@@ -42,7 +42,10 @@ class AppClient:
         res.raise_for_status()
 
     async def create_chat(self, user_ids: List[uuid.UUID], token: str) -> uuid.UUID:
-        payload = {"user_id_list": [str(uid) for uid in user_ids]}
+        payload = {
+            "user_id_list": [str(uid) for uid in user_ids],
+            **generate_chat_metadata()
+        }
         res = await self.client.post(
             f"{self.prefix}/chats/", 
             json=payload,
@@ -75,7 +78,7 @@ class AppClient:
             headers=self._headers(token)
         )
         res.raise_for_status()
-        return [uuid.UUID(uid) for uid in res.json()["chat_id_list"]]
+        return [uuid.UUID(chat["chat_id"]) for chat in res.json()["chats"]]
     
     async def delete_chat(self, chat_id: uuid.UUID, token: str):
         res = await self.client.delete(

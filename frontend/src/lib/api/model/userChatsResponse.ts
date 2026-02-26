@@ -4,7 +4,8 @@
  * FastAPI
  * OpenAPI spec version: 0.1.0
  */
+import type { UserChatItem } from "./userChatItem";
 
 export interface UserChatsResponse {
-  chat_id_list: string[];
+  chats: UserChatItem[];
 }
