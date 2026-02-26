@@ -1,6 +1,8 @@
 import uuid
 
-from fastapi import APIRouter, Depends, status, HTTPException
+from typing import List
+from fastapi import APIRouter, Depends, status, HTTPException, Query
+from harmony.app.core import settings
 from harmony.app.schemas import (
     UserCreateRequest, 
     UserResponse, 
@@ -99,21 +101,19 @@ async def get_current_user_details(
 
 @router.get(
     "/lookup", 
-    response_model=UserResponse,
+    response_model=List[UserResponse],
     status_code=status.HTTP_200_OK,
-    summary="Get a users details by email",
-    responses={
-        404: {"description": "User not found."}
-        }
+    summary="Search for users by email partial match",
 )
 async def get_user_details_by_email(
     email: str,
+    limit: int = Query(settings.DEFAULT_USER_SEARCH_LIMIT, gt=0, le=settings.DEFAULT_USER_SEARCH_LIMIT),
     user_query_service = Depends(get_user_queries)
 ):
     """
-    Retrieves the details of a specific user given their email.
+    Retrieves a list of users that match the email search query.
     """
-    return await user_query_service.get_user_by_email(email=email)
+    return await user_query_service.search_users_by_email(email_query=email, limit=limit)
 
 @router.get(
     "/{user_id}", 

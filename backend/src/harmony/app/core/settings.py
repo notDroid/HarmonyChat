@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # Chat Configuration
     CHAT_MAX_USERS_PER_OPERATION: int = 10
     DEFAULT_PAGINATION_LIMIT: int = 50
+    DEFAULT_USER_SEARCH_LIMIT: int = 10
 
     # AWS Configuration
     AWS_REGION: str = "us-east-1"

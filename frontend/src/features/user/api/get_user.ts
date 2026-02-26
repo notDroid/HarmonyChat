@@ -16,10 +16,11 @@ export async function getUserbyId(userId: string) {
     return user;
 }
 
-export async function getUserByEmail(email: string) {
+export async function searchUsersByEmail(email: string) {
     const res = await getUserDetailsByEmailApiV1UsersLookupGet({
         email: email
     });
-    const user = (res.data as UserResponse) || null;
-    return user;
+    
+    const users = (res.data as UserResponse[]) || [];
+    return users;
 }

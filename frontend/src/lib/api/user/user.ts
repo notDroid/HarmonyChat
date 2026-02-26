@@ -195,17 +195,12 @@ export const deleteMeApiV1UsersMeDelete = async (
 };
 
 /**
- * Retrieves the details of a specific user given their email.
- * @summary Get a users details by email
+ * Retrieves a list of users that match the email search query.
+ * @summary Search for users by email partial match
  */
 export type getUserDetailsByEmailApiV1UsersLookupGetResponse200 = {
-  data: UserResponse;
+  data: UserResponse[];
   status: 200;
-};
-
-export type getUserDetailsByEmailApiV1UsersLookupGetResponse404 = {
-  data: void;
-  status: 404;
 };
 
 export type getUserDetailsByEmailApiV1UsersLookupGetResponse422 = {
@@ -217,12 +212,10 @@ export type getUserDetailsByEmailApiV1UsersLookupGetResponseSuccess =
   getUserDetailsByEmailApiV1UsersLookupGetResponse200 & {
     headers: Headers;
   };
-export type getUserDetailsByEmailApiV1UsersLookupGetResponseError = (
-  | getUserDetailsByEmailApiV1UsersLookupGetResponse404
-  | getUserDetailsByEmailApiV1UsersLookupGetResponse422
-) & {
-  headers: Headers;
-};
+export type getUserDetailsByEmailApiV1UsersLookupGetResponseError =
+  getUserDetailsByEmailApiV1UsersLookupGetResponse422 & {
+    headers: Headers;
+  };
 
 export type getUserDetailsByEmailApiV1UsersLookupGetResponse =
   | getUserDetailsByEmailApiV1UsersLookupGetResponseSuccess

@@ -398,8 +398,8 @@
         "tags": [
           "user"
         ],
-        "summary": "Get a users details by email",
-        "description": "Retrieves the details of a specific user given their email.",
+        "summary": "Search for users by email partial match",
+        "description": "Retrieves a list of users that match the email search query.",
         "operationId": "get_user_details_by_email_api_v1_users_lookup_get",
         "parameters": [
           {
@@ -418,13 +418,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  },
+                  "title": "Response Get User Details By Email Api V1 Users Lookup Get"
                 }
               }
             }
-          },
-          "404": {
-            "description": "User not found."
           },
           "422": {
             "description": "Validation Error",

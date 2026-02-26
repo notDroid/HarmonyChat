@@ -40,3 +40,8 @@ class UserDataRepository:
             .values(tombstone=True)
         )
         await self.session.execute(stmt)
+
+    async def search_users_by_email(self, email_query: str, limit: int = 10) -> list[User]:
+        stmt = select(User).where(User.email.ilike(f"%{email_query}%")).limit(limit)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

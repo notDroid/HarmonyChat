@@ -152,12 +152,22 @@ export const CreateChatContent = ({
                 className="w-full rounded-md border border-app-outline bg-app-sidebar px-3 py-2 text-sm text-app-text placeholder:text-app-muted focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all"
               />
               
-              {/* Results List - Now Block/Relative (Not Absolute) to avoid clipping */}
+              {/* Results List */}
               {searchValue && (
                 <div className="mt-2 w-full border border-app-outline rounded-md bg-app-sidebar shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-1">
-                  {isSearching ? (
-                    <div className="p-4 text-center text-xs text-app-muted animate-pulse">Searching...</div>
+                  
+                  {searchValue.trim().length < 2 ? (
+                    // 1. Waiting for enough characters
+                    <div className="p-4 text-center text-xs text-app-muted">
+                      Keep typing to search...
+                    </div>
+                  ) : isSearching ? (
+                    // 2. React Query is actively fetching
+                    <div className="p-4 text-center text-xs text-app-muted animate-pulse">
+                      Searching...
+                    </div>
                   ) : searchResults.length > 0 ? (
+                    // 3. Results found
                     <ul className="divide-y divide-app-outline/50 max-h-40 overflow-y-auto">
                       {searchResults.map((user) => (
                         <li key={user.user_id}>
@@ -173,8 +183,12 @@ export const CreateChatContent = ({
                       ))}
                     </ul>
                   ) : (
-                    <div className="p-4 text-center text-xs text-app-muted">No users found</div>
+                    // 4. Query finished, but no results
+                    <div className="p-4 text-center text-xs text-app-muted">
+                      No users found
+                    </div>
                   )}
+                  
                 </div>
               )}
             </div>

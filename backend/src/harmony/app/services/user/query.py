@@ -48,6 +48,11 @@ class UserQueries:
             logger.warning("get_user_by_email_not_found", email=email)
             raise HTTPException(status.HTTP_404_NOT_FOUND, "User does not exist.")
         return user
+    
+    async def search_users_by_email(self, email_query: str, limit: int = 10) -> list[User]:
+        if not email_query or len(email_query) < 2:
+            return []
+        return await self.user_data_repo.search_users_by_email(email_query, limit=limit)
 
     async def check_user_exists(self, user_id: uuid.UUID) -> bool:
         """
