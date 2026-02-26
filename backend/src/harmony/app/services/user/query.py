@@ -7,6 +7,9 @@ import structlog
 from harmony.app.repositories import UserDataRepository, UserChatRepository
 from harmony.app.models import User
 from harmony.app.schemas import UserChatItem
+from pydantic import EmailStr, TypeAdapter
+
+email_adapter = TypeAdapter(EmailStr)
 
 logger = structlog.get_logger(__name__)
 
@@ -33,7 +36,18 @@ class UserQueries:
         return user
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
-        return await self.user_data_repo.get_user_by_email(email)
+        # Validate email
+        try:
+            email_adapter.validate_python(email)
+        except ValueError:
+            logger.warning("get_user_by_email_invalid_format", email=email)
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid email format.")
+        
+        user = await self.user_data_repo.get_user_by_email(email)
+        if not user:
+            logger.warning("get_user_by_email_not_found", email=email)
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "User does not exist.")
+        return user
 
     async def check_user_exists(self, user_id: uuid.UUID) -> bool:
         """

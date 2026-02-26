@@ -104,7 +104,7 @@ export default function CreateChatModalUI({
             {/* Search Input */}
             <input
               type="text"
-              placeholder="Search by username or email..."
+              placeholder="Search by user id or email..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="w-full rounded-md border border-app-outline bg-app-sidebar px-3 py-2 text-sm text-app-text placeholder:text-app-muted focus:border-brand focus:ring-1 focus:ring-brand focus:outline-none"

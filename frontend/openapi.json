@@ -393,23 +393,22 @@
         ]
       }
     },
-    "/api/v1/users/{user_id}": {
+    "/api/v1/users/lookup": {
       "get": {
         "tags": [
           "user"
         ],
-        "summary": "Get a users details by ID",
-        "description": "Retrieves the details of a specific user given their ID.",
-        "operationId": "get_user_details_by_id_api_v1_users__user_id__get",
+        "summary": "Get a users details by email",
+        "description": "Retrieves the details of a specific user given their email.",
+        "operationId": "get_user_details_by_email_api_v1_users_lookup_get",
         "parameters": [
           {
-            "name": "user_id",
-            "in": "path",
+            "name": "email",
+            "in": "query",
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
-              "title": "User Id"
+              "title": "Email"
             }
           }
         ],
@@ -440,23 +439,23 @@
         }
       }
     },
-    "/api/v1/users/lookup/": {
+    "/api/v1/users/{user_id}": {
       "get": {
         "tags": [
           "user"
         ],
-        "summary": "Get a users details by email",
-        "description": "Retrieves the details of a specific user given their email.",
-        "operationId": "get_user_details_by_email_api_v1_users_lookup__get",
+        "summary": "Get a users details by ID",
+        "description": "Retrieves the details of a specific user given their ID.",
+        "operationId": "get_user_details_by_id_api_v1_users__user_id__get",
         "parameters": [
           {
-            "name": "email",
-            "in": "query",
+            "name": "user_id",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "format": "email",
-              "title": "Email"
+              "format": "uuid",
+              "title": "User Id"
             }
           }
         ],

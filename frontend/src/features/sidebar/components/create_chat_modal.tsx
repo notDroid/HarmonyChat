@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+
 import CreateChatForm, { UserSearchResult } from "./create_chat_form";
+import { getUserByEmail } from "@/features/user/api/get_user";
+import { createChatAction } from "../api/create_chat_action";
+import { ChatCreateRequest, ChatResponse } from "@/lib/api/model";
 
 interface CreateChatModalProps {
   isOpen: boolean;
@@ -9,22 +15,78 @@ interface CreateChatModalProps {
 }
 
 export default function CreateChatModalComponent({ isOpen, onClose }: CreateChatModalProps) {
-  // TODO: Implement use_user_search hook (with debouncing)
-  const [mockSearchResults, setMockSearchResults] = useState<UserSearchResult[]>([]);
-  const isSearching = false; 
+  const router = useRouter();
+  
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  // TODO: Implement use_create_chat hook
-  const isSubmitting = false;
+  // 1. Debounced Search Logic
+  useEffect(() => {
+    // Clear results if input is empty
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
 
+    // Set a 500ms delay before hitting the API
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        // NOTE: Currently relies on exact email match due to backend limitations
+        const user = await getUserByEmail(searchQuery.trim());
+        
+        if (user && user.user_id) {
+          setSearchResults([{
+            user_id: user.user_id,
+            username: user.meta?.username || user.email,
+            email: user.email
+          }]);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error) {
+        // API throws a 404 if the user isn't found, which is expected during typing
+        setSearchResults([]); 
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    // Cleanup function cancels the timeout if the user keeps typing
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // 2. Chat Creation Logic
+  const createChatMutation = useMutation({
+    mutationFn: async (payload: ChatCreateRequest) => createChatAction(payload),
+
+    onSuccess: (newChat) => {
+      // Close the modal
+      onClose();
+      // Redirect the user directly to their new chat room
+      router.push(`/chats/${newChat?.chat_id}`);
+    },
+    onError: (error) => {
+      console.error("Failed to create chat:", error);
+      alert("Failed to create chat. Please check your connection and try again.");
+    }
+  });
+
+  // 3. Handlers passed down to the Form UI
   const handleSearch = (query: string) => {
-    // TODO: Pass query to your debounced search hook
-    console.log("Searching for:", query);
+    setSearchQuery(query);
   };
 
   const handleCreateChat = (data: { title: string; description: string; user_id_list: string[] }) => {
-    // TODO: Call your mutation here
-    // onSuccess: invalidate sidebar cache, close modal, and redirect to new chat
-    console.log("Creating chat with payload:", data);
+    // Format the payload to match the OpenAPI schema expectations
+    createChatMutation.mutate({
+      title: data.title || null,
+      description: data.description || null,
+      user_id_list: data.user_id_list,
+    });
   };
 
   return (
@@ -33,9 +95,9 @@ export default function CreateChatModalComponent({ isOpen, onClose }: CreateChat
       onClose={onClose}
       onSearch={handleSearch}
       onSubmit={handleCreateChat}
-      searchResults={mockSearchResults}
+      searchResults={searchResults}
       isSearching={isSearching}
-      isSubmitting={isSubmitting}
+      isSubmitting={createChatMutation.isPending}
     />
   );
 }
