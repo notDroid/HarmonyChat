@@ -1,3 +1,5 @@
+import uuid
+
 from starlette.requests import HTTPConnection
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +20,7 @@ from harmony.app.core import decode_token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
-) -> str:
+) -> uuid.UUID:
     payload = decode_token(token)
     user_id: str = payload.get("sub")
     

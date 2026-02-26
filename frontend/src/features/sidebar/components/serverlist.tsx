@@ -3,19 +3,25 @@ import { usePathname } from "next/navigation";
 import { ServerIcon, ServerIconProps } from "../ui/icon";
 import ServerSidebar from "../ui/sidebar";
 
-export default function ServerList({ chat_id_list }: { chat_id_list: string[] }) {
+import { UserChatsResponse } from "@/lib/api/model";
+
+export default function ServerList({ chats }: UserChatsResponse) {
   const pathname = usePathname();
+
   return (
     <ServerSidebar>
-      {chat_id_list.map((chat_id, index) => {
-        const is_active = pathname === `/chats/${chat_id}`;
+      {chats.map((chat) => {
+        const is_active = pathname === `/chats/${chat.chat_id}`;
+        
+        const title = chat.meta?.title || "?";
+        const label = title.charAt(0).toUpperCase();
 
         return (
-          <Link key={chat_id} href={`/chats/${chat_id}`} className="w-full">
+          <Link key={chat.chat_id} href={`/chats/${chat.chat_id}`} className="w-full">
             <ServerIcon 
               server_item={({
-                index,
-                chat_id,
+                label,
+                chat_id: chat.chat_id,
                 is_active,
                 has_unread: false,
               }) as ServerIconProps}

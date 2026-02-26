@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, status, HTTPException
 from harmony.app.schemas import (
     UserCreateRequest, 
@@ -46,7 +48,7 @@ async def sign_up(
     }
 )
 async def get_my_chats(
-    user_id: str = Depends(get_current_user),
+    user_id: uuid.UUID = Depends(get_current_user),
     user_query_service = Depends(get_user_queries)
 ):
     """
@@ -64,7 +66,7 @@ async def get_my_chats(
     }
 )
 async def delete_me(
-    user_id: str = Depends(get_current_user),
+    user_id: uuid.UUID = Depends(get_current_user),
     user_command_service = Depends(get_user_commands)
 ):
     """
@@ -87,7 +89,7 @@ async def delete_me(
     }
 )
 async def get_current_user_details(
-    user_id: str = Depends(get_current_user),
+    user_id: uuid.UUID = Depends(get_current_user),
     user_query_service = Depends(get_user_queries)
 ):
     """

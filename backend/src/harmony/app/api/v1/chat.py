@@ -33,7 +33,7 @@ router = APIRouter()
 )
 async def create_chat(
     data: ChatCreateRequest,
-    user_id: str = Depends(get_current_user),
+    user_id: uuid.UUID = Depends(get_current_user),
     chat_command_service = Depends(get_chat_commands)
 ):
     """
@@ -42,7 +42,7 @@ async def create_chat(
     - **user_id_list**: A list of user_ids for the users to include.
     """
     chat = await chat_command_service.create_chat(
-        creator_id=uuid.UUID(user_id),
+        creator_id=user_id,
         data=data
     )
     return chat
@@ -55,9 +55,9 @@ async def create_chat(
     responses=common_chat_errors
 )
 async def send_message(
-    chat_id: str,
+    chat_id: uuid.UUID,
     data: MessageSendRequest, 
-    user_id: str = Depends(get_current_user),
+    user_id: uuid.UUID = Depends(get_current_user),
     message_command_service = Depends(get_message_commands)
 ):
     """
@@ -70,8 +70,8 @@ async def send_message(
     # await asyncio.sleep(5)
 
     msg = await message_command_service.send_message(
-        chat_id=uuid.UUID(chat_id), 
-        user_id=uuid.UUID(user_id), 
+        chat_id=chat_id, 
+        user_id=user_id,
         content=data.content,
         client_uuid=data.client_uuid
     )
@@ -86,18 +86,18 @@ async def send_message(
     responses=common_chat_errors
 )
 async def get_chat_history(
-    chat_id: str,
+    chat_id: uuid.UUID,
     limit: int = settings.DEFAULT_PAGINATION_LIMIT,
     cursor: str | None = None,
-    user_id: str = Depends(get_current_user),
+    user_id: uuid.UUID = Depends(get_current_user),
     message_queries_service = Depends(get_message_queries)
 ):
     # Simulate timeout for testing purposes
     # await asyncio.sleep(5)
 
     messages, next_cursor = await message_queries_service.get_chat_history(
-        user_id=uuid.UUID(user_id), 
-        chat_id=uuid.UUID(chat_id), 
+        user_id=user_id, 
+        chat_id=chat_id, 
         limit=limit, 
         cursor=cursor
     )
@@ -110,9 +110,9 @@ async def get_chat_history(
     responses=common_chat_errors
 )
 async def delete_chat(
-    chat_id: str,
+    chat_id: uuid.UUID,
     background_tasks: BackgroundTasks,
-    user_id: str = Depends(get_current_user),
+    user_id: uuid.UUID = Depends(get_current_user),
     chat_command_service = Depends(get_chat_commands),
     message_command_service = Depends(get_message_commands)
 ):
@@ -123,5 +123,5 @@ async def delete_chat(
     - The actual deletion of thousands of messages happens in a **Background Task** 
       to prevent the API from hanging.
     """
-    await chat_command_service.delete_chat(user_id=uuid.UUID(user_id), chat_id=uuid.UUID(chat_id))
-    background_tasks.add_task(message_command_service.background_delete_chat_history, chat_id=uuid.UUID(chat_id))
+    await chat_command_service.delete_chat(user_id=user_id, chat_id=chat_id)
+    background_tasks.add_task(message_command_service.background_delete_chat_history, chat_id=chat_id)

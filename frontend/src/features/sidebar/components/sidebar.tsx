@@ -1,9 +1,7 @@
 "use client";
 
 import LoadingScreen from "@/components/loading";
-
 import ServerList from "./serverlist";
-
 import { useSidebarChats } from "../api/cache";
 
 export default function ServerListWrapper({ children }: { children: React.ReactNode }) {
@@ -19,7 +17,7 @@ export default function ServerListWrapper({ children }: { children: React.ReactN
   
   return (
     <div className="fixed flex h-screen w-full">
-      <ServerList chat_id_list={data.map(chat => chat.chat_id)} />
+      <ServerList chats={data} />
       {children}
     </div>
   );

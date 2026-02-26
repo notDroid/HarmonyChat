@@ -1,5 +1,5 @@
 export interface ServerIconProps {
-  index: number;
+  label: string;
   chat_id: string;
   icon_url?: string;
   has_unread: boolean;
@@ -52,7 +52,7 @@ export function ServerIcon(
             className="w-full h-full object-cover" 
           />
         ) : (
-          server_item.index
+          server_item.label
         )}
       </button>
     </div>
