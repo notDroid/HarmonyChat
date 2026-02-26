@@ -1,6 +1,5 @@
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { NetworkError, ApiError } from "@/lib/utils/errors";
-import { isNextRedirect } from "@/lib/utils/utils";
+import { NetworkError, ApiError, isNextRedirect } from "@/lib/utils/errors";
 import ErrorScreen from "@/components/error";
 
 import ServerListWrapper from "../components/sidebar";

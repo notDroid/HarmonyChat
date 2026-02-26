@@ -340,6 +340,34 @@
       }
     },
     "/api/v1/users/me": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get current user details",
+        "description": "Retrieves the details of the currently logged-in user.",
+        "operationId": "get_current_user_details_api_v1_users_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication credentials were not provided or are invalid."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
       "delete": {
         "tags": [
           "user"

@@ -1,12 +1,6 @@
-import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { ApiError, NetworkError, AuthRedirectError } from './errors';
-import { redirect } from 'next/navigation';
 
 const isServer = typeof window === 'undefined';
-
-export function isNextRedirect(error: unknown) {
-  return isRedirectError(error);
-}
 
 export const getBaseUrl = () => {
   if (isServer) {
@@ -26,17 +20,19 @@ export async function getAuthHeader() {
 
 async function handleAuthError(requestUrl: string) {
   // Ignore login endpoint failures
-  if (requestUrl.includes('/auth')) return;
+  if (requestUrl.includes('/login') || requestUrl.includes('/logout') || requestUrl.includes('/signup')) return;
 
   if (isServer) {
-    // SERVER SIDE: Use Next.js redirect (throws its own internal error)
-    redirect('/logout');
-  } else {
-    // CLIENT SIDE:
-    // Force a hard navigation (clears memory/state)
-    window.location.href = '/logout';
+    // SERVER SIDE: clear session and redirect to login
+    const { clearSession } = await import('@/features/auth/utils/session');
+    const { redirect } = await import('next/navigation');
     
-    // Throw specific error to halt the current function execution
+    await clearSession();
+    redirect('/login');
+  } else {
+    // CLIENT SIDE: Ask server to drop cookie
+    await fetch('/logout', { method: 'POST' });
+    window.location.href = '/login';
     throw new AuthRedirectError();
   }
 }

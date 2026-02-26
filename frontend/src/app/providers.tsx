@@ -1,7 +1,6 @@
 'use client';
 
-import { ApiError } from '@/lib/utils/errors';
-import { isNextRedirect } from '@/lib/utils/utils';
+import { ApiError, isNextRedirect } from '@/lib/utils/errors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 

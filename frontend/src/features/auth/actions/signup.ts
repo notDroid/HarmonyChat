@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { signUpApiV1UsersPost } from '@/lib/api/user/user'
 import { UserCreateRequest } from '@/lib/api/model/'
-import { NetworkError, ApiError } from '@/lib/utils/errors';
+import { NetworkError, ApiError, isNextRedirect } from '@/lib/utils/errors';
 
 export type SignupState = {
   message: string;
@@ -23,6 +23,8 @@ export async function signupAction(prevState: any, formData: FormData): Promise<
   try {
     await signUpApiV1UsersPost(signUpRequest);
   } catch (error) {
+    if (isNextRedirect(error)) throw error;
+    
     if (error instanceof NetworkError) {
       return { message: 'Unable to connect. Check your internet.' };
     } 

@@ -1,3 +1,5 @@
+import { isRedirectError } from "next/dist/client/components/redirect-error";
+
 export class ApiError extends Error {
   constructor(public status: number, message: string, public data?: any) {
     super(message);
@@ -19,4 +21,8 @@ export class AuthRedirectError extends Error {
     super('Redirecting to login...');
     this.name = 'AuthRedirectError';
   }
+}
+
+export function isNextRedirect(error: unknown) {
+  return isRedirectError(error);
 }

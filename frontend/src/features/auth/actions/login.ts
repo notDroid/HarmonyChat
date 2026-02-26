@@ -7,8 +7,10 @@ import { loginApiV1AuthTokenPost } from '@/lib/api/auth/auth'
 import { BodyLoginApiV1AuthTokenPost } from '@/lib/api/model/bodyLoginApiV1AuthTokenPost';
 import { Token } from '@/lib/api/model/token';
 
-import { NetworkError, ApiError } from '@/lib/utils/errors';
+import { NetworkError, ApiError, isNextRedirect } from '@/lib/utils/errors';
 import { decodeJwt } from 'jose';
+
+import { SESSION_SETTINGS } from '@/settings/session';
 
 export type LoginState = {
   message: string;
@@ -28,6 +30,8 @@ export async function loginAction(redirectPath: string | null, prevState: any, f
   try {
     res = await loginApiV1AuthTokenPost(loginRequest);
   } catch (error) {
+    if (isNextRedirect(error)) throw error;
+    
     if (error instanceof NetworkError) {
       console.error('Network error:', error);
       return { message: 'Unable to connect. Check your internet.' };
@@ -49,7 +53,7 @@ export async function loginAction(redirectPath: string | null, prevState: any, f
 
   // Set the Cookie
   const cookieStore = await cookies();
-  cookieStore.set('session_token', token, {
+  cookieStore.set(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     path: '/',
@@ -63,10 +67,4 @@ export async function loginAction(redirectPath: string | null, prevState: any, f
   }
 
   redirect(destination);
-}
-
-export async function logoutAction() {
-  const cookieStore = await cookies();
-  cookieStore.delete('session_token');
-  redirect('/login');
 }

@@ -104,6 +104,49 @@ export const getMyChatsApiV1UsersMeChatsGet = async (
 };
 
 /**
+ * Retrieves the details of the currently logged-in user.
+ * @summary Get current user details
+ */
+export type getCurrentUserDetailsApiV1UsersMeGetResponse200 = {
+  data: UserResponse;
+  status: 200;
+};
+
+export type getCurrentUserDetailsApiV1UsersMeGetResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type getCurrentUserDetailsApiV1UsersMeGetResponseSuccess =
+  getCurrentUserDetailsApiV1UsersMeGetResponse200 & {
+    headers: Headers;
+  };
+export type getCurrentUserDetailsApiV1UsersMeGetResponseError =
+  getCurrentUserDetailsApiV1UsersMeGetResponse401 & {
+    headers: Headers;
+  };
+
+export type getCurrentUserDetailsApiV1UsersMeGetResponse =
+  | getCurrentUserDetailsApiV1UsersMeGetResponseSuccess
+  | getCurrentUserDetailsApiV1UsersMeGetResponseError;
+
+export const getGetCurrentUserDetailsApiV1UsersMeGetUrl = () => {
+  return `/api/v1/users/me`;
+};
+
+export const getCurrentUserDetailsApiV1UsersMeGet = async (
+  options?: RequestInit,
+): Promise<getCurrentUserDetailsApiV1UsersMeGetResponse> => {
+  return inject<getCurrentUserDetailsApiV1UsersMeGetResponse>(
+    getGetCurrentUserDetailsApiV1UsersMeGetUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
  * **Soft delete** the current user.
 
 - Marks the user as 'tombstoned' in the database.

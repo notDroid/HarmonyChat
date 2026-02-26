@@ -75,3 +75,22 @@ async def delete_me(
     - Historical data (messages) is preserved for data integrity.
     """
     await user_command_service.delete_user(user_id=user_id)
+    
+@router.get(
+    "/me", 
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get current user details",
+    responses={
+        401: {"description": "Authentication credentials were not provided or are invalid."
+        }
+    }
+)
+async def get_current_user_details(
+    user_id: str = Depends(get_current_user),
+    user_query_service = Depends(get_user_queries)
+):
+    """
+    Retrieves the details of the currently logged-in user.
+    """
+    return await user_query_service.get_user_by_id(user_id=user_id)

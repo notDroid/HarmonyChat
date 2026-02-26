@@ -8,8 +8,7 @@ import ChatBar from "../components/bar";
 
 // API Functions
 import getChatHistory from "../api/get_chat_history";
-import { ApiError, NetworkError } from "@/lib/utils/errors";
-import { isNextRedirect } from "@/lib/utils/utils";
+import { ApiError, NetworkError, isNextRedirect } from "@/lib/utils/errors";
 
 // React Query
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
