@@ -2,35 +2,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ServerIcon, ServerIconProps } from "../ui/icon";
 import ServerSidebar from "../ui/sidebar";
-
 import { UserChatsResponse } from "@/lib/api/model";
-import CreateChatButtonComponent from "./create_button";
-import CreateChatModalComponent from "./create_chat_modal";
-
-import { useState } from "react";
+import CreateChat from "./create_chat"; // New simplified component
 
 export default function ServerList({ chats }: UserChatsResponse) {
   const pathname = usePathname();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
   return (
     <ServerSidebar>
-      { /* Create Chat Button at the top of the sidebar */ }
-      <CreateChatButtonComponent onClick={() => setIsModalOpen(true)} />
+      { /* New Composite Logic Component */ }
+      <CreateChat />
+
+      <div className="w-9 h-0.5 bg-app-outline rounded-full mx-auto shrink-0" />
 
       { /* List of User Chats */ }
       {chats.map((chat) => {
         const is_active = pathname === `/chats/${chat.chat_id}`;
         
-        const title = chat.meta?.title || "?";
-        const label = title.charAt(0).toUpperCase();
-
         return (
           <Link key={chat.chat_id} href={`/chats/${chat.chat_id}`} className="w-full">
             <ServerIcon 
               server_item={({
-                label,
+                label: chat.meta?.title?.charAt(0).toUpperCase() || "?",
                 chat_id: chat.chat_id,
                 is_active,
                 has_unread: false,
@@ -39,12 +32,6 @@ export default function ServerList({ chats }: UserChatsResponse) {
           </Link>
         );
       })}
-
-      { /* Create Chat Modal Component */ }
-      <CreateChatModalComponent 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-      />
     </ServerSidebar>
   );
 }

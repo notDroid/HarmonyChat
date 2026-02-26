@@ -1,6 +1,8 @@
-import { useQuery, queryOptions, QueryClient } from '@tanstack/react-query';
+import { useQuery, queryOptions, QueryClient, useQueryClient } from '@tanstack/react-query';
 import { SIDEBAR_SETTINGS } from '@/settings/sidebar';
 import getMyChats from './get_my_chats';
+import { ChatResponse } from '@/lib/api/model/chatResponse';
+import { UserChatsResponse } from '@/lib/api/model/userChatsResponse';
 
 export const sidebarQueryOptions = queryOptions({
   queryKey: [SIDEBAR_SETTINGS.QUERY_KEY],
@@ -22,4 +24,27 @@ export function useChatMetadata(chat_id: string) {
     // Select the metadata for the specific chat_id from the list of chats in the cache
     select: (chats) => chats?.find(c => c.chat_id === chat_id)?.meta
   });
+}
+
+export function useSidebarCache() {
+  const queryClient = useQueryClient();
+  const queryKey = sidebarQueryOptions.queryKey;
+
+  const addChat = (newChat: ChatResponse) => {
+    queryClient.setQueryData<UserChatsResponse['chats']>(queryKey, (oldChats) => {
+      if (!oldChats) return oldChats;
+
+      const newChatItem = {
+        chat_id: newChat.chat_id,
+        meta: newChat.meta
+      };
+
+      // Prepend the new chat to the list
+      return [newChatItem, ...oldChats];
+    });
+  };
+
+  return {
+    addChat
+  };
 }

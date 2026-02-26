@@ -8,9 +8,6 @@
 export interface ChatCreateRequest {
   title?: string | null;
   description?: string | null;
-  /**
-   * @minItems 1
-   * @maxItems 10
-   */
+  /** @maxItems 10 */
   user_id_list: string[];
 }

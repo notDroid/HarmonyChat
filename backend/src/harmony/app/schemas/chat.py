@@ -8,7 +8,7 @@ from .metadata import ChatMetaData
 class ChatCreateRequest(BaseModel):
     title: str | None = Field(None, min_length=1, max_length=100)
     description: str | None = Field(None, max_length=500)
-    user_id_list: list[uuid.UUID] = Field(..., min_length=1, max_length=10)
+    user_id_list: list[uuid.UUID] = Field(..., max_length=10)
 
 class MessageSendRequest(BaseModel):
     content: str = Field(..., min_length=1)

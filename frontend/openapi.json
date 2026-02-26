@@ -650,7 +650,6 @@
             },
             "type": "array",
             "maxItems": 10,
-            "minItems": 1,
             "title": "User Id List"
           }
         },
