@@ -7,6 +7,7 @@
 import type {
   BodyLoginApiV1AuthTokenPost,
   HTTPValidationError,
+  RefreshRequest,
   Token,
 } from ".././model";
 
@@ -97,7 +98,7 @@ export const loginApiV1AuthTokenPost = async (
 };
 
 /**
- * **Refresh Access Token using a Refresh Token.**
+ * **Refresh Tokens using a Refresh Token.**
  * @summary Refresh Access Token
  */
 export type refreshApiV1AuthRefreshPostResponse200 = {
@@ -105,18 +106,37 @@ export type refreshApiV1AuthRefreshPostResponse200 = {
   status: 200;
 };
 
+export type refreshApiV1AuthRefreshPostResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type refreshApiV1AuthRefreshPostResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
 export type refreshApiV1AuthRefreshPostResponseSuccess =
   refreshApiV1AuthRefreshPostResponse200 & {
     headers: Headers;
   };
+export type refreshApiV1AuthRefreshPostResponseError = (
+  | refreshApiV1AuthRefreshPostResponse401
+  | refreshApiV1AuthRefreshPostResponse422
+) & {
+  headers: Headers;
+};
+
 export type refreshApiV1AuthRefreshPostResponse =
-  refreshApiV1AuthRefreshPostResponseSuccess;
+  | refreshApiV1AuthRefreshPostResponseSuccess
+  | refreshApiV1AuthRefreshPostResponseError;
 
 export const getRefreshApiV1AuthRefreshPostUrl = () => {
   return `/api/v1/auth/refresh`;
 };
 
 export const refreshApiV1AuthRefreshPost = async (
+  refreshRequest: RefreshRequest,
   options?: RequestInit,
 ): Promise<refreshApiV1AuthRefreshPostResponse> => {
   return inject<refreshApiV1AuthRefreshPostResponse>(
@@ -124,6 +144,8 @@ export const refreshApiV1AuthRefreshPost = async (
     {
       ...options,
       method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(refreshRequest),
     },
   );
 };

@@ -1,8 +1,8 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from harmony.app.schemas import Token
-from .dependencies import get_auth_service, get_token
+from harmony.app.schemas import Token, RefreshRequest
+from .dependencies import get_auth_service
 
 router = APIRouter()
 
@@ -47,22 +47,17 @@ async def login(
     summary="Refresh Access Token",
     responses={
         401: {
-            "description": "Incorrect email or password, or user is inactive.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Incorrect email or password"}
-                }
-            }
+            "description": "Invalid or expired refresh token.",
         }
     }
 )
 async def refresh(
-    refresh_token: Annotated[str, Depends(get_token)],
+    refresh_token: RefreshRequest,
     auth_service = Depends(get_auth_service)
 ):
     """
-    **Refresh Access Token using a Refresh Token.**
+    **Refresh Tokens using a Refresh Token.**
     """
     return await auth_service.refresh_tokens(
-        refresh_token=refresh_token
+        refresh_token=refresh_token.refresh_token
     )

@@ -561,8 +561,18 @@
           "auth"
         ],
         "summary": "Refresh Access Token",
-        "description": "**Refresh Access Token using a Refresh Token.**",
+        "description": "**Refresh Tokens using a Refresh Token.**",
         "operationId": "refresh_api_v1_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -579,21 +589,19 @@
             }
           },
           "401": {
-            "description": "Incorrect email or password, or user is inactive.",
+            "description": "Invalid or expired refresh token."
+          },
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
-                "example": {
-                  "detail": "Incorrect email or password"
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/": {
@@ -942,6 +950,19 @@
           "content"
         ],
         "title": "MessageSendRequest"
+      },
+      "RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest"
       },
       "Token": {
         "properties": {

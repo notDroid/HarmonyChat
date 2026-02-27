@@ -1,4 +1,4 @@
-from .auth import Token
+from .auth import Token, RefreshRequest
 from .user import *
 from .chat import *
 from .message import ChatMessage

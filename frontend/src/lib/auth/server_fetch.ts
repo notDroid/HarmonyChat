@@ -7,17 +7,15 @@ import { isNextRedirect } from "../utils/errors";
 // Entry point into server-side fetch, all requests eventually reach here.
 export async function serverFetch(url: string, options: RequestInit): Promise<Response> {
   const refresh = await isRefreshUrl(url);
+
   // Inject auth headers from cookies securely on the server (if present)
-  const token = refresh ? await getRefreshToken() : await getAccesstToken();
-
-  if (refresh && !token) {
-    // No refresh token available, cannot refresh
-    return new Response('Unauthorized', { status: 401 });
+  if (!refresh) {
+    const accessToken = await getAccesstToken();
+    if (accessToken) {
+      options = await injectToken(options, accessToken);
+    }
   }
 
-  if (token) {
-    options = await injectToken(options, token);
-  }
   const res =  await fetch(url, options);
 
   // Handle 401 Unauthorized globally - attempt token refresh if access token is invalid/expired
@@ -40,7 +38,7 @@ export async function serverFetch(url: string, options: RequestInit): Promise<Re
         throw new Error('Network error during token refresh. Please try again.');
       }
 
-      // Return original 401 response if refresh fails for any other reason (like server error)
+      // Return original 401 response if refresh fails for any other reason (like no refresh token or server error)
       return res;
     }
 
