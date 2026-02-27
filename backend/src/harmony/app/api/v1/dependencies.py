@@ -6,7 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi.security import OAuth2PasswordBearer
 
-from harmony.app.repositories import ChatHistoryRepository, UserChatRepository, ChatDataRepository, UserDataRepository
+from harmony.app.repositories import (
+    ChatHistoryRepository, 
+    UserChatRepository, 
+    ChatDataRepository, 
+    UserDataRepository, 
+    AuthRepository
+)
 from harmony.app.services import (
     AuthService, 
     StreamService, 
@@ -14,14 +20,14 @@ from harmony.app.services import (
     ChatCommands, ChatQueries,
     MessageCommands, MessageQueries,
 )
-from harmony.app.core import decode_token
+from harmony.app.core import decode_access_token
 
 # ------------------------- Authentication Dependency ------------------------ #
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
 ) -> uuid.UUID:
-    payload = decode_token(token)
+    payload = decode_access_token(token)
     user_id: str = payload.get("sub")
     
     if user_id is None:
@@ -53,6 +59,9 @@ def get_user_data_repository(session: AsyncSession = Depends(get_db_session)) ->
 
 def get_user_chat_repository(session: AsyncSession = Depends(get_db_session)) -> UserChatRepository:
     return UserChatRepository(session)
+
+def get_auth_repository(session: AsyncSession = Depends(get_db_session)) -> AuthRepository:
+    return AuthRepository(session)
 
 # ---------------------------- Stream Dependencies --------------------------- #
 def get_redis_manager(conn: HTTPConnection):
@@ -106,10 +115,12 @@ def get_message_commands(
     return MessageCommands(chat_history_repository, chat_queries, user_queries, event_publisher)
 
 def get_auth_service(
+    session: AsyncSession = Depends(get_db_session),
     user_commands: UserCommands = Depends(get_user_commands),
     user_queries: UserQueries = Depends(get_user_queries),
+    auth_repository: AuthRepository = Depends(get_auth_repository),
 ) -> AuthService:
-    return AuthService(user_commands=user_commands, user_queries=user_queries) 
+    return AuthService(session, user_commands=user_commands, user_queries=user_queries, auth_repository=auth_repository) 
 
 def get_stream_service(
     ws_manager = Depends(get_ws_manager),

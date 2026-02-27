@@ -4,7 +4,7 @@ import { SESSION_SETTINGS } from './settings/session'
 
 export function proxy(request: NextRequest) {
   // Check if user has a token (either access or refresh)
-  const token = request.cookies.get(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME)?.value;
+  const token = request.cookies.get(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME)?.value || request.cookies.get(SESSION_SETTINGS.REFRESH_TOKEN_COOKIE_NAME)?.value;
   const { pathname } = request.nextUrl
 
   // If user is on a protected path and has no token, kick them out

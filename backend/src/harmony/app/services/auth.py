@@ -1,11 +1,23 @@
 from datetime import timedelta, timezone, datetime
 from fastapi import HTTPException, status
 
-from harmony.app.core import get_password_hash, verify_password, create_token, settings
+from harmony.app.core import (
+    get_password_hash, 
+    verify_password, 
+    settings, 
+    create_access_token, 
+    generate_refresh_token, 
+    hash_refresh_token
+)
+from .command import Command
 from .user import UserCommands, UserQueries
+from harmony.app.repositories import AuthRepository
 from harmony.app.schemas import UserCreateRequest, Token
+import structlog
 
-class AuthService:
+logger = structlog.get_logger(__name__)
+
+class AuthService(Command):
     '''
     Handles authentication workflows including user registration and login.
     
@@ -23,11 +35,15 @@ class AuthService:
 
     def __init__(
             self,
+            session,
             user_commands: UserCommands,
             user_queries: UserQueries,
+            auth_repository: AuthRepository
     ):
+        super().__init__(session, logger)
         self.user_commands = user_commands
         self.user_queries = user_queries
+        self.auth_repository = auth_repository
 
     async def sign_up(self, user_create: UserCreateRequest) -> str:
         try:
@@ -74,11 +90,24 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Create access token JWT
+        # Create tokens
+        access_token, refresh_token, hashed_rt, rt_expires_dt = await self.generate_tokens(str(user.user_id))
+
+        # Create refresh token session in DB with hashed_rt and user_id
+        async with self.transaction_handler("create_refresh_token", email=user.email, user_id=str(user.user_id)):  
+            await self.auth_repository.create_token(
+                token_hash=hashed_rt,
+                user_id=user.user_id,
+                expires_at=rt_expires_dt
+            )
+
+        return [access_token, refresh_token]
+        
+    async def generate_tokens(self, user_id: str) -> list[Token]:
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         expire_dt = datetime.now(timezone.utc) + access_token_expires
-        access_token_str = create_token(
-            data={"sub": str(user.user_id)}, 
+        access_token_str = create_access_token(
+            data={"sub": str(user_id)}, 
             expires_delta=access_token_expires
         )
         access_token = Token(
@@ -87,9 +116,45 @@ class AuthService:
             expiration=int(expire_dt.timestamp())
         )
 
-        # TODO: create refresh token
+        plain_rt, hashed_rt = generate_refresh_token()
+        rt_expires = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
-        return [access_token]
+        refresh_token = Token(
+            token=plain_rt,
+            token_type=settings.REFRESH_TOKEN_NAME, 
+            expiration=int(rt_expires.timestamp())
+        )
+
+        return access_token, refresh_token, hashed_rt, rt_expires
     
     async def refresh_tokens(self, refresh_token: str) -> list[Token]:
-        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Token refresh functionality is not implemented yet.")
+        token_hash = hash_refresh_token(refresh_token)
+
+        try:
+            async with self.transaction_handler("refresh_tokens", token_hash=token_hash):
+                # Validate and delete token
+                consumed_token = await self.auth_repository.consume_token(token_hash)
+                user_id = consumed_token.user_id
+                if consumed_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Refresh token expired."
+                    )
+
+                # Generate new tokens
+                access_token, refresh_token, hashed_rt, rt_expires_dt = await self.generate_tokens(str(user_id))
+
+                # Store the new refresh token session in DB
+                await self.auth_repository.create_token(
+                    token_hash=hashed_rt,
+                    user_id=user_id,
+                    expires_at=rt_expires_dt
+                )
+        except HTTPException:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return [access_token, refresh_token]

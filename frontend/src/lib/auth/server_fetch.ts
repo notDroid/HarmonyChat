@@ -17,6 +17,7 @@ export async function serverFetch(url: string, options: RequestInit): Promise<Re
   }
 
   const res =  await fetch(url, options);
+  console.log(`Fetch to ${url} returned status ${res.status}`);
 
   // Handle 401 Unauthorized globally - attempt token refresh if access token is invalid/expired
   if (res.status === 401) {
@@ -24,10 +25,12 @@ export async function serverFetch(url: string, options: RequestInit): Promise<Re
       // If we already tried refreshing and still got 401, give up and clear session
       return res;
     }
+    console.log(`Attempting to refresh access token due to 401 response from ${url}`);
     // Attempt to refresh the access token
     try {
       await refreshAction();
     } catch (error) {
+      console.log(`Token refresh failed: ${error instanceof Error ? error.message : String(error)}`);
       // On 401 this error will propagate up.
       if (isNextRedirect(error)) {
         throw error;
@@ -41,7 +44,7 @@ export async function serverFetch(url: string, options: RequestInit): Promise<Re
       // Return original 401 response if refresh fails for any other reason (like no refresh token or server error)
       return res;
     }
-
+    console.log(`Refresh successful, retrying original request to ${url}`);
     // Retry the original request with the new access token
     const newToken = await getAccesstToken();
     if (!newToken) {
