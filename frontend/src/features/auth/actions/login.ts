@@ -1,16 +1,13 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/dist/server/request/cookies';
 
 import { loginApiV1AuthTokenPost } from '@/lib/api/auth/auth'
 import { BodyLoginApiV1AuthTokenPost } from '@/lib/api/model/bodyLoginApiV1AuthTokenPost';
 import { Token } from '@/lib/api/model/token';
 
 import { NetworkError, ApiError, isNextRedirect } from '@/lib/utils/errors';
-import { decodeJwt } from 'jose';
-
-import { SESSION_SETTINGS } from '@/settings/session';
+import { setToken } from '@/lib/auth/session';
 
 export type LoginState = {
   message: string;
@@ -45,20 +42,12 @@ export async function loginAction(redirectPath: string | null, prevState: any, f
     console.error('Unexpected error:', error);
     return { message: 'Something went wrong. Please try again.' };
   }
-  const token = (res.data as Token).access_token;
-  
-  // Decode the JWT to get the expiration time (if available) for setting cookie expiration
-  const payload = decodeJwt(token);
-  const expiresAt = payload.exp ? new Date(payload.exp * 1000) : undefined;
 
-  // Set the Cookie
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    expires: expiresAt,
-  });
+  // Set tokens
+  const tokens = (res.data as Token[]);
+  for (const token of tokens) {
+    await setToken(token);
+  }
 
   // Redirect to dashboard
   let destination = '/chats';

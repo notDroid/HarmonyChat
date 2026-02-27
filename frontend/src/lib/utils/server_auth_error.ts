@@ -1,5 +1,5 @@
 "use server";
-import { clearSession } from '@/features/auth/utils/session';
+import { clearSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 
 export default async function handleServerAuthError() {

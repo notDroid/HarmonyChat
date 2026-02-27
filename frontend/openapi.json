@@ -410,6 +410,18 @@
               "type": "string",
               "title": "Email"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10,
+              "exclusiveMinimum": 0,
+              "default": 10,
+              "title": "Limit"
+            }
           }
         ],
         "responses": {
@@ -511,7 +523,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Token"
+                  "items": {
+                    "$ref": "#/components/schemas/Token"
+                  },
+                  "type": "array",
+                  "title": "Response Login Api V1 Auth Token Post"
                 }
               }
             }
@@ -537,6 +553,47 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Refresh Access Token",
+        "description": "**Refresh Access Token using a Refresh Token.**",
+        "operationId": "refresh_api_v1_auth_refresh_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Token"
+                  },
+                  "type": "array",
+                  "title": "Response Refresh Api V1 Auth Refresh Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Incorrect email or password, or user is inactive.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Incorrect email or password"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/": {
@@ -888,19 +945,24 @@
       },
       "Token": {
         "properties": {
-          "access_token": {
+          "token": {
             "type": "string",
-            "title": "Access Token"
+            "title": "Token"
           },
           "token_type": {
             "type": "string",
-            "title": "Token Type",
-            "default": "bearer"
+            "title": "Token Type"
+          },
+          "expiration": {
+            "type": "integer",
+            "title": "Expiration"
           }
         },
         "type": "object",
         "required": [
-          "access_token"
+          "token",
+          "token_type",
+          "expiration"
         ],
         "title": "Token"
       },

@@ -18,6 +18,12 @@ from harmony.app.core import decode_token
 
 # ------------------------- Authentication Dependency ------------------------ #
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+
+async def get_token(
+        token: str = Depends(oauth2_scheme)
+) -> str:
+    return token
+
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
 ) -> uuid.UUID:

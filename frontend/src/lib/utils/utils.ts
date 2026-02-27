@@ -1,7 +1,7 @@
-import { ApiError, NetworkError } from './errors';
+import { ApiError, NetworkError, isNextRedirect } from './errors';
 import handleServerAuthError from './server_auth_error';
 import handleClientAuthError from './client_auth_error';
-
+import { serverFetch } from '../auth/server_fetch';
 
 const isServer = typeof window === 'undefined';
 
@@ -13,26 +13,27 @@ export const getBaseUrl = () => {
   }
 };
 
-export async function getAuthHeader() {
-	if (!isServer) return {}; // Don't include auth headers on client-side requests
-	const { cookies } = await import('next/headers'); 
-  const cookieStore = await cookies();
-  const token = cookieStore.get('session_token')?.value;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 export async function fetchErrorWrapper<T>(url: string, options?: RequestInit): Promise<T> {
   let res: Response;
 
   try {
-    res = await fetch(url, options);
+    if (isServer) {
+      res = await serverFetch(url, options || {});
+    } else {
+      res = await fetch(url, options);
+    }
   } catch (error) {
+    if (isNextRedirect(error)) {
+      // Careful to let this happen when refresh token api call returns 401
+      throw error; 
+    }
     // This catches browser-level network failures (DNS, Offline, etc.)
     throw new NetworkError(`Unable to connect to server: ${error}`, 'OFFLINE');
   }
 
   // Handle 401 Unauthorized globally to trigger login redirect
   if (res.status === 401) {
+    // Eventually reaches clearSession()
     if (isServer) {
       await handleServerAuthError();
     } else {

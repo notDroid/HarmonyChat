@@ -1,41 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { serverFetch } from '@/lib/auth/server_fetch';
 
-// Your backend URL from env
+// Backend URL from env
 const INTERNAL_API_ENDPOINT = process.env.INTERNAL_API_ENDPOINT;
 
 async function handler(request: NextRequest, { params }: { params: Promise<{ path: string[] }>}) {
-  // 1. Reconstruct the actual path (e.g., /api/proxy/users/me -> users/me)
+  // 1. Reconstruct the path (e.g., /api/proxy/users/me -> users/me)
   const path = (await params).path.join('/');
-  const query = request.nextUrl.search; // Keep query parameters (e.g., ?limit=10)
+  const query = request.nextUrl.search;
   const targetUrl = `${INTERNAL_API_ENDPOINT}/${path}${query}`;
 
   // 2. Prepare headers
   const headers = new Headers(request.headers);
-  headers.delete('host'); // prevent host mismatch errors
+  headers.delete('host');
   headers.delete('connection'); 
 
-  // 3. Inject Auth Token from Cookie (BFF Pattern)
-  // This securely moves the token from a cookie to a Header
-  const cookieStore = await cookies();
-  const token = cookieStore.get('session_token')?.value;
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
   try {
-    // 4. Forward the request to the actual Backend
-    const backendResponse = await fetch(targetUrl, {
+    // 3. Forward the request to backend and deal with auth
+    const backendResponse = await serverFetch(targetUrl, {
       method: request.method,
       headers: headers,
       // Only pass body if it's not a GET/HEAD request
       body: (request.method !== 'GET' && request.method !== 'HEAD') ? request.body : undefined,
-      // @ts-ignore - Required for some Node versions to proxy request bodies efficiently
+      // @ts-ignore
       duplex: 'half', 
     });
 
-    // 5. Return the Backend's response to the Client
-    // We stream the body directly to support large data sets
+    // 4. Return the Backend's response to the Client
     return new Response(backendResponse.body, {
       status: backendResponse.status,
       statusText: backendResponse.statusText,

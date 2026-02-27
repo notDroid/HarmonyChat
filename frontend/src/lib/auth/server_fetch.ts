@@ -1,0 +1,58 @@
+"use server";
+import { getAccesstToken, getRefreshToken, injectToken, isRefreshUrl } from "./session";
+import { refreshAction } from "@/features/auth/actions/refresh";
+import { NetworkError } from "../utils/errors";
+import { isNextRedirect } from "../utils/errors";
+
+// Entry point into server-side fetch, all requests eventually reach here.
+export async function serverFetch(url: string, options: RequestInit): Promise<Response> {
+  const refresh = await isRefreshUrl(url);
+  // Inject auth headers from cookies securely on the server (if present)
+  const token = refresh ? await getRefreshToken() : await getAccesstToken();
+
+  if (refresh && !token) {
+    // No refresh token available, cannot refresh
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  if (token) {
+    options = await injectToken(options, token);
+  }
+  const res =  await fetch(url, options);
+
+  // Handle 401 Unauthorized globally - attempt token refresh if access token is invalid/expired
+  if (res.status === 401) {
+    if (refresh) {
+      // If we already tried refreshing and still got 401, give up and clear session
+      return res;
+    }
+    // Attempt to refresh the access token
+    try {
+      await refreshAction();
+    } catch (error) {
+      // On 401 this error will propagate up.
+      if (isNextRedirect(error)) {
+        throw error;
+      }
+
+      // Treat it like the api call failed due to network (we can retry again)
+      if (error instanceof NetworkError) {
+        throw new Error('Network error during token refresh. Please try again.');
+      }
+
+      // Return original 401 response if refresh fails for any other reason (like server error)
+      return res;
+    }
+
+    // Retry the original request with the new access token
+    const newToken = await getAccesstToken();
+    if (!newToken) {
+      // If we can't get a new access token, return 401 (should never happen if refresh succeeded, but just in case)
+      return new Response('Unauthorized', { status: 401 });
+    }
+    options = await injectToken(options, newToken);
+    return await fetch(url, options);
+  }
+
+  return res;
+}

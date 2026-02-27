@@ -24,7 +24,7 @@ Returns a Bearer token to be used in the `Authorization` header for subsequent r
  * @summary Login / Get Access Token
  */
 export type loginApiV1AuthTokenPostResponse200 = {
-  data: Token;
+  data: Token[];
   status: 200;
 };
 
@@ -92,6 +92,38 @@ export const loginApiV1AuthTokenPost = async (
         ...options?.headers,
       },
       body: formUrlEncoded,
+    },
+  );
+};
+
+/**
+ * **Refresh Access Token using a Refresh Token.**
+ * @summary Refresh Access Token
+ */
+export type refreshApiV1AuthRefreshPostResponse200 = {
+  data: Token[];
+  status: 200;
+};
+
+export type refreshApiV1AuthRefreshPostResponseSuccess =
+  refreshApiV1AuthRefreshPostResponse200 & {
+    headers: Headers;
+  };
+export type refreshApiV1AuthRefreshPostResponse =
+  refreshApiV1AuthRefreshPostResponseSuccess;
+
+export const getRefreshApiV1AuthRefreshPostUrl = () => {
+  return `/api/v1/auth/refresh`;
+};
+
+export const refreshApiV1AuthRefreshPost = async (
+  options?: RequestInit,
+): Promise<refreshApiV1AuthRefreshPostResponse> => {
+  return inject<refreshApiV1AuthRefreshPostResponse>(
+    getRefreshApiV1AuthRefreshPostUrl(),
+    {
+      ...options,
+      method: "POST",
     },
   );
 };

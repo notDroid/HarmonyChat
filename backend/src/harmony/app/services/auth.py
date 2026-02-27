@@ -51,7 +51,7 @@ class AuthService:
         
         return user
 
-    async def authenticate_user(self, email: str, password: str) -> Token:
+    async def authenticate_user(self, email: str, password: str) -> list[Token]:
         try:
             user = await self.user_queries.get_user_by_email(email)
         except HTTPException:
@@ -74,10 +74,17 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        # Create access token JWT
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_token(
             data={"sub": str(user.user_id)}, 
             expires_delta=access_token_expires
         )
+        access_token = Token(token=access_token, token_type=settings.ACCESS_TOKEN_NAME, expiration=access_token_expires.total_seconds())
 
-        return Token(access_token=access_token, token_type="bearer")
+        # TODO: create refresh token
+
+        return [access_token]
+    
+    async def refresh_tokens(self, refresh_token: str) -> list[Token]:
+        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Token refresh functionality is not implemented yet.")
