@@ -44,7 +44,6 @@ async function handler(request: NextRequest, { params }: { params: Promise<{ pat
   }
 }
 
-// Support all common HTTP methods
 export const GET = handler;
 export const POST = handler;
 export const PUT = handler;

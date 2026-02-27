@@ -14,6 +14,11 @@ export async function clearSession() {
   cookieStore.delete(SESSION_SETTINGS.REFRESH_TOKEN_COOKIE_NAME);
 }
 
+export async function clearAccessToken() {
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME);
+}
+
 export async function getAccesstToken() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME)?.value;
@@ -44,6 +49,20 @@ export async function setToken(token: Token) {
   // Set the Cookie
   const cookieStore = await cookies();
   cookieStore.set(token.token_type, token.token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    expires: expiresAt,
+  });
+}
+
+import { NextResponse } from 'next/server';
+export async function setTokenWithResponse(response: NextResponse, token: Token) {
+  // Expiration is in seconds, get expiration and convert to milliseconds for Date constructor
+  const expiresAt = token.expiration ? new Date(token.expiration * 1000) : undefined;
+
+  // Set the Cookie
+  response.cookies.set(token.token_type, token.token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     path: '/',

@@ -18,9 +18,7 @@ export async function refreshAction() {
   // Call refresh endpoint
   const res = await refreshApiV1AuthRefreshPost(request);
   
-  // Set tokens
+  // Get tokens
   const tokens = (res.data as Token[]);
-  for (const token of tokens) {
-    await setToken(token);
-  }
+  return tokens;
 }

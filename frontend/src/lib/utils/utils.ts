@@ -13,6 +13,12 @@ export const getBaseUrl = () => {
   }
 };
 
+export const stripBaseUrl = (url: string) => {
+  let urlwithoutBase = url.replace(process.env.INTERNAL_API_ENDPOINT || '', '');
+  urlwithoutBase = urlwithoutBase.replace(process.env.NEXT_PUBLIC_INTERNAL_API_ENDPOINT || '', '');
+  return urlwithoutBase;
+};
+
 export async function fetchErrorWrapper<T>(url: string, options?: RequestInit): Promise<T> {
   let res: Response;
 

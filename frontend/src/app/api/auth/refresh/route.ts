@@ -1,0 +1,45 @@
+import { NextResponse } from 'next/server';
+import { refreshAction } from '@/features/auth/actions/refresh';
+import { clearSession, clearAccessToken, setTokenWithResponse } from '@/lib/auth/session';
+import { SESSION_SETTINGS } from '@/settings/session';
+
+import { NetworkError } from '@/lib/utils/errors';
+
+export async function refresh(request: Request) {
+  const url = new URL(request.url);
+  const nextUrl = url.searchParams.get('next') || '/chats';
+  console.log(`Received request to /api/auth/refresh with next=${nextUrl}`);
+
+  try {
+    const tokens = await refreshAction(); 
+    console.log('Token refresh successful in /api/auth/refresh route');
+    const response = NextResponse.redirect(new URL(nextUrl, request.url));
+
+    for (const token of tokens) {
+      setTokenWithResponse(response, token);
+    }
+
+    return response;
+  } catch (error) {
+    if (error instanceof NetworkError) {
+      console.error('Network error during refresh, keeping session intact', error);
+      // This triggers proxy middleware to attempt refresh again on next request
+      // allowing for transient network issues to resolve without logging the user out
+      const response = NextResponse.redirect(new URL(nextUrl, request.url));
+      response.cookies.delete(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME); // Clear access token to trigger refresh logic on next request
+      return response;
+    }
+
+    console.error('Auth error during refresh, clearing session and redirecting to logout', error);
+    const response = NextResponse.redirect(new URL('/login', request.url));
+    response.cookies.delete(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME);
+    response.cookies.delete(SESSION_SETTINGS.REFRESH_TOKEN_COOKIE_NAME);
+    return response;
+  }
+}
+
+export const GET = refresh;
+export const POST = refresh;
+export const PUT = refresh;
+export const PATCH = refresh;
+export const DELETE = refresh;
