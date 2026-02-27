@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, timezone, datetime
 from fastapi import HTTPException, status
 
 from harmony.app.core import get_password_hash, verify_password, create_token, settings
@@ -76,11 +76,16 @@ class AuthService:
 
         # Create access token JWT
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_token(
+        expire_dt = datetime.now(timezone.utc) + access_token_expires
+        access_token_str = create_token(
             data={"sub": str(user.user_id)}, 
             expires_delta=access_token_expires
         )
-        access_token = Token(token=access_token, token_type=settings.ACCESS_TOKEN_NAME, expiration=access_token_expires.total_seconds())
+        access_token = Token(
+            token=access_token_str, 
+            token_type=settings.ACCESS_TOKEN_NAME, 
+            expiration=int(expire_dt.timestamp())
+        )
 
         # TODO: create refresh token
 

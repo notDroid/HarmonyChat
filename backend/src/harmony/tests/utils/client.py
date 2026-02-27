@@ -23,7 +23,7 @@ class AppClient:
         }
         res = await self.client.post(f"{self.prefix}/auth/token", data=form_data)
         res.raise_for_status()
-        return res.json()["access_token"]
+        return {token["token_type"]:token["token"] for token in res.json()}
 
     def _headers(self, token: Optional[str]) -> dict:
         return {"Authorization": f"Bearer {token}"} if token else {}
@@ -98,31 +98,31 @@ class SimulationActor:
         self.email = email
         self.password = password
         self.client = client
-        self.token: Optional[str] = None
+        self.tokens: dict[str, str] = {}
 
     async def login(self):
-        self.token = await self.client.login(self.email, self.password)
+        self.tokens = await self.client.login(self.email, self.password)
 
     async def create_chat_with(self, other_actors: List['SimulationActor']) -> uuid.UUID:
         ids = [a.user_id for a in other_actors]
-        chat_id = await self.client.create_chat(ids, token=self.token)
+        chat_id = await self.client.create_chat(ids, token=self.tokens["access_token"])
         return chat_id
 
     async def send_message(self, chat_id: uuid.UUID, content: str):
-        return await self.client.send_message(chat_id, content, token=self.token)
+        return await self.client.send_message(chat_id, content, token=self.tokens["access_token"])
 
     async def get_history(self, chat_id: uuid.UUID):
-        resp = await self.client.get_chat_history(chat_id, token=self.token)
+        resp = await self.client.get_chat_history(chat_id, token=self.tokens["access_token"])
         return resp.messages
 
     async def get_my_chats(self):
-        return await self.client.get_my_chats(token=self.token)
+        return await self.client.get_my_chats(token=self.tokens["access_token"])
     
     async def delete_chat(self, chat_id: uuid.UUID):
-        await self.client.delete_chat(chat_id, token=self.token)
+        await self.client.delete_chat(chat_id, token=self.tokens["access_token"])
 
     async def delete_self(self):
-        await self.client.delete_user_me(token=self.token)
+        await self.client.delete_user_me(token=self.tokens["access_token"])
 
 async def spawn_actor(client: AppClient) -> SimulationActor:
     data = generate_user_data()
