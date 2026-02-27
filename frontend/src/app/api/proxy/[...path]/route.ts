@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverFetch } from '@/lib/auth/server_fetch';
+import { isNextRedirect } from '@/lib/utils/errors';
 
 // Backend URL from env
 const INTERNAL_API_ENDPOINT = process.env.INTERNAL_API_ENDPOINT;
@@ -34,6 +35,7 @@ async function handler(request: NextRequest, { params }: { params: Promise<{ pat
     });
 
   } catch (error) {
+    if (isNextRedirect(error)) throw error;
     console.error("Proxy Error:", error);
     return NextResponse.json(
       { message: "Failed to connect to backend", detail: String(error) }, 
