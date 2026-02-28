@@ -1,15 +1,16 @@
 import json
-import logging
+import structlog
 from harmony.app.core import settings
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 class CacheService:
     '''
     A simple wrapper around Redis to handle caching of JSON-serializable data with TTL support.
-    Since the implementation is simple we bypass the repository pattern and interact with Redis directly from the service layer.
+    The service provides "best effort" caching on reads. 
+    It returns success/failure booleans for writes and deletes, allowing callers to handle failures.
     '''
     CACHE_DEFAULT_TTL_SECONDS = settings.CACHE_DEFAULT_TTL_SECONDS
     
@@ -21,20 +22,94 @@ class CacheService:
             data = await self.redis.get(key)
             return json.loads(data) if data else None
         except RedisError as e:
-            # Catches ConnectionError, TimeoutError, etc., making this a "best effort" read
-            logger.warning(f"Cache network error on GET for key", key=key, error=str(e))
+            logger.warning("cache_network_error_on_get", key=key, error=str(e))
             return None
         except json.JSONDecodeError as e:
-            logger.exception(f"Cache decode error for key", key=key)
+            logger.exception("cache_decode_error", key=key)
             return None
 
-    async def set_json(self, key: str, value: dict, ttl: int | None = None):
-        await self.redis.set(key, json.dumps(value), ex=ttl or self.CACHE_DEFAULT_TTL_SECONDS)
+    async def set_json(self, key: str, value: dict, ttl: int | None = None) -> bool:
+        try:
+            await self.redis.set(key, json.dumps(value), ex=ttl or self.CACHE_DEFAULT_TTL_SECONDS)
+            return True
+        except RedisError as e:
+            logger.warning("cache_network_error_on_set", key=key, error=str(e))
+            return False
+        except Exception as e:
+            logger.exception("unexpected_error_on_cache_set", key=key)
+            return False
         
-    async def delete(self, key: str):
-        await self.redis.delete(key)
+    async def delete(self, key: str) -> bool:
+        try:
+            await self.redis.delete(key)
+            return True
+        except RedisError as e:
+            logger.warning("cache_network_error_on_delete", key=key, error=str(e))
+            return False
         
-    async def delete_pattern(self, pattern: str):
-        keys = await self.redis.keys(pattern)
-        if keys:
-            await self.redis.delete(*keys)
+    async def delete_pattern(self, pattern: str, batch_size: int = 100) -> bool:
+        """
+        Safely deletes keys matching a pattern using SCAN to avoid blocking Redis.
+        Deletes in chunks to prevent massive memory usage and command payload limits.
+        """
+        try:
+            keys_to_delete = []
+            
+            # scan_iter yields keys matching the pattern without blocking the main Redis thread
+            async for key in self.redis.scan_iter(match=pattern, count=batch_size):
+                keys_to_delete.append(key)
+                
+                # Delete in batches to avoid overwhelming the network/memory
+                if len(keys_to_delete) >= batch_size:
+                    await self.redis.delete(*keys_to_delete)
+                    keys_to_delete.clear()
+                    
+            # Catch any remaining keys in the final partial batch
+            if keys_to_delete:
+                await self.redis.delete(*keys_to_delete)
+                
+            return True
+        except RedisError as e:
+            logger.warning("cache_network_error_on_delete_pattern", pattern=pattern, error=str(e))
+            return False
+        
+    async def get_many_json(self, keys: list[str]) -> list[dict | None]:
+        """
+        Fetches multiple keys in a single round-trip using MGET.
+        Returns a list of dictionaries (or None for misses/errors) in the same order as the keys.
+        """
+        if not keys:
+            return []
+            
+        try:
+            raw_data = await self.redis.mget(keys)
+            
+            results = []
+            for data in raw_data:
+                try:
+                    results.append(json.loads(data) if data else None)
+                except json.JSONDecodeError:
+                    results.append(None)
+            return results
+            
+        except RedisError as e:
+            logger.warning("cache_network_error_on_mget", keys_count=len(keys), error=str(e))
+            return [None] * len(keys)
+        
+    async def set_many_json(self, mapping: dict[str, dict], ttl: int | None = None) -> bool:
+        """
+        Sets multiple keys with TTLs in a single round-trip using a pipeline.
+        """
+        if not mapping:
+            return True
+            
+        try:
+            async with self.redis.pipeline(transaction=False) as pipe:
+                for key, value in mapping.items():
+                    pipe.set(key, json.dumps(value), ex=ttl or self.CACHE_DEFAULT_TTL_SECONDS)
+                await pipe.execute()
+            return True
+            
+        except RedisError as e:
+            logger.warning("cache_network_error_on_pipeline_set", keys_count=len(mapping), error=str(e))
+            return False

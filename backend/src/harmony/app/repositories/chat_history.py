@@ -25,7 +25,7 @@ class ChatHistoryRepository:
         )
 
     async def get_chat_history(self, chat_id: uuid.UUID, limit: int = 50, cursor: str | None = None):
-        chat_id = str(chat_id) # Ensure chat_id is a string for DynamoDB
+        chat_id = str(chat_id)
         
         query_kwargs = {
             "TableName": self.table_name,
@@ -48,14 +48,14 @@ class ChatHistoryRepository:
         
         return messages, next_cursor
 
-    async def delete_chat_history(self, chat_id: str):
+    async def delete_chat_history(self, chat_id: uuid.UUID):
         async for batch in paginate_in_batches(
             client=self.client,
             query_kwargs={
                 "TableName": self.table_name,
                 "KeyConditionExpression": "chat_id = :cid",
                 "ExpressionAttributeValues": to_dynamo_json({
-                    ":cid": chat_id
+                    ":cid": str(chat_id)
                 }),
                 "ProjectionExpression": "chat_id, ulid"
             },

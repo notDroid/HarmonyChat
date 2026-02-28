@@ -1,7 +1,17 @@
 from contextlib import asynccontextmanager
 from harmony.app.core import settings
-from .pubsub import RedisPubSubManager
-from .websocket import WebSocketManager
+from harmony.app.streams import RedisPubSubManager, WebSocketManager
+
+async def init_stream(app, stack):
+    """
+    Initializes the Redis Pub/Sub manager and WebSocket manager, storing them in app.state.
+    """
+    if not settings.ENABLE_PS_REDIS:
+        return
+
+    redis_manager, ws_manager = await stack.enter_async_context(stream_connector())
+    app.state.redis_pubsub_manager = redis_manager
+    app.state.ws_manager = ws_manager
 
 @asynccontextmanager
 async def stream_connector():
@@ -9,10 +19,6 @@ async def stream_connector():
     Context manager that yields (RedisManager, WebSocketManager).
     Handles Redis connection and listener loop.
     """
-    if not settings.ENABLE_PS_REDIS:
-        yield None, None
-        return
-
     ws_manager = WebSocketManager()
     redis_manager = RedisPubSubManager(ws_manager)
 

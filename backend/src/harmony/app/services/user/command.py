@@ -1,9 +1,10 @@
 import uuid
 from fastapi import HTTPException, status
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
-# Fixed the import to bring in UserDataRepository
+from harmony.app.core.interfaces import TaskQueue
 from harmony.app.repositories import UserDataRepository, UserChatRepository
 from harmony.app.schemas import UserCreateRequest, UserMetaData
 from ..command import Command
@@ -17,12 +18,14 @@ class UserCommands(Command):
         session: AsyncSession,
         user_data_repository: UserDataRepository,
         user_chat_repository: UserChatRepository,
-        user_event_handler: UserEventHandler | None = None
+        user_event_handler: UserEventHandler | None = None,
+        task_queue: Optional[TaskQueue] = None
     ):
         super().__init__(session, logger)
         self.user_data_repo = user_data_repository
         self.user_chat_repo = user_chat_repository
         self.user_event_handler = user_event_handler
+        self.task_queue = task_queue
 
     async def create_user(self, req: UserCreateRequest, hashed_password: str) -> uuid.UUID:
         # 1. Handle request->metadata transformation
@@ -50,4 +53,7 @@ class UserCommands(Command):
         logger.info("user_tombstoned", user_id=str(user_id))
 
         if self.user_event_handler:
-            await self.user_event_handler.on_delete_user(user_id=user_id)
+            self.task_queue.add_task(
+                self.user_event_handler.on_delete_user,
+                user_id=user_id
+            )

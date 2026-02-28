@@ -1,9 +1,11 @@
 import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 import structlog
 
 from harmony.app.core import settings
+from harmony.app.core.interfaces import TaskQueue
 from harmony.app.repositories import ChatDataRepository, UserChatRepository
 from harmony.app.schemas import ChatSchema
 from ..cache import CacheService
@@ -32,12 +34,14 @@ class ChatQueries:
         session: AsyncSession,
         chat_data_repository: ChatDataRepository,
         user_chat_repository: UserChatRepository,
-        cache_service: CacheService | None = None,
+        cache_service: Optional[CacheService] = None,
+        task_queue: Optional[TaskQueue] = None
     ):
         self.session = session
         self.chat_data_repo = chat_data_repository
         self.user_chat_repo = user_chat_repository
         self.cache_service = cache_service
+        self.task_queue = task_queue
 
     async def check_user_in_chat(self, user_id: uuid.UUID, chat_id: uuid.UUID) -> bool:
         # 1. Check cache first
@@ -55,13 +59,11 @@ class ChatQueries:
         
         # 3. Populate cache for future checks
         if self.cache_service:
-            try:
-                cache_key = self._membership_key(chat_id, user_id)
-                await self.cache_service.set_json(cache_key, is_member, expire=self.CACHE_MEMBERSHIP_TTL_SECONDS)
-                logger.debug("membership_cache_set", chat_id=str(chat_id), user_id=str(user_id), is_member=is_member)
-            except Exception as e:
-                logger.exception("membership_cache_set_failed", chat_id=str(chat_id), user_id=str(user_id))
-
+            cache_key = self._membership_key(chat_id, user_id)
+            self.task_queue.add_task(
+                self.cache_service.set_json,
+                cache_key, is_member, ttl=self.CACHE_MEMBERSHIP_TTL_SECONDS
+            )
         return is_member
     
     async def _require_membership(self, user_id: uuid.UUID, chat_id: uuid.UUID) -> None:
@@ -92,12 +94,11 @@ class ChatQueries:
         
         # 4. Populate cache for future requests
         if self.cache_service:
-            try:
-                cache_key = self._metadata_key(chat_id)
-                await self.cache_service.set_json(cache_key, chat.model_dump(mode="json"), expire=self.CACHE_CHAT_METADATA_TTL_SECONDS)
-                logger.debug("chat_metadata_cache_set", chat_id=str(chat_id), user_id=str(user_id))
-            except Exception as e:
-                logger.exception("chat_metadata_cache_set_failed", chat_id=str(chat_id), user_id=str(user_id))
+            cache_key = self._metadata_key(chat_id)
+            self.task_queue.add_task(
+                self.cache_service.set_json,
+                cache_key, chat.model_dump(mode="json"), ttl=self.CACHE_CHAT_METADATA_TTL_SECONDS
+            )
         
         return chat
 

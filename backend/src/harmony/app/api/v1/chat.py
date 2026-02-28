@@ -126,5 +126,5 @@ async def delete_chat(
     await chat_command_service.delete_chat(user_id=user_id, chat_id=chat_id)
 
     # TODO: Switch to event driven approach
-    if settings.ENABLE_EVENT_HANDLERS:
+    if message_event_service:
         background_tasks.add_task(message_event_service.on_chat_deleted, chat_id=chat_id)

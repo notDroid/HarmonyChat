@@ -2,9 +2,14 @@ from contextlib import asynccontextmanager, AsyncExitStack
 from fastapi import FastAPI
 import structlog
 
-from harmony.app.db.postgres import postgres_connector
-from harmony.app.db.dynamodb import dynamodb_connector
-from harmony.app.streams import stream_connector
+from .init import (
+    init_cache, 
+    init_dynamodb, 
+    init_postgres, 
+    init_stream
+)
+
+
 
 logger = structlog.get_logger(__name__)
 
@@ -16,15 +21,16 @@ async def lifespan(app: FastAPI):
         # --------------------------- Resources Setup -------------------------- #
         
         # 1. Postgres
-        app.state.session_factory = await stack.enter_async_context(postgres_connector())
-        
-        # 2. DynamoDB
-        app.state.dynamodb = await stack.enter_async_context(dynamodb_connector())
+        await init_postgres(app, stack)
 
-        # 3. Redis & WebSockets
-        redis, ws = await stack.enter_async_context(stream_connector())
-        app.state.redis_pubsub_manager = redis
-        app.state.ws_manager = ws
+        # 2. DynamoDB
+        await init_dynamodb(app, stack)
+
+        # 3. Cache
+        await init_cache(app, stack)
+
+        # 4. Stream
+        await init_stream(app, stack)
 
         logger.info("system_startup_complete")
         

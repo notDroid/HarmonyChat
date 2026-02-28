@@ -1,8 +1,10 @@
 import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 import structlog
 
+from harmony.app.core.interfaces import TaskQueue
 from harmony.app.repositories import ChatDataRepository, UserChatRepository
 from harmony.app.core import settings
 from harmony.app.schemas import ChatMetaData, ChatCreateRequest, ChatResponse
@@ -19,12 +21,14 @@ class ChatCommands(Command):
         session: AsyncSession,
         chat_data_repository: ChatDataRepository,
         user_chat_repository: UserChatRepository,
-        chat_event_handler: ChatEventHandler | None = None
+        chat_event_handler: Optional[ChatEventHandler] = None,
+        task_queue: Optional[TaskQueue] = None
     ):
         super().__init__(session, logger)
         self.chat_data_repo = chat_data_repository
         self.user_chat_repo = user_chat_repository
         self.chat_event_handler = chat_event_handler
+        self.task_queue = task_queue
 
     async def _require_membership(self, user_id: uuid.UUID, chat_id: uuid.UUID):
         is_member = await self.user_chat_repo.check_user_in_chat(chat_id=chat_id, user_id=user_id, lock=True)
@@ -72,7 +76,10 @@ class ChatCommands(Command):
         logger.info("users_added_to_chat", chat_id=chat_id, added_user_count=len(user_id_list))
 
         if self.chat_event_handler:
-            await self.chat_event_handler.on_users_added_to_chat(chat_id=chat_id, user_id_list=user_id_list)
+            self.task_queue.add_task(
+                self.chat_event_handler.on_users_added_to_chat,
+                chat_id=chat_id, user_id_list=user_id_list
+            )
 
     async def leave_chat(self, user_id: uuid.UUID, chat_id: uuid.UUID):
         # 1. Attempt to Delete Membership (also serves as a membership check)
@@ -81,7 +88,10 @@ class ChatCommands(Command):
         logger.info("chat_left", chat_id=chat_id, user_id=user_id)
 
         if self.chat_event_handler:
-            await self.chat_event_handler.on_user_left_chat(chat_id=chat_id, user_id=user_id)
+            self.task_queue.add_task(
+                self.chat_event_handler.on_user_left_chat,
+                chat_id=chat_id, user_id=user_id
+            )
 
     async def delete_chat(self, user_id: uuid.UUID, chat_id: uuid.UUID):
         # 1. Authorize and Delete
@@ -91,4 +101,7 @@ class ChatCommands(Command):
         logger.info("chat_deleted", chat_id=chat_id, deleted_by_user_id=user_id)
 
         if self.chat_event_handler:
-            await self.chat_event_handler.on_chat_deleted(chat_id=chat_id)
+            self.task_queue.add_task(
+                self.chat_event_handler.on_chat_deleted,
+                chat_id=chat_id
+            )

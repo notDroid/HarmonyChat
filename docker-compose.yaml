@@ -8,12 +8,13 @@ services:
       - ENABLE_DYNAMODB=True
       - ENABLE_PS_REDIS=True
       - ENABLE_PS_REDIS_LISTEN=True
-      - ENABLE_CACHE_REDIS=False
+      - ENABLE_CACHE_REDIS=True
       - ENABLE_EVENT_HANDLERS=True
 
       # --- Connection Strings ---
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
       - PS_REDIS_URL=redis://redis:6379/0
+      - CACHE_REDIS_URL=redis://redis:6379/1
       - POSTGRES_URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
 
       # --- AWS Config ---
@@ -30,6 +31,8 @@ services:
         condition: service_healthy
       init:
         condition: service_completed_successfully
+    ports:
+      - "8000:8000"
 
   # frontend:
   #   build: 
@@ -37,6 +40,8 @@ services:
   #   depends_on:
   #     api:
   #       condition: service_started
+  #   ports:
+  #     - "3000:3000"
 
   postgres:
     image: postgres:15-alpine

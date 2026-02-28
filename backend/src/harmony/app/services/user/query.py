@@ -9,6 +9,7 @@ from harmony.app.core import settings
 from harmony.app.repositories import UserDataRepository, UserChatRepository
 from harmony.app.schemas import UserChatItem, UserSchema
 from harmony.app.models import User
+from harmony.app.core.interfaces import TaskQueue
 from pydantic import EmailStr, TypeAdapter
 from ..cache import CacheService
 
@@ -32,13 +33,15 @@ class UserQueries:
         session: AsyncSession,
         user_data_repository: UserDataRepository,
         user_chat_repository: UserChatRepository,
-        cache_service: CacheService | None = None
+        cache_service: Optional[CacheService] = None,
+        task_queue: Optional[TaskQueue] = None
     ):
         self.session = session
         self.user_data_repo = user_data_repository
         self.user_chat_repo = user_chat_repository
         self.cache_service = cache_service
-
+        self.task_queue = task_queue
+        
     async def get_user_by_id(self, user_id: uuid.UUID) -> UserSchema:
         # 1. Try to fetch from cache first
         if self.cache_service:
@@ -58,12 +61,11 @@ class UserQueries:
         
         # 3. Cache the result for future lookups
         if self.cache_service:
-            try:
-                cache_key = self._user_cache_key(user_id)
-                await self.cache_service.set_json(cache_key, user.model_dump(mode="json"), expire=self.CACHE_USER_TTL_SECONDS)
-                logger.debug("get_user_by_id_cache_set", user_id=str(user_id))
-            except Exception as e:
-                logger.exception("get_user_by_id_cache_set_failed", user_id=str(user_id))
+            cache_key = self._user_cache_key(user_id)
+            self.task_queue.add_task(
+                self.cache_service.set_json,
+                cache_key, user.model_dump(mode="json"), ttl=self.CACHE_USER_TTL_SECONDS
+            )
 
         return user
 
@@ -120,12 +122,7 @@ class UserQueries:
         # 1. Concurrent Cache Lookup
         if self.cache_service:
             cache_keys = [self._user_cache_key(uid) for uid in user_ids]
-            
-            # Fire all cache gets concurrently
-            cache_results = await asyncio.gather(
-                *(self.cache_service.get_json(key) for key in cache_keys),
-                return_exceptions=True
-            )
+            cache_results = await self.cache_service.get_many_json(cache_keys)
 
             # Sort out hits vs misses
             for uid, cached_data in zip(user_ids, cache_results):
@@ -139,29 +136,23 @@ class UserQueries:
         # 2. Bulk Database Fetch for Misses
         if uncached_ids:
             db_users = await self.user_data_repo.get_users_by_ids(uncached_ids)
-            cache_tasks = []
+            cache_mapping = {}
 
             for uid, user in db_users.items():
                 schema_user = UserSchema.model_validate(user)
                 result_dict[uid] = schema_user
 
-                # 3. Prepare Cache Population for Misses
+                # Prepare payload for batch cache setting
                 if self.cache_service:
                     cache_key = self._user_cache_key(uid)
-                    cache_tasks.append(
-                        self.cache_service.set_json(
-                            cache_key, 
-                            schema_user.model_dump(mode="json"), 
-                            expire=self.CACHE_USER_TTL_SECONDS
-                        )
-                    )
+                    cache_mapping[cache_key] = schema_user.model_dump(mode="json")
 
-            # Fire all cache sets concurrently in the background
-            if cache_tasks:
-                try:
-                    await asyncio.gather(*cache_tasks)
-                    logger.debug("get_users_dict_cache_populated", populated_count=len(cache_tasks))
-                except Exception as e:
-                    logger.exception("get_users_dict_cache_set_failed")
+            # 3. Cache Population
+            if cache_mapping:
+                self.task_queue.add_task(
+                    self.cache_service.set_many_json,
+                    cache_mapping, 
+                    ttl=self.CACHE_USER_TTL_SECONDS
+                )
 
         return result_dict

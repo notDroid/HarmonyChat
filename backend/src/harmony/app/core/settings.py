@@ -8,12 +8,10 @@ class RedisPubSubOptions(BaseModel):
     retry_base: int = 1
 
 class RedisCacheOptions(BaseModel):
-    # TODO: Switch to infinite retries with exponential backoff for cache operations
-    # since we want them to succeed eventually and can tolerate some delay.
     health_check_interval: int = 30
-    retry_retries: int = 3
-    retry_cap: int = 10
-    retry_base: int = 1
+    retry_retries: int = -1  # Set to -1 for infinite retries
+    retry_cap: int = 10      # Maximum wait time between retries (seconds)
+    retry_base: int = 1      # Base wait time for the exponential backoff (seconds)
 
 class Settings(BaseSettings):
     ### Application Configuration
