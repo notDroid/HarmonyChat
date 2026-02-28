@@ -22,7 +22,7 @@ export async function serverFetch(url: string, options: RequestInit): Promise<Re
     // So reconilliation of session state must be done through redirects (I think, idk if there's a better way to do this)
     await clearAccessToken(); // best effort clear (doesn't work in server components)
     const urlwithoutBase = stripBaseUrl(url);
-    const nextUrl = `/api/auth/refresh?next=/api/proxy/${encodeURIComponent(urlwithoutBase)}`; // retry from proxy path
+    const nextUrl = `/api/auth/refresh?next=/api/proxy${encodeURIComponent(urlwithoutBase)}`; // retry from proxy path
     redirect(nextUrl);
   }
 

@@ -1,3 +1,4 @@
+import asyncio
 from datetime import timedelta, timezone, datetime
 from fastapi import HTTPException, status
 
@@ -19,7 +20,7 @@ logger = structlog.get_logger(__name__)
 
 class AuthService(Command):
     '''
-    Handles authentication workflows including user registration and login.
+    Handles authentication workflows including user registration, login, and token refresh.
     
     SignUp:
         1. Validates that the email/username is not already taken.
@@ -31,6 +32,16 @@ class AuthService(Command):
         2. Verifies the user is active (not tombstoned).
         3. Verifies the provided password against the stored hash.
         4. Generates and returns a JWT Bearer token.
+
+    Token Refresh:
+        1. Validates the provided refresh token exists and is not expired.
+        2. Generates new access and refresh tokens (refresh token rotation).
+        3. Stores the new refresh token and invalidates the old one.
+        (Token recovation is scheduled in the background)
+
+    Refresh Token Revocation:
+        (There is a short grace period before deleting the token to allow multiple simultaneous refresh requests)
+        1. Deletes the refresh token from the database, effectively revoking it.
     '''
 
     def __init__(
@@ -132,8 +143,8 @@ class AuthService(Command):
 
         try:
             async with self.transaction_handler("refresh_tokens", token_hash=token_hash):
-                # Validate and delete token
-                consumed_token = await self.auth_repository.consume_token(token_hash)
+                # Validate token exists and is not expired
+                consumed_token = await self.auth_repository.get_token(token_hash)
                 user_id = consumed_token.user_id
                 if consumed_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
                     raise HTTPException(
@@ -158,3 +169,12 @@ class AuthService(Command):
             )
 
         return [access_token, refresh_token]
+    
+    async def revoke_refresh_token(self, refresh_token: str):
+        token_hash = hash_refresh_token(refresh_token)
+        await self.auth_repository.delete_token(token_hash)
+
+    async def background_revoke_refresh_token(self, refresh_token: str):
+        # Wait for grace period before revoking the token to allow for any in-flight requests that might be using the same refresh token (e.g., multiple simultaneous refresh requests or clock skew)
+        await asyncio.sleep(settings.REFRESH_TOKEN_GRACE_PERIOD_SECONDS)
+        await self.revoke_refresh_token(refresh_token)

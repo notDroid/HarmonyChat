@@ -9,12 +9,15 @@ class UserCreateRequest(BaseModel):
     password: str
 
 # --- API Response Models (Output) ---
-class UserResponse(BaseModel):
+class UserSchema(BaseModel): # Synced with User SQLAlchemy model
     user_id: uuid.UUID
     email: EmailStr
     meta: UserMetaData
     
     model_config = ConfigDict(from_attributes=True)
+
+class UserResponse(UserSchema):
+    pass
 
 class UserChatItem(BaseModel):
     chat_id: uuid.UUID

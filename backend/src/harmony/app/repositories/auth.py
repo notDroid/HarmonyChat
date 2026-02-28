@@ -18,21 +18,10 @@ class AuthRepository:
         )
         self.session.add(token)
         return token
-
-    async def consume_token(self, token_hash: str) -> RefreshToken:
-        stmt = (
-            delete(RefreshToken)
-            .where(RefreshToken.token_hash == token_hash)
-            .returning(RefreshToken)
-        )
-        
-        result = await self.session.execute(stmt)
-        deleted_token = result.scalar_one_or_none()
-
-        if not deleted_token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired refresh token."
-            )
-            
-        return deleted_token
+    
+    async def get_token(self, token_hash: str) -> RefreshToken | None:
+        return await self.session.get(RefreshToken, token_hash)
+    
+    async def delete_token(self, token_hash: str):
+        stmt = delete(RefreshToken).where(RefreshToken.token_hash == token_hash)
+        await self.session.execute(stmt)

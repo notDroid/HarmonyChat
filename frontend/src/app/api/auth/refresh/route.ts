@@ -5,9 +5,12 @@ import { SESSION_SETTINGS } from '@/settings/session';
 
 import { NetworkError } from '@/lib/utils/errors';
 
+// This handles 401 errors to quickly refresh tokens regardless of where they come from (client or server components)
+// The proxy middleware will usually handle refreshing tokens automatically (99% of the time),
+// but there is a race condition where we get a 401 before the proxy has a chance to refresh
 export async function refresh(request: Request) {
   const url = new URL(request.url);
-  const nextUrl = url.searchParams.get('next') || '/chats';
+  const nextUrl = url.searchParams.get('next') || ''; // we always expect a next param
   console.log(`Received request to /api/auth/refresh with next=${nextUrl}`);
 
   try {

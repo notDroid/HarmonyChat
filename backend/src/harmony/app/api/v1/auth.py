@@ -1,5 +1,5 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from harmony.app.schemas import Token, RefreshRequest
 from .dependencies import get_auth_service
@@ -53,11 +53,20 @@ async def login(
 )
 async def refresh(
     refresh_token: RefreshRequest,
-    auth_service = Depends(get_auth_service)
+    background_tasks: BackgroundTasks,
+    auth_service = Depends(get_auth_service),
 ):
     """
     **Refresh Tokens using a Refresh Token.**
     """
-    return await auth_service.refresh_tokens(
+    # Get tokens
+    tokens = await auth_service.refresh_tokens(
         refresh_token=refresh_token.refresh_token
     )
+
+    # Schedule old refresh token for deletion after grace period
+    background_tasks.add_task(
+        auth_service.background_revoke_refresh_token, 
+        refresh_token=refresh_token.refresh_token
+    )
+    return tokens

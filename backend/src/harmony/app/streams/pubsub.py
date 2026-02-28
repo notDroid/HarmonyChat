@@ -21,11 +21,11 @@ class RedisPubSubManager:
     Layer 1: Manages Redis Subscriptions.
     """
     def __init__(self, ws_manager: WebSocketManager):
-        self.redis_url = settings.REDIS_URL
+        self.redis_url = settings.PS_REDIS_URL
         self.ws_manager = ws_manager
         self.listening_task = None
         self._subscribed_channels: Set[str] = set()
-        self.stall_timeout = settings.REDIS_STALL_TIMEOUT
+        self.stall_timeout = settings.PS_REDIS_STALL_TIMEOUT
         
         # Lock per channel to avoid race conditions 99% of the time, allowing concurrent subscriptions to different channels.
         self._subscription_lock = defaultdict(asyncio.Lock)  
@@ -36,16 +36,16 @@ class RedisPubSubManager:
         """
         try:
             # Parse Redis options from settings, excluding retry parameters since we're using a custom retry strategy
-            redis_kwargs = settings.redis_opts.model_dump(
+            redis_kwargs = settings.PS_redis_opts.model_dump(
                 exclude={"retry_retries", "retry_cap", "retry_base"}
             )
 
             redis_kwargs["retry"] = Retry(
                 ExponentialBackoff(
-                    cap=settings.redis_opts.retry_cap, 
-                    base=settings.redis_opts.retry_base
+                    cap=settings.PS_redis_opts.retry_cap, 
+                    base=settings.PS_redis_opts.retry_base
                 ), 
-                retries=settings.redis_opts.retry_retries
+                retries=settings.PS_redis_opts.retry_retries
             )
 
             # Connect to Redis

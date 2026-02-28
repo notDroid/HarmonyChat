@@ -6,7 +6,6 @@ import uuid
 from datetime import datetime
 from typing import List, Any
 
-
 from .base import Base
 
 

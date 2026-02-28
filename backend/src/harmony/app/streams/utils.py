@@ -9,7 +9,7 @@ async def stream_connector():
     Context manager that yields (RedisManager, WebSocketManager).
     Handles Redis connection and listener loop.
     """
-    if not settings.ENABLE_REDIS:
+    if not settings.PS_ENABLE_REDIS:
         yield None, None
         return
 
@@ -20,7 +20,7 @@ async def stream_connector():
     await redis_manager.connect()
 
     # 2. Start Listening (Background Task inside manager)
-    if settings.ENABLE_REDIS_LISTEN:
+    if settings.PS_ENABLE_REDIS_LISTEN:
         redis_manager.start_listen()
 
     try:

@@ -15,12 +15,15 @@ class MessageSendRequest(BaseModel):
     client_uuid: uuid.UUID | None = None
 
 # --- API Response Models (Output) ---
-class ChatResponse(BaseModel):
+class ChatSchema(BaseModel): # Synced with Chat SQLAlchemy model
     chat_id: uuid.UUID
     created_at: datetime
     
     meta: ChatMetaData 
     model_config = ConfigDict(from_attributes=True)
+
+class ChatResponse(ChatSchema):
+    pass
 
 class ChatHistoryResponse(BaseModel):
     messages: list[ChatMessageResponse]
