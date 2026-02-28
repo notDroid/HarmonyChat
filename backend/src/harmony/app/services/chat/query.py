@@ -40,7 +40,7 @@ class ChatQueries:
         self.cache_service = cache_service
 
     async def check_user_in_chat(self, user_id: uuid.UUID, chat_id: uuid.UUID) -> bool:
-        # 1. Check cache first (if available)
+        # 1. Check cache first
         if self.cache_service:
             cache_key = self._membership_key(chat_id, user_id)
             is_member = await self.cache_service.get_json(cache_key)
@@ -53,7 +53,7 @@ class ChatQueries:
         # 2. Fallback to database check
         is_member = await self.user_chat_repo.check_user_in_chat(chat_id=chat_id, user_id=user_id)
         
-        # 3. Populate cache for future checks (if available)
+        # 3. Populate cache for future checks
         if self.cache_service:
             try:
                 cache_key = self._membership_key(chat_id, user_id)
@@ -75,7 +75,7 @@ class ChatQueries:
         # 1. Authorize
         await self._require_membership(user_id, chat_id)
 
-        # 2. Fetch from cache (if available)
+        # 2. Fetch from cache
         if self.cache_service:
             cache_key = self._metadata_key(chat_id)
             cached_metadata = await self.cache_service.get_json(cache_key)
@@ -90,7 +90,7 @@ class ChatQueries:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat does not exist.")
         chat = ChatSchema.model_validate(chat) # Convert from SQLAlchemy model to Pydantic schema
         
-        # 4. Populate cache for future requests (if available)
+        # 4. Populate cache for future requests
         if self.cache_service:
             try:
                 cache_key = self._metadata_key(chat_id)

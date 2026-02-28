@@ -7,6 +7,7 @@ from harmony.app.repositories import ChatDataRepository, UserChatRepository
 from harmony.app.core import settings
 from harmony.app.schemas import ChatMetaData, ChatCreateRequest, ChatResponse
 from ..command import Command
+from .event import ChatEventHandler
 
 logger = structlog.get_logger(__name__)
 
@@ -18,10 +19,12 @@ class ChatCommands(Command):
         session: AsyncSession,
         chat_data_repository: ChatDataRepository,
         user_chat_repository: UserChatRepository,
+        chat_event_handler: ChatEventHandler | None = None
     ):
         super().__init__(session, logger)
         self.chat_data_repo = chat_data_repository
         self.user_chat_repo = user_chat_repository
+        self.chat_event_handler = chat_event_handler
 
     async def _require_membership(self, user_id: uuid.UUID, chat_id: uuid.UUID):
         is_member = await self.user_chat_repo.check_user_in_chat(chat_id=chat_id, user_id=user_id, lock=True)
@@ -66,20 +69,26 @@ class ChatCommands(Command):
         async with self.transaction_handler("add_users", chat_id=chat_id, user_id=user_id):
             await self._require_membership(user_id=user_id, chat_id=chat_id)
             await self.user_chat_repo.add_users_to_chat(chat_id=chat_id, user_id_list=user_id_list)
-            
         logger.info("users_added_to_chat", chat_id=chat_id, added_user_count=len(user_id_list))
 
+        if self.chat_event_handler:
+            await self.chat_event_handler.on_users_added_to_chat(chat_id=chat_id, user_id_list=user_id_list)
+
     async def leave_chat(self, user_id: uuid.UUID, chat_id: uuid.UUID):
-        # Attempt to Delete Membership (also serves as a membership check)
+        # 1. Attempt to Delete Membership (also serves as a membership check)
         async with self.transaction_handler("leave_chat", chat_id=chat_id, user_id=user_id):
             await self.user_chat_repo.remove_user_from_chat(chat_id=chat_id, user_id=user_id)
-            
         logger.info("chat_left", chat_id=chat_id, user_id=user_id)
 
+        if self.chat_event_handler:
+            await self.chat_event_handler.on_user_left_chat(chat_id=chat_id, user_id=user_id)
+
     async def delete_chat(self, user_id: uuid.UUID, chat_id: uuid.UUID):
-        # Authorize and Delete
+        # 1. Authorize and Delete
         async with self.transaction_handler("delete_chat", chat_id=chat_id, user_id=user_id):
             await self._require_membership(user_id=user_id, chat_id=chat_id)
             await self.chat_data_repo.delete_chat(chat_id)
-            
         logger.info("chat_deleted", chat_id=chat_id, deleted_by_user_id=user_id)
+
+        if self.chat_event_handler:
+            await self.chat_event_handler.on_chat_deleted(chat_id=chat_id)

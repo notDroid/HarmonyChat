@@ -69,14 +69,3 @@ class MessageCommands:
         except Exception as e:
             logger.exception("message_send_failed", chat_id=str(chat_id), user_id=str(user_id))
             raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Failed to send message.")
-        
-    async def background_delete_chat_history(self, chat_id: uuid.UUID):
-        """
-        Deletes all messages for a chat. Should be called in the background after a chat is deleted to prevent API latency.
-        Note: This is a best-effort operation. If it fails, it will be retried on the next message send or chat access for that chat.
-        """
-        try:
-            await self.chat_history_repo.delete_chat_history(chat_id)
-            logger.info("chat_history_deleted", chat_id=str(chat_id))
-        except Exception as e:
-            logger.exception("chat_history_delete_failed", chat_id=str(chat_id))

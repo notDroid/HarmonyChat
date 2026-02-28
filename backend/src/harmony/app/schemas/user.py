@@ -12,6 +12,7 @@ class UserCreateRequest(BaseModel):
 class UserSchema(BaseModel): # Synced with User SQLAlchemy model
     user_id: uuid.UUID
     email: EmailStr
+    tombstone: bool
     meta: UserMetaData
     
     model_config = ConfigDict(from_attributes=True)
