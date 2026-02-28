@@ -16,11 +16,12 @@ from harmony.app.repositories import (
 from harmony.app.services import (
     AuthService, 
     StreamService, 
-    UserCommands, UserQueries, 
-    ChatCommands, ChatQueries,
-    MessageCommands, MessageQueries,
+    UserCommands, UserQueries, UserEventHandler,
+    ChatCommands, ChatQueries, ChatEventHandler,
+    MessageCommands, MessageQueries, MessageEventHandler,
+    CacheService
 )
-from harmony.app.core import decode_access_token
+from harmony.app.core import decode_access_token, settings
 
 # ------------------------- Authentication Dependency ------------------------ #
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
@@ -64,26 +65,37 @@ def get_auth_repository(session: AsyncSession = Depends(get_db_session)) -> Auth
     return AuthRepository(session)
 
 # ---------------------------- Stream Dependencies --------------------------- #
-def get_redis_manager(conn: HTTPConnection):
-    return conn.app.state.redis_manager
+def get_redis_pubsub_manager(conn: HTTPConnection):
+    return conn.app.state.redis_pubsub_manager
 
 def get_ws_manager(conn: HTTPConnection):
     return conn.app.state.ws_manager
 
+def get_redis_cache_client(conn: HTTPConnection):
+    if not settings.ENABLE_CACHE_REDIS: return None
+    return conn.app.state.redis_cache_client
+
 # --------------------------- Service Dependencies --------------------------- #
+
+def get_cache_service(redis_client = Depends(get_redis_cache_client)):
+    if not redis_client: return None
+    return CacheService(redis_client)
+
 def get_user_queries(
     session: AsyncSession = Depends(get_db_session),
     user_data_repository: UserDataRepository = Depends(get_user_data_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
+    cache_service: CacheService = Depends(get_cache_service),
 ) -> UserQueries:
-    return UserQueries(session, user_data_repository, user_chat_repository)
+    return UserQueries(session, user_data_repository, user_chat_repository, cache_service)
 
 def get_chat_queries(
     session: AsyncSession = Depends(get_db_session),
     chat_data_repository: ChatDataRepository = Depends(get_chat_data_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
+    cache_service: CacheService = Depends(get_cache_service),
 ) -> ChatQueries:
-    return ChatQueries(session, chat_data_repository, user_chat_repository)
+    return ChatQueries(session, chat_data_repository, user_chat_repository, cache_service)
 
 def get_message_queries(
     chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
@@ -92,25 +104,45 @@ def get_message_queries(
 ) -> MessageQueries:
     return MessageQueries(chat_history_repository, chat_queries, user_queries)
 
+def get_user_event_handler(
+    cache_service: CacheService = Depends(get_cache_service),
+) -> UserEventHandler:
+    if not settings.ENABLE_EVENT_HANDLERS: return None
+    return UserEventHandler(cache_service)
+
+def get_chat_event_handler(
+    cache_service: CacheService = Depends(get_cache_service),
+) -> ChatEventHandler:
+    if not settings.ENABLE_EVENT_HANDLERS: return None
+    return ChatEventHandler(cache_service)
+
+def get_message_event_handler(
+    cache_service: CacheService = Depends(get_cache_service),
+) -> MessageEventHandler:
+    if not settings.ENABLE_EVENT_HANDLERS: return None
+    return MessageEventHandler(cache_service)
+
 def get_user_commands(
     session: AsyncSession = Depends(get_db_session),
     user_data_repository: UserDataRepository = Depends(get_user_data_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
+    user_event_handler: UserEventHandler = Depends(get_user_event_handler),
 ) -> UserCommands:
-    return UserCommands(session, user_data_repository, user_chat_repository)
+    return UserCommands(session, user_data_repository, user_chat_repository, user_event_handler)
 
 def get_chat_commands(
     session: AsyncSession = Depends(get_db_session),
     chat_data_repository: ChatDataRepository = Depends(get_chat_data_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
+    chat_event_handler: ChatEventHandler = Depends(get_chat_event_handler),
 ) -> ChatCommands:
-    return ChatCommands(session, chat_data_repository, user_chat_repository)
+    return ChatCommands(session, chat_data_repository, user_chat_repository, chat_event_handler)
 
 def get_message_commands(
     chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
     chat_queries: ChatQueries = Depends(get_chat_queries),
     user_queries: UserQueries = Depends(get_user_queries),
-    event_publisher = Depends(get_redis_manager),
+    event_publisher = Depends(get_redis_pubsub_manager),
 ) -> MessageCommands:
     return MessageCommands(chat_history_repository, chat_queries, user_queries, event_publisher)
 
@@ -124,7 +156,7 @@ def get_auth_service(
 
 def get_stream_service(
     ws_manager = Depends(get_ws_manager),
-    redis_manager = Depends(get_redis_manager),
+    redis_manager = Depends(get_redis_pubsub_manager),
     chat_queries: ChatQueries = Depends(get_chat_queries),
 ) -> StreamService:
     return StreamService(ws_manager, redis_manager, chat_queries)

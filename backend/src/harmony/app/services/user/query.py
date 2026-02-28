@@ -1,12 +1,14 @@
 import uuid
+import asyncio
 from typing import Optional, List
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
+from harmony.app.core import settings
 from harmony.app.repositories import UserDataRepository, UserChatRepository
-from harmony.app.models import User
 from harmony.app.schemas import UserChatItem, UserSchema
+from harmony.app.models import User
 from pydantic import EmailStr, TypeAdapter
 from ..cache import CacheService
 
@@ -19,7 +21,7 @@ class UserQueries:
     Handles all read-only operations (Queries) for the User domain.
     """
 
-    CACHE_USER_TTL_SECONDS = 3600
+    CACHE_USER_TTL_SECONDS = settings.CACHE_USER_TTL_SECONDS
 
     @staticmethod
     def _user_cache_key(user_id: uuid.UUID) -> str:
@@ -65,7 +67,7 @@ class UserQueries:
 
         return user
 
-    async def get_user_by_email(self, email: str) -> Optional[UserSchema]:
+    async def get_user_by_email(self, email: str, raw: bool = False) -> Optional[UserSchema | User]:
         # Validate email
         try:
             email_adapter.validate_python(email)
@@ -77,6 +79,8 @@ class UserQueries:
         if not user:
             logger.warning("get_user_by_email_not_found", email=email)
             raise HTTPException(status.HTTP_404_NOT_FOUND, "User does not exist.")
+        if raw:
+            return user
         return UserSchema.model_validate(user)
     
     async def search_users_by_email(self, email_query: str, limit: int = 10) -> list[UserSchema]:
@@ -107,5 +111,57 @@ class UserQueries:
             )
         
     async def get_users_dict(self, user_ids: list[uuid.UUID]) -> dict[uuid.UUID, UserSchema]:
-        users = await self.user_data_repo.get_users_by_ids(user_ids)
-        return {user_id: UserSchema.model_validate(user) for user_id, user in users.items()}
+        if not user_ids: 
+            return {}
+
+        result_dict: dict[uuid.UUID, UserSchema] = {}
+        uncached_ids: list[uuid.UUID] = []
+
+        # 1. Concurrent Cache Lookup
+        if self.cache_service:
+            cache_keys = [self._user_cache_key(uid) for uid in user_ids]
+            
+            # Fire all cache gets concurrently
+            cache_results = await asyncio.gather(
+                *(self.cache_service.get_json(key) for key in cache_keys),
+                return_exceptions=True
+            )
+
+            # Sort out hits vs misses
+            for uid, cached_data in zip(user_ids, cache_results):
+                if isinstance(cached_data, dict):
+                    result_dict[uid] = UserSchema.model_validate(cached_data)
+                else:
+                    uncached_ids.append(uid)
+        else:
+            uncached_ids = user_ids
+
+        # 2. Bulk Database Fetch for Misses
+        if uncached_ids:
+            db_users = await self.user_data_repo.get_users_by_ids(uncached_ids)
+            cache_tasks = []
+
+            for uid, user in db_users.items():
+                schema_user = UserSchema.model_validate(user)
+                result_dict[uid] = schema_user
+
+                # 3. Prepare Cache Population for Misses
+                if self.cache_service:
+                    cache_key = self._user_cache_key(uid)
+                    cache_tasks.append(
+                        self.cache_service.set_json(
+                            cache_key, 
+                            schema_user.model_dump(mode="json"), 
+                            expire=self.CACHE_USER_TTL_SECONDS
+                        )
+                    )
+
+            # Fire all cache sets concurrently in the background
+            if cache_tasks:
+                try:
+                    await asyncio.gather(*cache_tasks)
+                    logger.debug("get_users_dict_cache_populated", populated_count=len(cache_tasks))
+                except Exception as e:
+                    logger.exception("get_users_dict_cache_set_failed")
+
+        return result_dict

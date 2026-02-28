@@ -6,8 +6,10 @@ services:
       # --- Feature Flags ---
       - ENABLE_POSTGRES=True
       - ENABLE_DYNAMODB=True
-      - PS_ENABLE_REDIS=True
-      - PS+ENABLE_REDIS_LISTEN=True
+      - ENABLE_PS_REDIS=True
+      - ENABLE_PS_REDIS_LISTEN=True
+      - ENABLE_CACHE_REDIS=False
+      - ENABLE_EVENT_HANDLERS=True
 
       # --- Connection Strings ---
       - DYNAMODB_ENDPOINT=http://dynamodb:8000

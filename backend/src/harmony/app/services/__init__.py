@@ -1,5 +1,6 @@
 from .auth import AuthService
 from .stream import StreamService
-from .chat import ChatCommands, ChatQueries
-from .user import UserCommands, UserQueries
-from .message import MessageCommands, MessageQueries
+from .chat import ChatCommands, ChatQueries, ChatEventHandler
+from .user import UserCommands, UserQueries, UserEventHandler
+from .message import MessageCommands, MessageQueries, MessageEventHandler
+from .cache import CacheService

@@ -80,7 +80,7 @@ class AuthService(Command):
 
     async def authenticate_user(self, email: str, password: str) -> list[Token]:
         try:
-            user = await self.user_queries.get_user_by_email(email)
+            user = await self.user_queries.get_user_by_email(email, raw=True)
         except HTTPException:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

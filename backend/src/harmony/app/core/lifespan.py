@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
 
         # 3. Redis & WebSockets
         redis, ws = await stack.enter_async_context(stream_connector())
-        app.state.redis_manager = redis
+        app.state.redis_pubsub_manager = redis
         app.state.ws_manager = ws
 
         logger.info("system_startup_complete")

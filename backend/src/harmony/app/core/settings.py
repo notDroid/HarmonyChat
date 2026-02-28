@@ -1,7 +1,15 @@
 from pydantic_settings import BaseSettings
 from pydantic import BaseModel
 
-class RedisOptions(BaseModel):
+class RedisPubSubOptions(BaseModel):
+    health_check_interval: int = 30
+    retry_retries: int = 3
+    retry_cap: int = 10
+    retry_base: int = 1
+
+class RedisCacheOptions(BaseModel):
+    # TODO: Switch to infinite retries with exponential backoff for cache operations
+    # since we want them to succeed eventually and can tolerate some delay.
     health_check_interval: int = 30
     retry_retries: int = 3
     retry_cap: int = 10
@@ -14,8 +22,10 @@ class Settings(BaseSettings):
     # Feature Toggles
     ENABLE_POSTGRES:        bool = True
     ENABLE_DYNAMODB:        bool = True
-    PS_ENABLE_REDIS:        bool = True
-    PS_ENABLE_REDIS_LISTEN: bool = True
+    ENABLE_PS_REDIS:        bool = True
+    ENABLE_PS_REDIS_LISTEN: bool = True
+    ENABLE_CACHE_REDIS:     bool = True
+    ENABLE_EVENT_HANDLERS:  bool = True
 
     # Chat Configuration
     CHAT_MAX_USERS_PER_OPERATION: int = 10
@@ -44,16 +54,20 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_NAME: str = "refresh_token"
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    REFRESH_TOKEN_GRACE_PERIOD_SECONDS: int = 2 # Time window to allow reuse of refresh token after it's been used (to account for clock skew and multiple simultaneous requests)
+    REFRESH_TOKEN_GRACE_PERIOD_SECONDS: int = 2
 
     # Pub/Sub Redis Configuration
     PS_REDIS_URL: str = "redis://localhost:6379/0"
+    PS_redis_opts: RedisPubSubOptions = RedisPubSubOptions()
     PS_REDIS_STALL_TIMEOUT: float = 0.001 # Block for 1ms while stalling for messages.
-    PS_redis_opts: RedisOptions = RedisOptions()
 
     # Redis Cache Configuration
     CACHE_REDIS_URL: str = "redis://localhost:6379/1"
+    CACHE_redis_opts: RedisCacheOptions = RedisCacheOptions()
     CACHE_DEFAULT_TTL_SECONDS: int = 300
+    CACHE_MEMBERSHIP_TTL_SECONDS: int = 300
+    CACHE_CHAT_METADATA_TTL_SECONDS: int = 300
+    CACHE_USER_TTL_SECONDS: int = 300
 
     # Postgres Configuration
     POSTGRES_URL: str = "postgresql+asyncpg://user:password@localhost:5432/harmony"

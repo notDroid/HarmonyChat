@@ -17,6 +17,7 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 class RedisPubSubManager:
+    STALL_TIMEOUT = settings.PS_REDIS_STALL_TIMEOUT
     """
     Layer 1: Manages Redis Subscriptions.
     """
@@ -25,7 +26,6 @@ class RedisPubSubManager:
         self.ws_manager = ws_manager
         self.listening_task = None
         self._subscribed_channels: Set[str] = set()
-        self.stall_timeout = settings.PS_REDIS_STALL_TIMEOUT
         
         # Lock per channel to avoid race conditions 99% of the time, allowing concurrent subscriptions to different channels.
         self._subscription_lock = defaultdict(asyncio.Lock)  
@@ -116,7 +116,7 @@ class RedisPubSubManager:
         """
         try:
             while True:
-                message = await self.pubsub.get_message(ignore_subscribe_messages=True, timeout=self.stall_timeout)
+                message = await self.pubsub.get_message(ignore_subscribe_messages=True, timeout=self.STALL_TIMEOUT)
                 if not message: continue
                 # logger.debug("Redis message received", chat_id=message["channel"], payload_size=len(message["data"]))
                 if message["type"] == "message":

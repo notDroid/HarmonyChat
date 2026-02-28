@@ -3,6 +3,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
+from harmony.app.core import settings
 from harmony.app.repositories import ChatDataRepository, UserChatRepository
 from harmony.app.schemas import ChatSchema
 from ..cache import CacheService
@@ -15,9 +16,8 @@ class ChatQueries:
     Does not mutate state.
     """
 
-    # TODO: inherit from settings
-    CACHE_MEMBERSHIP_TTL_SECONDS = 300
-    CACHE_CHAT_METADATA_TTL_SECONDS = 300
+    CACHE_MEMBERSHIP_TTL_SECONDS = settings.CACHE_MEMBERSHIP_TTL_SECONDS
+    CACHE_CHAT_METADATA_TTL_SECONDS = settings.CACHE_CHAT_METADATA_TTL_SECONDS
 
     @staticmethod
     def _membership_key(chat_id: uuid.UUID, user_id: uuid.UUID) -> str:
