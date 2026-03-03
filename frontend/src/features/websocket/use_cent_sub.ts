@@ -8,7 +8,8 @@ export function useCentrifugeSubscription(channel: string | null, onEvent: (ctx:
   useEffect(() => {
     if (!centrifuge || !channel) return;
 
-    const sub = centrifuge.newSubscription(channel);
+    // Get the existing subscription, or create a new one if it doesn't exist
+    const sub = centrifuge.getSubscription(channel) || centrifuge.newSubscription(channel);
 
     sub.on('publication', onEvent);
     sub.on('subscribed', () => setIsSubscribed(true));
@@ -19,6 +20,7 @@ export function useCentrifugeSubscription(channel: string | null, onEvent: (ctx:
     return () => {
       sub.removeAllListeners();
       sub.unsubscribe();
+      centrifuge.removeSubscription(sub); 
     };
   }, [centrifuge, channel, onEvent]);
 

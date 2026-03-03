@@ -67,8 +67,11 @@ class MessageCommands:
             # 5. Publish to Redis Pub/Sub
             self.task_queue.add_task(
                 self.event_publisher.publish_message, 
-                str(chat_id), 
-                msg_resp.model_dump(mode="json")
+                f"chat:{chat_id}", 
+                {
+                    "type": "chat_message",
+                    "payload": msg_resp.model_dump(mode="json")
+                }
             )
             
             logger.info("message_sent", chat_id=str(chat_id), user_id=str(user_id), message_id=ulid_str)

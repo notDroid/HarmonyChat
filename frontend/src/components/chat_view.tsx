@@ -17,17 +17,9 @@ export default async function ChatScreen({
   try {
       // Attempt to prefetch user metdata
       await prefetchCurrentUser(queryClient);
-  } catch (error) {
-      if (isNextRedirect(error)) throw error;
-      
-      if (error instanceof NetworkError) {
-          // Retry on the client side
-      }
-      else if (error instanceof ApiError) {
-          return <ErrorScreen message={error.message || 'Unable to load chats.'} />;
-      }
-      else {
-          return <ErrorScreen message={'Something went wrong. Please try again later.'} />;
+  } catch (error) {      
+      if (!(error instanceof NetworkError)) {
+          throw error
       }
   }
 

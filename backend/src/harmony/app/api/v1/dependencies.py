@@ -2,7 +2,7 @@ import uuid
 import jwt
 from harmony.app.core import Settings
 from starlette.requests import HTTPConnection
-from fastapi import BackgroundTasks, Depends, HTTPException, status
+from fastapi import BackgroundTasks, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi.security import OAuth2PasswordBearer
@@ -61,6 +61,25 @@ async def get_current_user(
         )
         
     return user_id
+
+async def get_user_from_cookie(
+    request: Request,
+    settings: Settings = Depends(get_settings)
+) -> str | None:
+    token = request.cookies.get(settings.auth.access_token_name)
+    if not token:
+        return None
+
+    try:
+        payload = decode_access_token(
+            token, 
+            secret_key=settings.auth.secret_key, 
+            algorithm=settings.auth.algorithm
+        )
+        return payload.get("sub")
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        logger.warning("invalid_ws_cookie_token")
+        return None
 
 # --------------------------- Database Dependencies -------------------------- #
 def get_dynamo_client(conn: HTTPConnection):

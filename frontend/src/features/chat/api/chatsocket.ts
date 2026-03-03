@@ -8,6 +8,7 @@ export function useChatQuerySync(chat_id: string) {
   const { insertOrUpdateMessage, invalidateChatCache } = useChatCache(chat_id);
 
   const handleEvent = useCallback((event: ChatEvent) => {
+    console.log("Received chat event", event);
     switch (event.type) {
       case 'chat_message':
         insertOrUpdateMessage(event.payload);

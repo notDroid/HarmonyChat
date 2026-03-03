@@ -6,7 +6,7 @@ class CentrifugoSubscribeRequest(BaseModel):
     client: str
     transport: str
     protocol: str
-    user_id: str
+    user: str
     channel: str
 
 class CentrifugoError(BaseModel):
@@ -15,4 +15,18 @@ class CentrifugoError(BaseModel):
 
 class CentrifugoSubscribeResponse(BaseModel):
     result: Optional[Dict[str, Any]] = None
+    error: Optional[CentrifugoError] = None
+
+
+class CentrifugoConnectRequest(BaseModel):
+    client: str
+    transport: str
+    protocol: str
+    encoding: str
+
+class CentrifugoConnectResult(BaseModel):
+    user: str
+
+class CentrifugoConnectResponse(BaseModel):
+    result: Optional[CentrifugoConnectResult] = None
     error: Optional[CentrifugoError] = None
