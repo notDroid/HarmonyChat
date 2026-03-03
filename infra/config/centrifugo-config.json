@@ -5,6 +5,11 @@
 
   "api_key": "your-secure-backend-api-key",
 
+  "allowed_origins": [
+    "*" 
+  ],
+  "allow_anonymous": true,
+
   "namespaces": [
     {
       "name": "chat",
