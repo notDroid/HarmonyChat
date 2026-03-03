@@ -43,12 +43,14 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!token && pathname.startsWith('/chats')) {
+    console.log(`No token found for request to ${pathname}, redirecting to login`);
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('next', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
   if (token && pathname === '/login') {
+    console.log(`Token found for request to /login, redirecting to /chats`);
     return NextResponse.redirect(new URL('/chats', request.url))
   }
 

@@ -88,10 +88,10 @@ def get_chat_pagination_limit(
     if limit is None:
         return settings.chat.default_pagination_limit
     
-    if limit > settings.chat.max_pagination_limit:
+    if limit > settings.chat.default_pagination_limit:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Limit cannot be greater than {settings.chat.max_pagination_limit}"
+            detail=f"Limit cannot be greater than {settings.chat.default_pagination_limit}"
         )
         
     return limit

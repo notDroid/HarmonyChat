@@ -1,10 +1,11 @@
 "use server";
-import { getAccesstToken, injectToken, isRefreshUrl, clearAccessToken } from "./session";
+import { getAccesstToken, injectToken, isRefreshUrl, clearAccessToken, isTokenUrl } from "./session";
 import { redirect } from 'next/navigation';
 import { stripBaseUrl } from '../utils/utils';
+
 // Entry point into server-side fetch, all requests eventually reach here.
 export async function serverFetch(url: string, options: RequestInit): Promise<Response> {
-  const refresh = await isRefreshUrl(url);
+  const isTokenReq = await isRefreshUrl(url) || await isTokenUrl(url);
 
   // Inject auth headers from cookies securely on the server (if present)
   const accessToken = await getAccesstToken();
@@ -15,8 +16,8 @@ export async function serverFetch(url: string, options: RequestInit): Promise<Re
   let res =  await fetch(url, options);
 
   // Handle 401 Unauthorized globally - attempt token refresh if access token is invalid/expired
-  if (res.status === 401 && !refresh) {
-    console.warn('Received 401 from serverFetch, redirecting to refresh endpoint');
+  if (res.status === 401 && !isTokenReq) {
+    console.warn(`Received 401 from serverFetch, redirecting to refresh endpoint ${url}`);
 
     // This effectively acts like retry trampoline (that catches all 401 errors so they won't invalidate the session until we've had a chance to refresh tokens)
     //    1. we redirect to the refresh endpoint which will attempt to refresh tokens 

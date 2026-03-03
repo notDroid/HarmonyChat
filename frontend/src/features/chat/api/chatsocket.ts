@@ -1,20 +1,30 @@
+// src/features/chat/api/chatsocket.ts
 import { useCallback } from "react";
-import { useChatWebSocket } from "./websocket";
-import { ChatMessage } from "@/lib/api/model";
+import { useChatEvents } from "./use_chat_events";
 import { useChatCache } from "./cache";
-import { UIMessage } from "../ui/message";
+// import { ChatEvent } from "@/lib/api/ws/model";
 
-// This hook is responsible for syncing incoming WebSocket messages with the React Query cache
 export function useChatQuerySync(chat_id: string) {
   const { insertOrUpdateMessage, invalidateChatCache } = useChatCache(chat_id);
 
-  const handleNewMessage = useCallback((newMessage: ChatMessage) => {
-    insertOrUpdateMessage(newMessage as UIMessage);
-  }, [insertOrUpdateMessage]);
+  // temporary
+  const handleEvent = useCallback((event: any) => {}, []);
 
-  const handleConnect = useCallback(() => {
-    invalidateChatCache();
-  }, [invalidateChatCache]);
+  // const handleEvent = useCallback((event: ChatEvent) => {
+  //   switch (event.type) {
+  //     case 'chat_message':
+  //       insertOrUpdateMessage(event.payload);
+  //       break;
+  //     case 'chat_deleted':
+  //       // Handle kicking the user out of the view or showing a modal
+  //       break;
+  //     case 'user_joined':
+  //       // Update a member list cache
+  //       break;
+  //     default:
+  //       console.warn('Unknown event type', event);
+  //   }
+  // }, [insertOrUpdateMessage]);
 
-  useChatWebSocket(chat_id, handleNewMessage, handleConnect);
+  useChatEvents(chat_id, handleEvent);
 }

@@ -8,6 +8,10 @@ export async function isRefreshUrl(url: string) {
   return url.includes(SESSION_SETTINGS.REFRESH_ENDPOINT);
 }
 
+export async function isTokenUrl(url: string) {
+  return url.includes(SESSION_SETTINGS.TOKEN_ENDPOINT);
+}
+
 export async function clearSession() {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME);

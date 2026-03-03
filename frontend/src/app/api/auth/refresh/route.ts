@@ -33,7 +33,7 @@ export async function refresh(request: Request) {
       return response;
     }
 
-    console.error('Auth error during refresh, clearing session and redirecting to logout', error);
+    console.warn('Auth error during refresh, clearing session and redirecting to logout', error instanceof Error ? error.message : String(error));
     const response = NextResponse.json({}, { status: 401 });
     response.cookies.delete(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME);
     response.cookies.delete(SESSION_SETTINGS.REFRESH_TOKEN_COOKIE_NAME);

@@ -38,7 +38,7 @@ export async function fetchErrorWrapper<T>(url: string, options?: RequestInit): 
   }
 
   // Handle 401 Unauthorized globally to trigger login redirect
-  if (res.status === 401) {
+  if (res.status === 401 ) {
     // Eventually reaches clearSession()
     if (isServer) {
       await handleServerAuthError();
