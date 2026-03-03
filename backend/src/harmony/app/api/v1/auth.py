@@ -64,6 +64,7 @@ async def refresh(
         refresh_token=refresh_token.refresh_token
     )
 
+    # TODO: shift to event driven approach
     # Schedule old refresh token for deletion after grace period
     background_tasks.add_task(
         auth_service.background_revoke_refresh_token, 

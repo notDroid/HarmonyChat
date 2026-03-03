@@ -1,14 +1,14 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from harmony.app.services import StreamService
+from fastapi import APIRouter, Depends
+from harmony.app.schemas import CentrifugoSubscribeRequest
+from harmony.app.services import PubSubService
 
-from .dependencies import get_stream_service
+from .dependencies import get_pubsub_service
 
 router = APIRouter()
 
-@router.websocket("/{chat_id}")
-async def chat_websocket(
-    websocket: WebSocket, 
-    chat_id: str,
-    stream_service: StreamService = Depends(get_stream_service),
+@router.post("/subscribe")
+async def subscribe_proxy(
+    req: CentrifugoSubscribeRequest,
+    pubsub_service: PubSubService = Depends(get_pubsub_service),
 ):
-    await stream_service.handle_chat_connection(websocket=websocket, chat_id=chat_id)
+    return await pubsub_service.authorize_subscription(req)

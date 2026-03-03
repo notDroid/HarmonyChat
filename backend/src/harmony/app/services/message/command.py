@@ -1,16 +1,18 @@
 import uuid
 import asyncio
 from ulid import ULID
+from typing import Optional
 from datetime import datetime, timezone
 from fastapi import HTTPException, status
 import structlog
 
+from harmony.app.core.interfaces import TaskQueue
 from harmony.app.schemas import ChatMessage, ChatMessageResponse
 from harmony.app.repositories import ChatHistoryRepository
 
 from ..chat import ChatQueries
 from ..user import UserQueries
-from harmony.app.streams import RedisPubSubManager
+from ..pubsub import PubSubService
 
 logger = structlog.get_logger(__name__)
 
@@ -20,12 +22,14 @@ class MessageCommands:
         chat_history_repository: ChatHistoryRepository,
         chat_queries: ChatQueries,
         user_queries: UserQueries,
-        event_publisher: RedisPubSubManager,
+        event_publisher: PubSubService,
+        task_queue: Optional[TaskQueue] = None
     ):
         self.chat_history_repo = chat_history_repository
         self.chat_queries = chat_queries
         self.user_queries = user_queries
         self.event_publisher = event_publisher
+        self.task_queue = task_queue
 
     async def send_message(self, chat_id: uuid.UUID, user_id: uuid.UUID, content: str, client_uuid: str | None = None) -> ChatMessage:
         # 1. Authorize
@@ -53,7 +57,7 @@ class MessageCommands:
             task2 = self.user_queries.get_user_by_id(user_id)
             results = await asyncio.gather(task1, task2)
 
-            # 4. Fill in author metadata for pub/sub response
+            # 4. Fill in author metadata to publish message with complete info
             sender = results[1]
             msg_resp = ChatMessageResponse(
                 **msg.model_dump(),
@@ -61,7 +65,11 @@ class MessageCommands:
             )
             
             # 5. Publish to Redis Pub/Sub
-            await self.event_publisher.publish(str(chat_id), msg_resp.model_dump(mode="json"))
+            self.task_queue.add_task(
+                self.event_publisher.publish_message, 
+                str(chat_id), 
+                msg_resp.model_dump(mode="json")
+            )
             
             logger.info("message_sent", chat_id=str(chat_id), user_id=str(user_id), message_id=ulid_str)
             return msg_resp

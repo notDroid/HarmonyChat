@@ -3,25 +3,28 @@ services:
     build: backend
     container_name: backend
     environment:
+      # - APP_ENV=production
+
       # --- Feature Flags ---
-      - ENABLE_POSTGRES=True
-      - ENABLE_DYNAMODB=True
-      - ENABLE_PS_REDIS=True
-      - ENABLE_PS_REDIS_LISTEN=True
-      - ENABLE_CACHE_REDIS=True
-      - ENABLE_EVENT_HANDLERS=True
+      - FEATURES__POSTGRES=True
+      - FEATURES__DYNAMODB=True
+      - FEATURES__CENTRIFUGO=True
+      - FEATURES__CACHE_REDIS=True
+      - FEATURES__EVENT_HANDLERS=True
 
       # --- Connection Strings ---
-      - DYNAMODB_ENDPOINT=http://dynamodb:8000
-      - PS_REDIS_URL=redis://redis:6379/0
-      - CACHE_REDIS_URL=redis://redis:6379/1
-      - POSTGRES_URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
+      - DYNAMODB__URL=http://dynamodb:8000
+      - REDIS__URL=redis://redis:6379/1
+      - POSTGRES__URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
+      - CENT__URL=http://centrifugo:8000/api
+
+      - CENT__API_KEY=your-secure-backend-api-key
 
       # --- AWS Config ---
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_DEFAULT_REGION=us-east-1
-      - AWS_REGION=us-east-1
+      - AWS__ACCESS_KEY_ID=test
+      - AWS__SECRET_ACCESS_KEY=test
+      - AWS__DEFAULT_REGION=us-east-1
+      - AWS__REGION=us-east-1
     depends_on:
       redis:
         condition: service_healthy
@@ -51,7 +54,7 @@ services:
       - POSTGRES_PASSWORD=harmony
       - POSTGRES_DB=harmony
     volumes:
-      - ./volumes/postgres:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U harmony -d harmony"]
       interval: 5s
@@ -61,9 +64,10 @@ services:
   dynamodb:
     image: amazon/dynamodb-local
     container_name: dynamodb
+    user: root
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data -cors *"
     volumes:
-      - ./volumes/dynamodb:/home/dynamodblocal/data
+      - dynamodb_data:/home/dynamodblocal/data
     healthcheck:
        test: ["CMD-SHELL", "curl -f http://localhost:8000 || exit 1"]
        interval: 5s
@@ -73,18 +77,32 @@ services:
   redis:
     image: redis:alpine
     container_name: redis
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  centrifugo:
+    image: centrifugo/centrifugo:v5
+    container_name: centrifugo
+    volumes:
+      - ./infra/config/centrifugo-config.json:/centrifugo/config.json
+    command: centrifugo -c config.json --log_level debug
+    ports:
+      - "8001:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+
   init:
     build: backend
     container_name: init
     environment:
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
-      - POSTGRES_URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
+
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=us-east-1
@@ -95,3 +113,11 @@ services:
     volumes:
       - ./infra/:/app/infra/:ro
     command: python infra/local/init_db.py --table-file infra/config/tables.json
+
+volumes:
+  postgres_data:
+    driver: local
+  dynamodb_data:
+    driver: local
+  redis_data:
+    driver: local

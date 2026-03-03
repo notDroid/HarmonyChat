@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
-from harmony.app.core import settings
+from harmony.app.core import CacheConfig
 from harmony.app.repositories import UserDataRepository, UserChatRepository
 from harmony.app.schemas import UserChatItem, UserSchema
 from harmony.app.models import User
@@ -22,8 +22,6 @@ class UserQueries:
     Handles all read-only operations (Queries) for the User domain.
     """
 
-    CACHE_USER_TTL_SECONDS = settings.CACHE_USER_TTL_SECONDS
-
     @staticmethod
     def _user_cache_key(user_id: uuid.UUID) -> str:
         return f"user:{user_id}"
@@ -34,13 +32,15 @@ class UserQueries:
         user_data_repository: UserDataRepository,
         user_chat_repository: UserChatRepository,
         cache_service: Optional[CacheService] = None,
-        task_queue: Optional[TaskQueue] = None
+        task_queue: Optional[TaskQueue] = None,
+        cache_config: CacheConfig = CacheConfig()
     ):
         self.session = session
         self.user_data_repo = user_data_repository
         self.user_chat_repo = user_chat_repository
         self.cache_service = cache_service
         self.task_queue = task_queue
+        self.cache_config = cache_config
         
     async def get_user_by_id(self, user_id: uuid.UUID) -> UserSchema:
         # 1. Try to fetch from cache first
@@ -64,7 +64,7 @@ class UserQueries:
             cache_key = self._user_cache_key(user_id)
             self.task_queue.add_task(
                 self.cache_service.set_json,
-                cache_key, user.model_dump(mode="json"), ttl=self.CACHE_USER_TTL_SECONDS
+                cache_key, user.model_dump(mode="json"), ttl=self.cache_config.user_ttl_seconds
             )
 
         return user
@@ -152,7 +152,7 @@ class UserQueries:
                 self.task_queue.add_task(
                     self.cache_service.set_many_json,
                     cache_mapping, 
-                    ttl=self.CACHE_USER_TTL_SECONDS
+                    ttl=self.cache_config.user_ttl_seconds
                 )
 
         return result_dict

@@ -1,36 +1,32 @@
 from contextlib import asynccontextmanager
-from harmony.app.core import settings
-from harmony.app.streams import RedisPubSubManager, WebSocketManager
+from harmony.app.core import get_settings, CentrifugoConfig
+
+from cent import AsyncClient
 
 async def init_stream(app, stack):
     """
-    Initializes the Redis Pub/Sub manager and WebSocket manager, storing them in app.state.
+    Initializes the cent client.
     """
-    if not settings.ENABLE_PS_REDIS:
+    settings = get_settings()
+    if not settings.features.centrifugo:
         return
 
-    redis_manager, ws_manager = await stack.enter_async_context(stream_connector())
-    app.state.redis_pubsub_manager = redis_manager
-    app.state.ws_manager = ws_manager
+    cent_client = await stack.enter_async_context(stream_connector(settings.cent))
+    app.state.cent_client = cent_client
 
 @asynccontextmanager
-async def stream_connector():
+async def stream_connector(cfg: CentrifugoConfig = None):
     """
-    Context manager that yields (RedisManager, WebSocketManager).
-    Handles Redis connection and listener loop.
+    Context manager that yields cent client
     """
-    ws_manager = WebSocketManager()
-    redis_manager = RedisPubSubManager(ws_manager)
 
-    # 1. Connect
-    await redis_manager.connect()
-
-    # 2. Start Listening (Background Task inside manager)
-    if settings.ENABLE_PS_REDIS_LISTEN:
-        redis_manager.start_listen()
-
+    client = AsyncClient(
+        api_url=cfg.url, 
+        api_key=cfg.api_key,
+        timeout=cfg.timeout
+    )
+    
     try:
-        yield redis_manager, ws_manager
+        yield client
     finally:
-        # 3. Disconnect
-        await redis_manager.disconnect()
+        await client.close()

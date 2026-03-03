@@ -1,19 +1,18 @@
 import uuid
-from harmony.app.core import settings
 from harmony.app.schemas import ChatMessage
 from harmony.app.db import to_dynamo_json, from_dynamo_json, paginate_in_batches, delete_batch
+from harmony.app.core.settings import DynamoDBConfig
 
 class ChatHistoryRepository:
-    table_name = settings.CHAT_HISTORY_TABLE_NAME
-
     '''
     Key:
         - Partition Key: chat_id (string)
         - Sort Key: ulid (string, ULID timestamp for ordering)
     '''
     
-    def __init__(self, client):
+    def __init__(self, client, dynamodb_config: DynamoDBConfig):
         self.client = client
+        self.table_name = dynamodb_config.chat_history_table_name
 
     async def create_message(self, item: ChatMessage):
         dynamo_item = to_dynamo_json(item.model_dump(mode="json"))

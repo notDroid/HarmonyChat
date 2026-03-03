@@ -8,3 +8,4 @@ class Token(BaseModel):
 # ----------------------- Refresh Token Endpoint Request ----------------------- #
 class RefreshRequest(BaseModel):
     refresh_token: str
+

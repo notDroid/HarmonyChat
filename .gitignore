@@ -1,5 +1,5 @@
-# Ignore docker volumes (data persistence)
-volumes/
+# Ignore log files
+logs.txt
 
 # --- Operating System Files ---
 # macOS

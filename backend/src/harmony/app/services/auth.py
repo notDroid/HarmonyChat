@@ -5,11 +5,11 @@ from fastapi import HTTPException, status
 from harmony.app.core import (
     get_password_hash, 
     verify_password, 
-    settings, 
     create_access_token, 
     generate_refresh_token, 
     hash_refresh_token
 )
+from harmony.app.core import AuthConfig
 from .command import Command
 from .user import UserCommands, UserQueries
 from harmony.app.repositories import AuthRepository
@@ -49,12 +49,14 @@ class AuthService(Command):
             session,
             user_commands: UserCommands,
             user_queries: UserQueries,
-            auth_repository: AuthRepository
+            auth_repository: AuthRepository,
+            auth_config: AuthConfig = AuthConfig()
     ):
         super().__init__(session, logger)
         self.user_commands = user_commands
         self.user_queries = user_queries
         self.auth_repository = auth_repository
+        self.cfg = auth_config
 
     async def sign_up(self, user_create: UserCreateRequest) -> str:
         try:
@@ -102,7 +104,7 @@ class AuthService(Command):
             )
 
         # Create tokens
-        access_token, refresh_token, hashed_rt, rt_expires_dt = await self.generate_tokens(str(user.user_id))
+        access_token, refresh_token, hashed_rt, rt_expires_dt = await self._generate_tokens(str(user.user_id))
 
         # Create refresh token session in DB with hashed_rt and user_id
         async with self.transaction_handler("create_refresh_token", email=user.email, user_id=str(user.user_id)):  
@@ -114,25 +116,27 @@ class AuthService(Command):
 
         return [access_token, refresh_token]
         
-    async def generate_tokens(self, user_id: str) -> list[Token]:
-        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    async def _generate_tokens(self, user_id: str) -> list[Token]:
+        access_token_expires = timedelta(minutes=self.cfg.access_token_expire_minutes)
         expire_dt = datetime.now(timezone.utc) + access_token_expires
         access_token_str = create_access_token(
             data={"sub": str(user_id)}, 
-            expires_delta=access_token_expires
+            expires_delta=access_token_expires,
+            secret_key=self.cfg.secret_key,
+            algorithm=self.cfg.algorithm
         )
         access_token = Token(
             token=access_token_str, 
-            token_type=settings.ACCESS_TOKEN_NAME, 
+            token_type=self.cfg.access_token_name, 
             expiration=int(expire_dt.timestamp())
         )
 
         plain_rt, hashed_rt = generate_refresh_token()
-        rt_expires = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        rt_expires = datetime.now(timezone.utc) + timedelta(days=self.cfg.refresh_token_expire_days)
 
         refresh_token = Token(
             token=plain_rt,
-            token_type=settings.REFRESH_TOKEN_NAME, 
+            token_type=self.cfg.refresh_token_name, 
             expiration=int(rt_expires.timestamp())
         )
 
@@ -153,7 +157,7 @@ class AuthService(Command):
                     )
 
                 # Generate new tokens
-                access_token, refresh_token, hashed_rt, rt_expires_dt = await self.generate_tokens(str(user_id))
+                access_token, refresh_token, hashed_rt, rt_expires_dt = await self._generate_tokens(str(user_id))
 
                 # Store the new refresh token session in DB
                 await self.auth_repository.create_token(
@@ -176,5 +180,5 @@ class AuthService(Command):
 
     async def background_revoke_refresh_token(self, refresh_token: str):
         # Wait for grace period before revoking the token to allow for any in-flight requests that might be using the same refresh token (e.g., multiple simultaneous refresh requests or clock skew)
-        await asyncio.sleep(settings.REFRESH_TOKEN_GRACE_PERIOD_SECONDS)
+        await asyncio.sleep(self.cfg.refresh_token_grace_period_seconds)
         await self.revoke_refresh_token(refresh_token)

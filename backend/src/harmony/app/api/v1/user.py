@@ -2,12 +2,12 @@ import uuid
 
 from typing import List
 from fastapi import APIRouter, Depends, status, HTTPException, Query
-from harmony.app.core import settings
 from harmony.app.schemas import (
     UserCreateRequest, 
     UserResponse, 
     UserChatsResponse
 )
+from harmony.app.core import get_settings, Settings
 from .dependencies import get_auth_service, get_current_user, get_user_commands, get_user_queries
 
 router = APIRouter()
@@ -99,6 +99,26 @@ async def get_current_user_details(
     """
     return await user_query_service.get_user_by_id(user_id=user_id)
 
+def get_user_search_limit(
+    limit: int | None = Query(default=None, ge=1, description="Search result limit"),
+    settings: Settings = Depends(get_settings)
+) -> int:
+    """
+    Resolves and strictly validates the user search limit against configured maximums.
+    """
+    max_limit = settings.user.default_user_search_limit
+    
+    if limit is None:
+        return max_limit
+        
+    if limit > max_limit:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Limit cannot be greater than {max_limit}"
+        )
+        
+    return limit
+
 @router.get(
     "/lookup", 
     response_model=List[UserResponse],
@@ -107,7 +127,7 @@ async def get_current_user_details(
 )
 async def get_user_details_by_email(
     email: str,
-    limit: int = Query(settings.DEFAULT_USER_SEARCH_LIMIT, gt=0, le=settings.DEFAULT_USER_SEARCH_LIMIT),
+    limit: int = Depends(get_user_search_limit),
     user_query_service = Depends(get_user_queries)
 ):
     """

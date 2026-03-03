@@ -1,6 +1,6 @@
 import json
 import structlog
-from harmony.app.core import settings
+from harmony.app.core import CacheConfig
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
@@ -12,10 +12,10 @@ class CacheService:
     The service provides "best effort" caching on reads. 
     It returns success/failure booleans for writes and deletes, allowing callers to handle failures.
     '''
-    CACHE_DEFAULT_TTL_SECONDS = settings.CACHE_DEFAULT_TTL_SECONDS
     
-    def __init__(self, redis_client: Redis):
+    def __init__(self, redis_client: Redis, cache_config: CacheConfig = CacheConfig()):
         self.redis = redis_client
+        self.cfg = cache_config
         
     async def get_json(self, key: str) -> dict | None:
         try:
@@ -30,7 +30,7 @@ class CacheService:
 
     async def set_json(self, key: str, value: dict, ttl: int | None = None) -> bool:
         try:
-            await self.redis.set(key, json.dumps(value), ex=ttl or self.CACHE_DEFAULT_TTL_SECONDS)
+            await self.redis.set(key, json.dumps(value), ex=ttl or self.cfg.default_ttl_seconds)
             return True
         except RedisError as e:
             logger.warning("cache_network_error_on_set", key=key, error=str(e))
@@ -106,7 +106,7 @@ class CacheService:
         try:
             async with self.redis.pipeline(transaction=False) as pipe:
                 for key, value in mapping.items():
-                    pipe.set(key, json.dumps(value), ex=ttl or self.CACHE_DEFAULT_TTL_SECONDS)
+                    pipe.set(key, json.dumps(value), ex=ttl or self.cfg.default_ttl_seconds)
                 await pipe.execute()
             return True
             

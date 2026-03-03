@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 import structlog
 
-from harmony.app.core import settings
+from harmony.app.core import CacheConfig
 from harmony.app.core.interfaces import TaskQueue
 from harmony.app.repositories import ChatDataRepository, UserChatRepository
 from harmony.app.schemas import ChatSchema
@@ -17,9 +17,6 @@ class ChatQueries:
     Handles all read-only operations (Queries) for the Chat domain.
     Does not mutate state.
     """
-
-    CACHE_MEMBERSHIP_TTL_SECONDS = settings.CACHE_MEMBERSHIP_TTL_SECONDS
-    CACHE_CHAT_METADATA_TTL_SECONDS = settings.CACHE_CHAT_METADATA_TTL_SECONDS
 
     @staticmethod
     def _membership_key(chat_id: uuid.UUID, user_id: uuid.UUID) -> str:
@@ -35,13 +32,15 @@ class ChatQueries:
         chat_data_repository: ChatDataRepository,
         user_chat_repository: UserChatRepository,
         cache_service: Optional[CacheService] = None,
-        task_queue: Optional[TaskQueue] = None
+        task_queue: Optional[TaskQueue] = None,
+        cache_config: CacheConfig = CacheConfig()
     ):
         self.session = session
         self.chat_data_repo = chat_data_repository
         self.user_chat_repo = user_chat_repository
         self.cache_service = cache_service
         self.task_queue = task_queue
+        self.cache_config = cache_config
 
     async def check_user_in_chat(self, user_id: uuid.UUID, chat_id: uuid.UUID) -> bool:
         # 1. Check cache first
@@ -62,7 +61,7 @@ class ChatQueries:
             cache_key = self._membership_key(chat_id, user_id)
             self.task_queue.add_task(
                 self.cache_service.set_json,
-                cache_key, is_member, ttl=self.CACHE_MEMBERSHIP_TTL_SECONDS
+                cache_key, is_member, ttl=self.cache_config.membership_ttl_seconds
             )
         return is_member
     
@@ -97,7 +96,7 @@ class ChatQueries:
             cache_key = self._metadata_key(chat_id)
             self.task_queue.add_task(
                 self.cache_service.set_json,
-                cache_key, chat.model_dump(mode="json"), ttl=self.CACHE_CHAT_METADATA_TTL_SECONDS
+                cache_key, chat.model_dump(mode="json"), ttl=self.cache_config.chat_metadata_ttl_seconds
             )
         
         return chat

@@ -1,7 +1,6 @@
-import asyncio
 import uuid
-from fastapi import Depends, BackgroundTasks, APIRouter, status, HTTPException, Request
-from harmony.app.core import settings
+from fastapi import Depends, BackgroundTasks, APIRouter, status, HTTPException, Request, Query
+from harmony.app.core.settings import get_settings, Settings
 from harmony.app.schemas import (
     ChatCreateRequest, 
     ChatResponse, 
@@ -78,6 +77,25 @@ async def send_message(
 
     return msg
 
+def get_chat_pagination_limit(
+    limit: int | None = Query(default=None, ge=1, description="Number of items to return"),
+    settings: Settings = Depends(get_settings)
+) -> int:
+    """
+    Resolves the chat pagination limit. 
+    Falls back to the default setting if no limit is provided by the client.
+    """
+    if limit is None:
+        return settings.chat.default_pagination_limit
+    
+    if limit > settings.chat.max_pagination_limit:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Limit cannot be greater than {settings.chat.max_pagination_limit}"
+        )
+        
+    return limit
+
 @router.get(
     "/{chat_id}", 
     response_model=ChatHistoryResponse,
@@ -87,7 +105,7 @@ async def send_message(
 )
 async def get_chat_history(
     chat_id: uuid.UUID,
-    limit: int = settings.DEFAULT_PAGINATION_LIMIT,
+    limit: int = Depends(get_chat_pagination_limit),
     cursor: str | None = None,
     user_id: uuid.UUID = Depends(get_current_user),
     message_queries_service = Depends(get_message_queries)

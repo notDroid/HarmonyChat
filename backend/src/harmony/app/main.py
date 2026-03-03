@@ -8,15 +8,16 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from .core import settings, setup_logging, lifespan
+from .core import get_settings, setup_logging, lifespan
 from .api.v1 import router as api_v1_router
 
 # Initialize logging
-setup_logging(is_local_dev=(settings.APP_ENV == "development"))
+settings = get_settings()
+setup_logging(is_local_dev=(settings.app_env == "development"))
 logger = structlog.get_logger(__name__)
 
 # Initialize FastAPI app with lifespan for resource management
-app = FastAPI(lifespan=lifespan, debug=(settings.APP_ENV == "development"))
+app = FastAPI(lifespan=lifespan, debug=(settings.app_env == "development"))
 app.include_router(api_v1_router, prefix="/api/v1")
 
 # CORS Middleware (allow all for simplicity)
@@ -36,7 +37,7 @@ async def root():
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     error_trace = traceback.format_exc()
-    logger.error(f"UNHANDLED EXCEPTION on {request.method} {request.url}\n{error_trace}")
+    logger.exception(f"Unhandled exception during request processing", exc_info=exc)
     
     return JSONResponse(
         status_code=500,

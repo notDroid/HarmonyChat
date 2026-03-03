@@ -34,7 +34,7 @@ export async function refresh(request: Request) {
     }
 
     console.error('Auth error during refresh, clearing session and redirecting to logout', error);
-    const response = NextResponse.redirect(new URL('/login', request.url));
+    const response = NextResponse.json({}, { status: 401 });
     response.cookies.delete(SESSION_SETTINGS.ACCESS_TOKEN_COOKIE_NAME);
     response.cookies.delete(SESSION_SETTINGS.REFRESH_TOKEN_COOKIE_NAME);
     return response;

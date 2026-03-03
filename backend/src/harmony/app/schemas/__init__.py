@@ -3,3 +3,4 @@ from .user import *
 from .chat import *
 from .message import ChatMessage
 from .metadata import UserMetaData, ChatMetaData
+from .centrifugo import CentrifugoSubscribeRequest, CentrifugoError, CentrifugoSubscribeResponse

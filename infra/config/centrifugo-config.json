@@ -1,0 +1,28 @@
+{
+  "engine": "redis",
+  "redis_address": "redis:6379",
+  "redis_prefix": "centrifugo",
+
+  "token_hmac_secret_key": "64d54ec76be75e906e03e3fba806e2c1ff5f8da12dfb9226e7eea2a72e477c96",
+  "api_key": "your-secure-backend-api-key",
+
+  "namespaces": [
+    {
+      "name": "chat",
+      "subscribe_proxy_name": "fastapi_proxy"
+    }
+  ],
+
+  "proxies": [
+    {
+      "name": "fastapi_proxy",
+      "endpoint": "http://api:8000/api/v1/centrifugo/subscribe"
+    }
+  ],
+  
+  "admin": {
+    "enabled": true,
+    "password": "admin",
+    "secret": "admin"
+  }
+}

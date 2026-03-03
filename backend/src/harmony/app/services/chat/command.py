@@ -6,7 +6,7 @@ import structlog
 
 from harmony.app.core.interfaces import TaskQueue
 from harmony.app.repositories import ChatDataRepository, UserChatRepository
-from harmony.app.core import settings
+from harmony.app.core import ChatConfig
 from harmony.app.schemas import ChatMetaData, ChatCreateRequest, ChatResponse
 from ..command import Command
 from .event import ChatEventHandler
@@ -14,21 +14,21 @@ from .event import ChatEventHandler
 logger = structlog.get_logger(__name__)
 
 class ChatCommands(Command):
-    MAX_USERS = settings.CHAT_MAX_USERS_PER_OPERATION
-
     def __init__(
         self, 
         session: AsyncSession,
         chat_data_repository: ChatDataRepository,
         user_chat_repository: UserChatRepository,
         chat_event_handler: Optional[ChatEventHandler] = None,
-        task_queue: Optional[TaskQueue] = None
+        task_queue: Optional[TaskQueue] = None,
+        chat_config: ChatConfig = ChatConfig()
     ):
         super().__init__(session, logger)
         self.chat_data_repo = chat_data_repository
         self.user_chat_repo = user_chat_repository
         self.chat_event_handler = chat_event_handler
         self.task_queue = task_queue
+        self.cfg = chat_config
 
     async def _require_membership(self, user_id: uuid.UUID, chat_id: uuid.UUID):
         is_member = await self.user_chat_repo.check_user_in_chat(chat_id=chat_id, user_id=user_id, lock=True)
@@ -39,9 +39,9 @@ class ChatCommands(Command):
     async def create_chat(self, creator_id: uuid.UUID, data: ChatCreateRequest) -> ChatResponse:
         # 1. Validate
         user_id_list = list(set(data.user_id_list + [creator_id]))
-        if len(user_id_list) > self.MAX_USERS:
+        if len(user_id_list) > self.cfg.max_users_per_operation:
             logger.warning("create_chat_exceeds_max_users", creator_id=creator_id, requested_count=len(user_id_list))
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Limit of {self.MAX_USERS} users exceeded.")
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Limit of {self.cfg.max_users_per_operation} users exceeded.")
         
         # 2. Parse metadata
         metadata = ChatMetaData(
@@ -65,9 +65,9 @@ class ChatCommands(Command):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "user_id_list cannot be empty")
         if user_id in user_id_list:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "user_id_list cannot contain the requesting user_id")
-        if len(user_id_list) > self.MAX_USERS:
+        if len(user_id_list) > self.cfg.max_users_per_operation:
             logger.warning("add_users_to_chat_exceeds_max_users", chat_id=chat_id, requested_count=len(user_id_list))
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Limit of {self.MAX_USERS} users exceeded.")
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Limit of {self.cfg.max_users_per_operation} users exceeded.")
         
         # 2. Authorize and Create
         async with self.transaction_handler("add_users", chat_id=chat_id, user_id=user_id):

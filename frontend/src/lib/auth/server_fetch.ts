@@ -17,10 +17,20 @@ export async function serverFetch(url: string, options: RequestInit): Promise<Re
   // Handle 401 Unauthorized globally - attempt token refresh if access token is invalid/expired
   if (res.status === 401 && !refresh) {
     console.warn('Received 401 from serverFetch, redirecting to refresh endpoint');
-    // Destroty control flow in order to do this
+
+    // This effectively acts like retry trampoline (that catches all 401 errors so they won't invalidate the session until we've had a chance to refresh tokens)
+    //    1. we redirect to the refresh endpoint which will attempt to refresh tokens 
+    //    2. then redirect back to the original request URL (via next param)
     // Next.js server side components prevent us from setting (deleting) cookies 
     // So reconilliation of session state must be done through redirects (I think, idk if there's a better way to do this)
-    await clearAccessToken(); // best effort clear (doesn't work in server components)
+
+    // best effort clear (throws an error in server components)
+    try {
+      await clearAccessToken(); 
+    } catch (e) {
+      console.warn('Failed to clear access token:', e);
+    }
+
     const urlwithoutBase = stripBaseUrl(url);
     const nextUrl = `/api/auth/refresh?next=/api/proxy${encodeURIComponent(urlwithoutBase)}`; // retry from proxy path
     redirect(nextUrl);
