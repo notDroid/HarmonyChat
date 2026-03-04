@@ -9,7 +9,8 @@
         "topics": ["chat_messages"],
         "consumer_group": "centrifugo",
         "publication_data_mode": {
-          "enabled": true
+          "enabled": true,
+          "channels_header": "x-centrifugo-channels" 
         }
       }
     }

@@ -62,9 +62,7 @@ class MessageCommands:
                 key=str(chat_id).encode("utf-8"),
                 value=msg_resp.model_dump_json().encode("utf-8"),
                 headers=[
-                    ("X-Centrifugo-Channel", f"chat:{chat_id}".encode("utf-8")),
-                    ("channel", f"chat:{chat_id}".encode("utf-8")),
-                    ("x-centrifugo-channel", f"chat:{chat_id}".encode("utf-8"))
+                    ("x-centrifugo-channels", f"chat:{chat_id}".encode("utf-8")) 
                 ]
             )
 
