@@ -66,15 +66,16 @@ async def get_user_from_cookie(
     request: Request,
     settings: Settings = Depends(get_settings)
 ) -> str | None:
-    token = request.cookies.get(settings.auth.access_token_name)
+    cfg = settings.auth
+    token = request.cookies.get(cfg.access_token_name)
     if not token:
         return None
 
     try:
         payload = decode_access_token(
             token, 
-            secret_key=settings.auth.secret_key, 
-            algorithm=settings.auth.algorithm
+            secret_key=cfg.secret_key, 
+            algorithm=cfg.algorithm
         )
         return payload.get("sub")
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):

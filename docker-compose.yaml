@@ -86,11 +86,11 @@ services:
       retries: 5
 
   centrifugo:
-    image: centrifugo/centrifugo:v5
+    image: centrifugo/centrifugo:v6
     container_name: centrifugo
     volumes:
       - ./infra/config/centrifugo-config.json:/centrifugo/config.json
-    command: centrifugo -c config.json --log_level debug
+    command: centrifugo -c config.json
     ports:
       - "8001:8000"
     depends_on:
