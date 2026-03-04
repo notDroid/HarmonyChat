@@ -15,9 +15,13 @@ aiofiles==25.1.0
 aiohappyeyeballs==2.6.1
     # via aiohttp
 aiohttp==3.13.3
-    # via aiobotocore
+    # via
+    #   aiobotocore
+    #   cent
 aioitertools==0.13.0
     # via aiobotocore
+aiokafka==0.13.0
+    # via harmony-chat-api (pyproject.toml)
 aiosignal==1.4.0
     # via aiohttp
 annotated-doc==0.0.4
@@ -34,6 +38,8 @@ argon2-cffi==25.1.0
     # via pwdlib
 argon2-cffi-bindings==25.1.0
     # via argon2-cffi
+async-timeout==5.0.1
+    # via aiokafka
 asyncpg==0.31.0
     # via harmony-chat-api (pyproject.toml)
 attrs==25.4.0
@@ -45,8 +51,14 @@ botocore==1.40.61
     #   aiobotocore
     #   boto3
     #   s3transfer
+cent==5.2.0
+    # via harmony-chat-api (pyproject.toml)
+certifi==2026.2.25
+    # via requests
 cffi==2.0.0
     # via argon2-cffi-bindings
+charset-normalizer==3.4.4
+    # via requests
 click==8.3.1
     # via uvicorn
 dnspython==2.8.0
@@ -67,6 +79,7 @@ idna==3.11
     # via
     #   anyio
     #   email-validator
+    #   requests
     #   yarl
 jmespath==1.1.0
     # via
@@ -78,6 +91,8 @@ multidict==6.7.1
     #   aiobotocore
     #   aiohttp
     #   yarl
+packaging==26.0
+    # via aiokafka
 propcache==0.4.1
     # via
     #   aiohttp
@@ -88,6 +103,7 @@ pycparser==3.0
     # via cffi
 pydantic[email]==2.12.5
     # via
+    #   cent
     #   fastapi
     #   harmony-chat-api (pyproject.toml)
     #   pydantic-settings
@@ -113,6 +129,8 @@ pyyaml==6.0.3
     # via uvicorn
 redis==7.2.0
     # via harmony-chat-api (pyproject.toml)
+requests==2.32.5
+    # via cent
 s3transfer==0.14.0
     # via boto3
 scalar-fastapi==1.6.2
@@ -125,8 +143,11 @@ starlette==0.52.1
     # via fastapi
 structlog==25.5.0
     # via harmony-chat-api (pyproject.toml)
+types-requests==2.32.4.20260107
+    # via cent
 typing-extensions==4.15.0
     # via
+    #   aiokafka
     #   aiosignal
     #   anyio
     #   fastapi
@@ -142,7 +163,10 @@ typing-inspection==0.4.2
     #   pydantic
     #   pydantic-settings
 urllib3==2.6.3
-    # via botocore
+    # via
+    #   botocore
+    #   requests
+    #   types-requests
 uvicorn[standard]==0.41.0
     # via harmony-chat-api (pyproject.toml)
 uvloop==0.22.1

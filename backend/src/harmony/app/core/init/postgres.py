@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from harmony.app.core import get_settings, PostgresConfig
+from ..settings import get_settings, PostgresConfig
 from harmony.app.models import Base
 
 async def init_postgres(app, stack):

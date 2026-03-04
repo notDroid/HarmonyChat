@@ -5,9 +5,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class FeatureToggles(BaseModel):
     postgres: bool = False
     dynamodb: bool = False
-    centrifugo: bool = False
     cache_redis: bool = False
     event_handlers: bool = False
+    kafka: bool = False
 
 class DynamoDBConfig(BaseModel):
     url: str = "http://localhost:8080"
@@ -49,10 +49,9 @@ class RedisConfig(BaseModel):
 class PostgresConfig(BaseModel):
     url: str = "postgresql+asyncpg://user:password@localhost:5432/harmony"
 
-class CentrifugoConfig(BaseModel):
-    url: str = "http://localhost:8000/api"
-    api_key: str = "testsecret"
-    timeout: int = 1
+class KafkaConfig(BaseModel):
+    bootstrap_servers: str = "localhost:9092"
+    retry_backoff_ms: int = 500
 
 class Settings(BaseSettings):
     app_env: str = "development"
@@ -68,7 +67,7 @@ class Settings(BaseSettings):
     aws: AWSConfig = AWSConfig()
     dynamodb: DynamoDBConfig = DynamoDBConfig()
     postgres: PostgresConfig = PostgresConfig()
-    cent: CentrifugoConfig = CentrifugoConfig()
+    kafka: KafkaConfig = KafkaConfig()
 
     model_config = SettingsConfigDict(
         env_file=".env",

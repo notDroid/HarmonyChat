@@ -1,4 +1,5 @@
 import uuid
+from aiokafka import AIOKafkaProducer
 import jwt
 from harmony.app.core import Settings
 from starlette.requests import HTTPConnection
@@ -107,11 +108,11 @@ def get_auth_repository(session: AsyncSession = Depends(get_db_session)) -> Auth
     return AuthRepository(session)
 
 # ---------------------------- Stream Dependencies --------------------------- #
-def get_cent_client(conn: HTTPConnection):
-    return conn.app.state.cent_client
-
 def get_redis_cache_client(conn: HTTPConnection):
     return conn.app.state.redis_cache_client
+
+def get_kafka_producer(conn: HTTPConnection):
+    return conn.app.state.kafka_producer
 
 # --------------------------- Service Dependencies --------------------------- #
 
@@ -186,11 +187,9 @@ def get_message_event_handler(
     return MessageEventHandler(chat_history_repository=chat_history_repo)
 
 def get_pubsub_service(
-    cent_client = Depends(get_cent_client),
     chat_queries: ChatQueries = Depends(get_chat_queries),
 ):
-    if not cent_client: return None
-    return PubSubService(client=cent_client, chat_queries=chat_queries)
+    return PubSubService(chat_queries=chat_queries)
 
 def get_user_commands(
     background_tasks: BackgroundTasks,
@@ -229,13 +228,13 @@ def get_message_commands(
     chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
     chat_queries: ChatQueries = Depends(get_chat_queries),
     user_queries: UserQueries = Depends(get_user_queries),
-    event_publisher: PubSubService = Depends(get_pubsub_service),
+    kafka_producer: AIOKafkaProducer = Depends(get_kafka_producer),
 ) -> MessageCommands:
     return MessageCommands(
         chat_history_repository=chat_history_repository, 
         chat_queries=chat_queries, 
         user_queries=user_queries, 
-        event_publisher=event_publisher, 
+        publisher=kafka_producer, 
         task_queue=background_tasks
     )
 

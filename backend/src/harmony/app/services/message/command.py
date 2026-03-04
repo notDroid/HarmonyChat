@@ -1,5 +1,6 @@
 import uuid
 import asyncio
+from aiokafka import AIOKafkaProducer
 from ulid import ULID
 from typing import Optional
 from datetime import datetime, timezone
@@ -12,7 +13,6 @@ from harmony.app.repositories import ChatHistoryRepository
 
 from ..chat import ChatQueries
 from ..user import UserQueries
-from ..pubsub import PubSubService
 
 logger = structlog.get_logger(__name__)
 
@@ -22,13 +22,13 @@ class MessageCommands:
         chat_history_repository: ChatHistoryRepository,
         chat_queries: ChatQueries,
         user_queries: UserQueries,
-        event_publisher: PubSubService,
+        publisher: AIOKafkaProducer,
         task_queue: Optional[TaskQueue] = None
     ):
         self.chat_history_repo = chat_history_repository
         self.chat_queries = chat_queries
         self.user_queries = user_queries
-        self.event_publisher = event_publisher
+        self.publisher = publisher
         self.task_queue = task_queue
 
     async def send_message(self, chat_id: uuid.UUID, user_id: uuid.UUID, content: str, client_uuid: str | None = None) -> ChatMessage:
@@ -51,29 +51,16 @@ class MessageCommands:
             client_uuid=client_uuid
         )
 
-        try:
-            # 3. Persist to DynamoDB and fetch sender metadata concurrently
-            task1 = self.chat_history_repo.create_message(msg)
-            task2 = self.user_queries.get_user_by_id(user_id)
-            results = await asyncio.gather(task1, task2)
+        sender = await self.user_queries.get_user_by_id(user_id)
+        msg_resp = ChatMessageResponse(**msg.model_dump(), author_metadata=sender.meta)
 
-            # 4. Fill in author metadata to publish message with complete info
-            sender = results[1]
-            msg_resp = ChatMessageResponse(
-                **msg.model_dump(),
-                author_metadata=sender.meta
+        try:
+            await self.publisher.send_and_wait(
+                topic="chat_messages",
+                key=str(chat_id).encode("utf-8"),
+                value=msg_resp.model_dump_json().encode("utf-8")
             )
-            
-            # 5. Publish to Redis Pub/Sub
-            self.task_queue.add_task(
-                self.event_publisher.publish_message, 
-                f"chat:{chat_id}", 
-                {
-                    "type": "chat_message",
-                    "payload": msg_resp.model_dump(mode="json")
-                }
-            )
-            
+
             logger.info("message_sent", chat_id=str(chat_id), user_id=str(user_id), message_id=ulid_str)
             return msg_resp
             

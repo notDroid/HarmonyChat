@@ -55,7 +55,7 @@ tasks:
   run:dev:
     desc: "▶️  START DEV: Runs the local dev environment"
     cmds:
-      - docker compose up
+      - docker compose up --build
 
   run:sim:
     desc: "▶️  START SIMULATION: Runs the Prod-mirror environment"

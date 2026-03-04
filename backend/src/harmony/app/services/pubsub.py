@@ -1,5 +1,4 @@
 import uuid
-from cent import AsyncClient, PublishRequest
 from .chat import ChatQueries
 from harmony.app.schemas import (
     CentrifugoSubscribeRequest, CentrifugoSubscribeResponse, 
@@ -18,16 +17,9 @@ class PubSubService:
     """
     def __init__(
         self,
-        client: AsyncClient,
-        chat_queries: ChatQueries
+        chat_queries: ChatQueries,
     ):
-        self.client = client
         self.chat_queries = chat_queries
-
-    async def publish_message(self, channel: str, message: dict):
-        request = PublishRequest(channel=channel, data=message)
-        await self.client.publish(request)
-        logger.info("published_message", channel=channel)
 
     @staticmethod 
     def parse_request(req: CentrifugoSubscribeRequest):

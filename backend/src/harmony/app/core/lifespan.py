@@ -6,7 +6,7 @@ from .init import (
     init_cache, 
     init_dynamodb, 
     init_postgres, 
-    init_stream
+    init_kafka,
 )
 
 
@@ -29,8 +29,8 @@ async def lifespan(app: FastAPI):
         # 3. Cache
         await init_cache(app, stack)
 
-        # 4. Stream
-        await init_stream(app, stack)
+        # 4. Kafka
+        await init_kafka(app, stack)
 
         logger.info("system_startup_complete")
         

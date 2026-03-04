@@ -1,6 +1,6 @@
 import aioboto3
 from contextlib import asynccontextmanager
-from harmony.app.core import get_settings, DynamoDBConfig, AWSConfig
+from ..settings import get_settings, DynamoDBConfig, AWSConfig
 
 async def init_dynamodb(app, stack):
     """
