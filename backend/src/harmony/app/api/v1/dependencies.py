@@ -228,6 +228,7 @@ def get_message_commands(
     chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
     chat_queries: ChatQueries = Depends(get_chat_queries),
     user_queries: UserQueries = Depends(get_user_queries),
+    settings: Settings = Depends(get_settings),
     kafka_producer: AIOKafkaProducer = Depends(get_kafka_producer),
 ) -> MessageCommands:
     return MessageCommands(
@@ -235,7 +236,8 @@ def get_message_commands(
         chat_queries=chat_queries, 
         user_queries=user_queries, 
         publisher=kafka_producer, 
-        task_queue=background_tasks
+        chat_config=settings.chat,
+        task_queue=background_tasks,
     )
 
 def get_auth_service(

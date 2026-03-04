@@ -1,4 +1,19 @@
 {
+  "consumers": [
+    {
+      "name": "chat_kafka_consumer",
+      "type": "kafka",
+      "enabled": true,
+      "kafka": {
+        "brokers": ["kafka:9092"],
+        "topics": ["chat_messages"],
+        "consumer_group": "centrifugo",
+        "publication_data_mode": {
+          "enabled": true
+        }
+      }
+    }
+  ],
   "engine": {
     "type": "redis",
     "redis": {
@@ -13,7 +28,6 @@
     "password": "admin",
     "secret": "admin"
   },
-
   "client": {
     "allowed_origins": [
       "*"

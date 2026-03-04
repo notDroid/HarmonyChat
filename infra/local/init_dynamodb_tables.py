@@ -1,12 +1,12 @@
-import json
 import os
+import json
 import boto3
 import botocore.exceptions
-import argparse
 
 # --------- CONFIGURATION ---------
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 DYNAMODB_ENDPOINT = os.getenv("DYNAMODB_ENDPOINT", "http://localhost:8000")
+TABLE_FILE = os.getenv("TABLE_FILE", "dynamodb-tables.json")
 
 # --------- CREATE TABLES ---------
 def create_tables(dynamodb, table_file):
@@ -28,25 +28,13 @@ def create_tables(dynamodb, table_file):
                 print(f"Table {table_name} already exists. Skipping.")
             else:
                 # Re-raise other unexpected errors
-                print(f"Unexpected error creating {table_name}: {e}")
+                print(f"Unexpected error creating {table_name}")
                 raise e
             
-def main(table_file):
+def init_db():
     dynamodb = boto3.resource(
         'dynamodb',
         endpoint_url=DYNAMODB_ENDPOINT,
         region_name=AWS_REGION,
     )
-    create_tables(dynamodb, table_file)
-            
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Initialize DynamoDB tables.")
-    parser.add_argument(
-        "--table-file",
-        type=str,
-        help="Path to the table schema JSON file.",
-        required=True
-    )
-    args = parser.parse_args()
-
-    main(table_file=args.table_file)
+    create_tables(dynamodb, TABLE_FILE)

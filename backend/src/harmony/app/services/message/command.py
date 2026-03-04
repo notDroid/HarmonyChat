@@ -1,6 +1,6 @@
 import uuid
-import asyncio
 from aiokafka import AIOKafkaProducer
+from harmony.app.core.settings import ChatConfig
 from ulid import ULID
 from typing import Optional
 from datetime import datetime, timezone
@@ -23,12 +23,14 @@ class MessageCommands:
         chat_queries: ChatQueries,
         user_queries: UserQueries,
         publisher: AIOKafkaProducer,
+        chat_config: ChatConfig,
         task_queue: Optional[TaskQueue] = None
     ):
         self.chat_history_repo = chat_history_repository
         self.chat_queries = chat_queries
         self.user_queries = user_queries
         self.publisher = publisher
+        self.cfg = chat_config
         self.task_queue = task_queue
 
     async def send_message(self, chat_id: uuid.UUID, user_id: uuid.UUID, content: str, client_uuid: str | None = None) -> ChatMessage:
@@ -56,9 +58,14 @@ class MessageCommands:
 
         try:
             await self.publisher.send_and_wait(
-                topic="chat_messages",
+                topic=self.cfg.message_topic,
                 key=str(chat_id).encode("utf-8"),
-                value=msg_resp.model_dump_json().encode("utf-8")
+                value=msg_resp.model_dump_json().encode("utf-8"),
+                headers=[
+                    ("X-Centrifugo-Channel", f"chat:{chat_id}".encode("utf-8")),
+                    ("channel", f"chat:{chat_id}".encode("utf-8")),
+                    ("x-centrifugo-channel", f"chat:{chat_id}".encode("utf-8"))
+                ]
             )
 
             logger.info("message_sent", chat_id=str(chat_id), user_id=str(user_id), message_id=ulid_str)

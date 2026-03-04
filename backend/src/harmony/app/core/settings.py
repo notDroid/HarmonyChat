@@ -16,6 +16,7 @@ class DynamoDBConfig(BaseModel):
 class ChatConfig(BaseModel):
     max_users_per_operation: int = 10
     default_pagination_limit: int = 50
+    message_topic: str = "chat_messages"
 
 class UserConfig(BaseModel):
     default_user_search_limit: int = 10
