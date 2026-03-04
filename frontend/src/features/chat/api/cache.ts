@@ -2,6 +2,7 @@ import { useQueryClient, InfiniteData, useInfiniteQuery, infiniteQueryOptions, Q
 import { CHAT_PANEL_SETTINGS } from '@/settings/chat_panel';
 import { ChatHistoryResponse } from "@/lib/api/model";
 import { UIMessage } from "../ui/message";
+import { useCallback } from 'react';
 
 import getChatHistory from './get_chat_history';
 
@@ -26,7 +27,7 @@ export function useChatCache(chat_id: string) {
   const queryClient = useQueryClient();
   const queryKey = [CHAT_PANEL_SETTINGS.QUERY_KEY, chat_id];
 
-  const insertOrUpdateMessage = (newMessage: UIMessage) => {
+  const insertOrUpdateMessage = useCallback((newMessage: UIMessage) => {
     // If the cache is empty, we cannot safely append without breaking pagination.
     // In this case, we should invalidate the cache, which occurs when a websocket message arrives while we have no messages loaded.
     const currentData = queryClient.getQueryData<InfiniteData<ChatHistoryResponse>>(queryKey);
@@ -66,9 +67,9 @@ export function useChatCache(chat_id: string) {
 
       return { ...oldData, pages: newPages };
     });
-  };
+  }, [queryClient, chat_id]);
 
-  const updateMessageStatus = (client_uuid: string, status: 'pending' | 'error' | 'sent') => {
+  const updateMessageStatus = useCallback((client_uuid: string, status: 'pending' | 'error' | 'sent') => {
     queryClient.setQueryData<InfiniteData<ChatHistoryResponse>>(queryKey, (oldData) => {
       if (!oldData) return oldData;
 
@@ -86,11 +87,11 @@ export function useChatCache(chat_id: string) {
 
       return { ...oldData, pages: newPages };
     });
-  };
+  }, [queryClient, chat_id]);
 
-  const invalidateChatCache = () => {
+  const invalidateChatCache = useCallback(() => {
     queryClient.invalidateQueries({ queryKey });
-  }
+  }, [queryClient, chat_id]);
 
   return {
     insertOrUpdateMessage,
