@@ -1,7 +1,6 @@
-FROM confluentinc/cp-server-connect:latest
+# Pin to a specific Confluent Platform version
+FROM confluentinc/cp-server-connect:7.5.3
 
-# Install DynamoDB Sink
-RUN confluent-hub install --no-prompt confluentinc/kafka-connect-aws-dynamodb:latest
-
-# Install Debezium PostgreSQL Source
-RUN confluent-hub install --no-prompt debezium/debezium-connector-postgresql:latest
+# Pin plugins to explicit versions compatible with the base image
+RUN confluent-hub install --no-prompt confluentinc/kafka-connect-aws-dynamodb:1.4.1
+RUN confluent-hub install --no-prompt debezium/debezium-connector-postgresql:2.4.2
