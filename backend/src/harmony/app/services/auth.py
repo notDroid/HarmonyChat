@@ -149,12 +149,12 @@ class AuthService(Command):
             async with self.transaction_handler("refresh_tokens", token_hash=token_hash):
                 # Validate token exists and is not expired
                 consumed_token = await self.auth_repository.get_token(token_hash)
-                user_id = consumed_token.user_id
-                if consumed_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+                if not consumed_token or consumed_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Refresh token expired."
                     )
+                user_id = consumed_token.user_id
 
                 # Generate new tokens
                 access_token, refresh_token, hashed_rt, rt_expires_dt = await self._generate_tokens(str(user_id))

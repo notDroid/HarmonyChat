@@ -15,7 +15,6 @@ export const getBaseUrl = () => {
 
 export const stripBaseUrl = (url: string) => {
   let urlwithoutBase = url.replace(process.env.INTERNAL_API_ENDPOINT || '', '');
-  urlwithoutBase = urlwithoutBase.replace(process.env.NEXT_PUBLIC_INTERNAL_API_ENDPOINT || '', '');
   return urlwithoutBase;
 };
 
