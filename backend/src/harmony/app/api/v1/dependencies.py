@@ -36,7 +36,11 @@ async def get_current_user(
 ) -> uuid.UUID:
     cfg = settings.auth
     try:
-        payload = decode_access_token(token, secret_key=cfg.secret_key, algorithm=cfg.algorithm)
+        payload = decode_access_token(
+            token, 
+            secret_key=cfg.secret_key.get_secret_value(), 
+            algorithm=cfg.algorithm
+        )
     except jwt.ExpiredSignatureError:
         logger.warning("token_expired", token=token)
         raise HTTPException(
@@ -75,7 +79,7 @@ async def get_user_from_cookie(
     try:
         payload = decode_access_token(
             token, 
-            secret_key=cfg.secret_key, 
+            secret_key=cfg.secret_key.get_secret_value(), 
             algorithm=cfg.algorithm
         )
         return payload.get("sub")

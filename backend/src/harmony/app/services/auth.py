@@ -122,7 +122,7 @@ class AuthService(Command):
         access_token_str = create_access_token(
             data={"sub": str(user_id)}, 
             expires_delta=access_token_expires,
-            secret_key=self.cfg.secret_key,
+            secret_key=self.cfg.secret_key.get_secret_value(),
             algorithm=self.cfg.algorithm
         )
         access_token = Token(
