@@ -1,6 +1,7 @@
 import uuid
 from fastapi import HTTPException, status
 from typing import Optional
+from harmony.app.models.outbox import OutboxEvent
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
@@ -49,6 +50,13 @@ class UserCommands(Command):
     async def delete_user(self, user_id: uuid.UUID):
         async with self.transaction_handler("delete_user", user_id=user_id):
             await self.user_data_repo.make_user_tombstone(user_id=user_id)
+
+            self.session.add(OutboxEvent(
+                aggregate_type="User",
+                aggregate_id=str(user_id),
+                event_type="TOMBSTONED",
+                payload={}
+            ))
             
         logger.info("user_tombstoned", user_id=str(user_id))
 

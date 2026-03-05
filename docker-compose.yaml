@@ -61,6 +61,7 @@ services:
       - POSTGRES_DB=harmony
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    command: postgres -c wal_level=logical
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U harmony -d harmony"]
       interval: 5s

@@ -68,6 +68,7 @@ class RedisConfig(BaseModel):
     """Redis connection and health configuration."""
     url: str = Field(default="redis://localhost:6379/1", description="Redis connection string")
     health_check_interval: int = Field(default=30, ge=0, description="Interval in seconds between Redis health checks")
+    request_timeout_ms: int = Field(default=100, ge=0, description="Timeout for Redis operations in milliseconds")
 
 
 class PostgresConfig(BaseModel):

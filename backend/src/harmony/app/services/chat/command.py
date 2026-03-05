@@ -1,5 +1,6 @@
 import uuid
 from fastapi import HTTPException, status
+from harmony.app.models.outbox import OutboxEvent
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 import structlog
@@ -73,6 +74,20 @@ class ChatCommands(Command):
         async with self.transaction_handler("add_users", chat_id=chat_id, user_id=user_id):
             await self._require_membership(user_id=user_id, chat_id=chat_id)
             await self.user_chat_repo.add_users_to_chat(chat_id=chat_id, user_id_list=user_id_list)
+
+            self.session.add(OutboxEvent(
+                aggregate_type="Chat",
+                aggregate_id=str(chat_id),
+                event_type="USERS_ADDED",
+                payload={"added_by": str(user_id), "user_id_list": [str(uid) for uid in user_id_list]}
+            ))
+            for new_user_id in user_id_list:
+                self.session.add(OutboxEvent(
+                    aggregate_type="User",
+                    aggregate_id=str(new_user_id),
+                    event_type="ADDED_TO_CHAT",
+                    payload={"added_by": str(user_id), "chat_id": str(chat_id)}
+                ))
         logger.info("users_added_to_chat", chat_id=chat_id, added_user_count=len(user_id_list))
 
         if self.chat_event_handler:
@@ -85,6 +100,19 @@ class ChatCommands(Command):
         # 1. Attempt to Delete Membership (also serves as a membership check)
         async with self.transaction_handler("leave_chat", chat_id=chat_id, user_id=user_id):
             await self.user_chat_repo.remove_user_from_chat(chat_id=chat_id, user_id=user_id)
+
+            self.session.add(OutboxEvent(
+                aggregate_type="Chat",
+                aggregate_id=str(chat_id),
+                event_type="USER_LEFT",
+                payload={"user_id": str(user_id)}
+            ))
+            self.session.add(OutboxEvent(
+                aggregate_type="User",
+                aggregate_id=str(user_id),
+                event_type="LEFT_CHAT",
+                payload={"chat_id": str(chat_id)}
+            ))
         logger.info("chat_left", chat_id=chat_id, user_id=user_id)
 
         if self.chat_event_handler:
@@ -98,6 +126,13 @@ class ChatCommands(Command):
         async with self.transaction_handler("delete_chat", chat_id=chat_id, user_id=user_id):
             await self._require_membership(user_id=user_id, chat_id=chat_id)
             await self.chat_data_repo.delete_chat(chat_id)
+
+            self.session.add(OutboxEvent(
+                aggregate_type="Chat",
+                aggregate_id=str(chat_id),
+                event_type="CHAT_DELETED",
+                payload={"deleted_by": str(user_id)}
+            ))
         logger.info("chat_deleted", chat_id=chat_id, deleted_by_user_id=user_id)
 
         if self.chat_event_handler:

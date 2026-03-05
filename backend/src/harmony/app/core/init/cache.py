@@ -30,6 +30,7 @@ async def cache_connector(cfg: RedisConfig):
         cfg.url,
         decode_responses=True,
         health_check_interval=cfg.health_check_interval,
+        socket_timeout=cfg.request_timeout_ms / 1000,  # Convert ms to seconds
         retry_on_timeout=False,
     )
 
