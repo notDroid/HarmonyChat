@@ -133,7 +133,7 @@ services:
 
   kafka-connect:
     build:
-      context: infra/docker/dynamodb-sink
+      context: infra/docker/kafka-connect
     container_name: kafka-connect
     depends_on:
       kafka:
@@ -195,7 +195,8 @@ services:
       - TABLE_FILE=infra/config/dynamodb-tables.json
 
       - CONNECT_URL=http://kafka-connect:8083/connectors
-      - CONFIG_FILE=infra/config/dynamodb-sink.json
+      - DYNAMODB_SINK_CONFIG_FILE=infra/config/dynamodb-sink.json
+      - DEBEZIUM_SOURCE_CONFIG_FILE=infra/config/debezium-source.json
     depends_on:
       dynamodb:
         condition: service_started

@@ -3,12 +3,10 @@ import json
 import boto3
 import botocore.exceptions
 
-# --------- CONFIGURATION ---------
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 DYNAMODB_ENDPOINT = os.getenv("DYNAMODB_ENDPOINT", "http://localhost:8000")
 TABLE_FILE = os.getenv("TABLE_FILE", "dynamodb-tables.json")
 
-# --------- CREATE TABLES ---------
 def create_tables(dynamodb, table_file):
     with open(table_file, "r") as f:
         table_schemas = json.load(f)
