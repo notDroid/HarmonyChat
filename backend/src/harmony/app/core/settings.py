@@ -10,7 +10,6 @@ class FeatureToggles(BaseModel):
     postgres: bool = Field(default=False, description="Enable PostgreSQL database integration")
     dynamodb: bool = Field(default=False, description="Enable AWS DynamoDB integration")
     cache_redis: bool = Field(default=False, description="Enable Redis caching")
-    event_handlers: bool = Field(default=False, description="Enable asynchronous event handlers")
     kafka: bool = Field(default=False, description="Enable Kafka message brokering")
 
 

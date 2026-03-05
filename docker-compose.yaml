@@ -10,7 +10,7 @@ services:
       - FEATURES__DYNAMODB=True
       - FEATURES__CENTRIFUGO=True
       - FEATURES__CACHE_REDIS=True
-      - FEATURES__EVENT_HANDLERS=True
+      - FEATURES__EVENT_HANDLERS=False
       - FEATURES__KAFKA=True
 
       # --- Connection Strings ---
@@ -38,6 +38,26 @@ services:
         condition: service_completed_successfully
     ports:
       - "8000:8000"
+
+  consumer:
+    build: backend
+    container_name: consumer
+    environment:
+      - DYNAMODB__URL=http://dynamodb:8000
+      - REDIS__URL=redis://redis:6379/1
+      - POSTGRES__URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
+      - KAFKA__BOOTSTRAP_SERVERS=kafka:9092
+      - AWS__ACCESS_KEY_ID=test
+      - AWS__SECRET_ACCESS_KEY=test
+      - AWS__DEFAULT_REGION=us-east-1
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      dynamodb:
+        condition: service_started
+    command: python -m harmony.consumer.main 
 
   # frontend:
   #   build: 

@@ -1,5 +1,5 @@
 import uuid
-from fastapi import Depends, BackgroundTasks, APIRouter, status, HTTPException, Request, Query
+from fastapi import Depends, APIRouter, status, HTTPException, Request, Query
 from harmony.app.core.settings import get_settings, Settings
 from harmony.app.schemas import (
     ChatCreateRequest, 
@@ -8,7 +8,7 @@ from harmony.app.schemas import (
     ChatMessage, 
     ChatHistoryResponse
 )
-from .dependencies import get_current_user, get_chat_commands, get_chat_queries, get_message_commands, get_message_queries, get_message_event_handler
+from .dependencies import get_current_user, get_chat_commands, get_chat_queries, get_message_commands, get_message_queries
 
 # common error responses
 common_chat_errors = {
@@ -129,10 +129,8 @@ async def get_chat_history(
 )
 async def delete_chat(
     chat_id: uuid.UUID,
-    background_tasks: BackgroundTasks,
     user_id: uuid.UUID = Depends(get_current_user),
     chat_command_service = Depends(get_chat_commands),
-    message_event_service = Depends(get_message_event_handler)
 ):
     """
     **Hard deletes** a chat and all its associated history.
@@ -142,7 +140,3 @@ async def delete_chat(
       to prevent the API from hanging.
     """
     await chat_command_service.delete_chat(user_id=user_id, chat_id=chat_id)
-
-    # TODO: Switch to event driven approach
-    if message_event_service:
-        background_tasks.add_task(message_event_service.on_chat_deleted, chat_id=chat_id)

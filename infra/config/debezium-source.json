@@ -19,7 +19,7 @@
     "transforms.outbox.table.field.event.key": "aggregate_id",
     "transforms.outbox.table.field.event.type": "event_type",
     "transforms.outbox.table.field.event.payload": "payload",
-    "transforms.outbox.table.fields.additional.placement": "aggregate_type:header:aggregate_type",
+    "transforms.outbox.table.fields.additional.placement": "aggregate_type:header:aggregate_type,event_type:header:eventType",
     
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
     "value.converter": "org.apache.kafka.connect.json.JsonConverter",

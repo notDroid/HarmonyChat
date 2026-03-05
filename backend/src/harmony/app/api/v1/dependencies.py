@@ -18,9 +18,9 @@ from harmony.app.repositories import (
 from harmony.app.services import (
     AuthService, 
     PubSubService, 
-    UserCommands, UserQueries, UserEventHandler,
-    ChatCommands, ChatQueries, ChatEventHandler,
-    MessageCommands, MessageQueries, MessageEventHandler,
+    UserCommands, UserQueries,
+    ChatCommands, ChatQueries,
+    MessageCommands, MessageQueries,
     CacheService
 )
 from harmony.app.core import decode_access_token, get_settings, Settings
@@ -169,66 +169,36 @@ def get_message_queries(
         user_queries=user_queries
     )
 
-def get_user_event_handler(
-    cache_service: CacheService = Depends(get_cache_service),
-    settings: Settings = Depends(get_settings)
-) -> UserEventHandler:
-    if not settings.features.event_handlers: return None
-    return UserEventHandler(cache_service=cache_service)
-
-def get_chat_event_handler(
-    cache_service: CacheService = Depends(get_cache_service),
-    settings: Settings = Depends(get_settings)
-) -> ChatEventHandler:
-    if not settings.features.event_handlers: return None
-    return ChatEventHandler(cache_service=cache_service)
-
-def get_message_event_handler(
-    chat_history_repo: ChatHistoryRepository = Depends(get_chat_history_repository),
-    settings: Settings = Depends(get_settings)
-) -> MessageEventHandler:
-    if not settings.features.event_handlers: return None
-    return MessageEventHandler(chat_history_repository=chat_history_repo)
-
 def get_pubsub_service(
     chat_queries: ChatQueries = Depends(get_chat_queries),
 ):
     return PubSubService(chat_queries=chat_queries)
 
 def get_user_commands(
-    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_db_session),
     user_data_repository: UserDataRepository = Depends(get_user_data_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
-    user_event_handler: UserEventHandler = Depends(get_user_event_handler),
 ) -> UserCommands:
     return UserCommands(
         session=session, 
         user_data_repository=user_data_repository, 
         user_chat_repository=user_chat_repository, 
-        user_event_handler=user_event_handler, 
-        task_queue=background_tasks
     )
 
 def get_chat_commands(
-    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_db_session),
     chat_data_repository: ChatDataRepository = Depends(get_chat_data_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
-    chat_event_handler: ChatEventHandler = Depends(get_chat_event_handler),
     settings: Settings = Depends(get_settings)
 ) -> ChatCommands:
     return ChatCommands(
         session=session, 
         chat_data_repository=chat_data_repository, 
         user_chat_repository=user_chat_repository, 
-        chat_event_handler=chat_event_handler, 
-        task_queue=background_tasks,
         chat_config=settings.chat
     )
 
 def get_message_commands(
-    background_tasks: BackgroundTasks,
     chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
     chat_queries: ChatQueries = Depends(get_chat_queries),
     user_queries: UserQueries = Depends(get_user_queries),
@@ -241,7 +211,6 @@ def get_message_commands(
         user_queries=user_queries, 
         publisher=kafka_producer, 
         chat_config=settings.chat,
-        task_queue=background_tasks,
     )
 
 def get_auth_service(

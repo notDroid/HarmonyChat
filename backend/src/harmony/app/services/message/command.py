@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 import structlog
 
-from harmony.app.core.interfaces import TaskQueue
 from harmony.app.schemas import ChatMessage, ChatMessageResponse
 from harmony.app.repositories import ChatHistoryRepository
 
@@ -24,14 +23,12 @@ class MessageCommands:
         user_queries: UserQueries,
         publisher: AIOKafkaProducer,
         chat_config: ChatConfig,
-        task_queue: Optional[TaskQueue] = None
     ):
         self.chat_history_repo = chat_history_repository
         self.chat_queries = chat_queries
         self.user_queries = user_queries
         self.publisher = publisher
         self.cfg = chat_config
-        self.task_queue = task_queue
 
     async def send_message(self, chat_id: uuid.UUID, user_id: uuid.UUID, content: str, client_uuid: str | None = None) -> ChatMessage:
         # 1. Authorize
