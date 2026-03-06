@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import AsyncExitStack
+import signal
 import structlog
 
 from harmony.app.core import get_settings, setup_logging
@@ -7,7 +8,9 @@ from harmony.app.init import cache_connector, dynamodb_connector
 from harmony.app.repositories import ChatHistoryRepository
 from harmony.app.services import ChatEventHandler, UserEventHandler, MessageEventHandler
 from harmony.app.services.cache import CacheService
+
 from .consumer import CDCConsumer
+from .handlers import setup_router
 
 logger = structlog.get_logger(__name__)
 
@@ -29,16 +32,29 @@ async def main():
         user_handler = UserEventHandler(cache_service)
         msg_handler = MessageEventHandler(chat_history_repo)
 
+        router = setup_router(chat_handler, user_handler, msg_handler)
+
         # 4. Start Consumer
         consumer = CDCConsumer(
             kafka_bootstrap_servers=settings.kafka.bootstrap_servers,
-            chat_handler=chat_handler,
-            user_handler=user_handler,
-            message_handler=msg_handler
+            topics=settings.kafka.topics,
+            router=router
         )
         
+        loop = asyncio.get_running_loop()
+        stop_event = asyncio.Event()
+        
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, stop_event.set)
+            
         logger.info("starting_cdc_worker")
-        await consumer.start()
+        
+        # Run consumer until stop_event is set
+        consumer_task = asyncio.create_task(consumer.start(stop_event))
+        await stop_event.wait()
+        
+        logger.info("shutting_down_cdc_worker")
+        await consumer_task
 
 if __name__ == "__main__":
     asyncio.run(main())

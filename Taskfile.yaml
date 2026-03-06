@@ -127,4 +127,4 @@ tasks:
     desc: "🔄 COMPILE: generate requirements.txt from pyproject.toml"
     dir: backend
     cmds:
-      - pip-compile pyproject.toml --output-file requirements.txt
+      - conda run -n {{.CONDA_ENV}} pip-compile pyproject.toml --output-file requirements.txt

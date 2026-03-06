@@ -82,6 +82,7 @@ class KafkaConfig(BaseModel):
     """Kafka producer/consumer configuration."""
     bootstrap_servers: str = Field(default="localhost:9092", description="Comma-separated Kafka brokers")
     retry_backoff_ms: int = Field(default=500, ge=0, description="Milliseconds to wait before retrying a failed Kafka operation")
+    topics: list[str] = Field(default_factory=lambda: ["Chat", "User"], description="List of Kafka topics to pull from")
 
 
 class Settings(BaseSettings):

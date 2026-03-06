@@ -15,6 +15,7 @@ dependencies = [
     "typing-inspection>=0.4.2",
     "annotated-doc>=0.0.4",
     "structlog>=25.5.0",
+    "tenacity>=9.1.4",
 
     "aioboto3>=15.5.0",
     "aiofiles>=25.1.0",
