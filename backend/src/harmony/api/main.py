@@ -1,19 +1,20 @@
 import uuid
-import traceback
-from .exception_handlers import register_exception_handlers
-from scalar_fastapi import get_scalar_api_reference
+
 import structlog
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from scalar_fastapi import get_scalar_api_reference
 
-from harmony.app.core import get_settings, setup_logging, lifespan
+from harmony.app.core import get_api_settings, setup_logging
+
+from .lifespan import lifespan
+from .exception_handlers import register_exception_handlers
 from .v1 import router as api_v1_router
 
 # Initialize logging
-settings = get_settings()
+settings = get_api_settings()
 setup_logging(is_local_dev=(settings.app_env == "development"))
 logger = structlog.get_logger(__name__)
 

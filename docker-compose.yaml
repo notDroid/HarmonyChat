@@ -18,7 +18,7 @@ services:
       - REDIS__URL=redis://redis:6379/1
       - POSTGRES__URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
       - CENT__URL=http://centrifugo:8000/api
-      - KAFKA__BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_PRODUCER__BOOTSTRAP_SERVERS=kafka:9092
 
       - CENT__API_KEY=your-secure-backend-api-key
 
@@ -46,7 +46,7 @@ services:
       - DYNAMODB__URL=http://dynamodb:8000
       - REDIS__URL=redis://redis:6379/1
       - POSTGRES__URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
-      - KAFKA__BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_CONSUMER__BOOTSTRAP_SERVERS=kafka:9092
       - AWS__ACCESS_KEY_ID=test
       - AWS__SECRET_ACCESS_KEY=test
       - AWS__DEFAULT_REGION=us-east-1

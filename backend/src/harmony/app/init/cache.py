@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from redis.asyncio import Redis
 import structlog
 
-from harmony.app.core import get_settings, RedisConfig
+from harmony.app.core import RedisConfig
 
 logger = structlog.get_logger(__name__)
 

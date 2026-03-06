@@ -7,10 +7,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class FeatureToggles(BaseModel):
     """Flags to enable or disable specific architectural components."""
-    postgres: bool = Field(default=False, description="Enable PostgreSQL database integration")
-    dynamodb: bool = Field(default=False, description="Enable AWS DynamoDB integration")
     cache_redis: bool = Field(default=False, description="Enable Redis caching")
-    kafka: bool = Field(default=False, description="Enable Kafka message brokering")
+
+
+class KafkaConsumerConfig(BaseModel):
+    """Configuration for the CDC Consumer."""
+    bootstrap_servers: str = Field(default="localhost:9092")
+    group_id: str = Field(default="harmony-cdc-worker")
+    topics: list[str] = Field(default_factory=lambda: ["Chat", "User"])
+    
+    max_poll_records: int = Field(default=500, description="Max messages per batch")
+    fetch_max_bytes: int = Field(default=52428800, description="50MB max fetch size")
+    session_timeout_ms: int = Field(default=10_000, description="Consumer session timeout in milliseconds")
 
 
 class DynamoDBConfig(BaseModel):
@@ -78,38 +86,29 @@ class PostgresConfig(BaseModel):
     )
 
 
-class KafkaConfig(BaseModel):
+class KafkaProducerConfig(BaseModel):
     """Kafka producer/consumer configuration."""
     bootstrap_servers: str = Field(default="localhost:9092", description="Comma-separated Kafka brokers")
     retry_backoff_ms: int = Field(default=500, ge=0, description="Milliseconds to wait before retrying a failed Kafka operation")
-    topics: list[str] = Field(default_factory=lambda: ["Chat", "User"], description="List of Kafka topics to pull from")
 
-
-class Settings(BaseSettings):
+class BaseAppSettings(BaseSettings):
     """
-    Main Application Settings.
+    Shared settings
     """
-    # App Metadata
-    project_name: str = Field(default="Harmony API", description="Name of the FastAPI application")
-    app_env: Literal["development", "staging", "production"] = Field(
-        default="development", 
-        description="Current application environment"
-    )
-    debug: bool = Field(default=True, description="Enable or disable FastAPI debug mode")
-    
-    # Nested Configurations
+    app_env: Literal["development", "staging", "production"] = Field(default="development")
     features: FeatureToggles = FeatureToggles()
+    
+    # Shared Infrastructure
+    postgres: PostgresConfig = PostgresConfig()
+    redis: RedisConfig = RedisConfig()
+    aws: AWSConfig = AWSConfig()
+    dynamodb: DynamoDBConfig = DynamoDBConfig()
+
+    # Shared Config
     chat: ChatConfig = ChatConfig()
     user: UserConfig = UserConfig()
     auth: AuthConfig = AuthConfig()
     cache: CacheConfig = CacheConfig()
-
-    # Infrastructure Configurations
-    redis: RedisConfig = RedisConfig()
-    aws: AWSConfig = AWSConfig()
-    dynamodb: DynamoDBConfig = DynamoDBConfig()
-    postgres: PostgresConfig = PostgresConfig()
-    kafka: KafkaConfig = KafkaConfig()
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -119,7 +118,26 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
+class APISettings(BaseAppSettings):
+    project_name: str = Field(default="Harmony API")
+    debug: bool = Field(default=True)
+    
+    kafka_producer: KafkaProducerConfig = KafkaProducerConfig()
+
+
+class ConsumerSettings(BaseAppSettings):
+    """
+    Settings strictly for the Kafka CDC Consumer process.
+    """
+    consumer_name: str = Field(default="Harmony CDC Worker")
+
+    kafka_consumer: KafkaConsumerConfig = KafkaConsumerConfig()
+
 
 @lru_cache
-def get_settings() -> Settings:
-    return Settings()
+def get_api_settings() -> APISettings:
+    return APISettings()
+
+@lru_cache
+def get_consumer_settings() -> ConsumerSettings:
+    return ConsumerSettings()

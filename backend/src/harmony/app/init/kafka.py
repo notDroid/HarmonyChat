@@ -1,12 +1,12 @@
 from contextlib import asynccontextmanager
 from aiokafka import AIOKafkaProducer
-from harmony.app.core import KafkaConfig
+from harmony.app.core import KafkaProducerConfig
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 @asynccontextmanager
-async def kafka_connector(cfg: KafkaConfig):
+async def kafka_connector(cfg: KafkaProducerConfig):
     """
     Context manager that yields a connected AIOKafkaProducer.
     Handles startup, idempotency setup, and graceful teardown.

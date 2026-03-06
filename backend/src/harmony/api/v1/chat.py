@@ -1,6 +1,6 @@
 import uuid
 from fastapi import Depends, APIRouter, status, HTTPException, Request, Query
-from harmony.app.core.settings import get_settings, Settings
+from harmony.app.core.settings import get_api_settings, APISettings
 from harmony.app.schemas import (
     ChatCreateRequest, 
     ChatResponse, 
@@ -79,7 +79,7 @@ async def send_message(
 
 def get_chat_pagination_limit(
     limit: int | None = Query(default=None, ge=1, description="Number of items to return"),
-    settings: Settings = Depends(get_settings)
+    settings: APISettings = Depends(get_api_settings)
 ) -> int:
     """
     Resolves the chat pagination limit. 

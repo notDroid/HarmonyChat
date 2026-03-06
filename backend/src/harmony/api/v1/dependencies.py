@@ -1,7 +1,6 @@
 import uuid
 from aiokafka import AIOKafkaProducer
 import jwt
-from harmony.app.core import Settings
 from starlette.requests import HTTPConnection
 from fastapi import BackgroundTasks, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +22,7 @@ from harmony.app.services import (
     MessageCommands, MessageQueries,
     CacheService
 )
-from harmony.app.core import decode_access_token, get_settings, Settings
+from harmony.app.core import decode_access_token, get_api_settings, APISettings
 
 import structlog
 logger = structlog.get_logger(__name__)
@@ -32,7 +31,7 @@ logger = structlog.get_logger(__name__)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
-    settings: Settings = Depends(get_settings)
+    settings: APISettings = Depends(get_api_settings)
 ) -> uuid.UUID:
     cfg = settings.auth
     try:
@@ -69,7 +68,7 @@ async def get_current_user(
 
 async def get_user_from_cookie(
     request: Request,
-    settings: Settings = Depends(get_settings)
+    settings: APISettings = Depends(get_api_settings)
 ) -> str | None:
     cfg = settings.auth
     token = request.cookies.get(cfg.access_token_name)
@@ -96,7 +95,7 @@ async def get_db_session(conn: HTTPConnection):
         yield session
 
 # -------------------------- Repository Dependencies ------------------------- #
-def get_chat_history_repository(dynamodb = Depends(get_dynamo_client), settings: Settings = Depends(get_settings)) -> ChatHistoryRepository:
+def get_chat_history_repository(dynamodb = Depends(get_dynamo_client), settings: APISettings = Depends(get_api_settings)) -> ChatHistoryRepository:
     return ChatHistoryRepository(dynamodb, dynamodb_config=settings.dynamodb)
 
 def get_chat_data_repository(session: AsyncSession = Depends(get_db_session)) -> ChatDataRepository:
@@ -112,7 +111,7 @@ def get_auth_repository(session: AsyncSession = Depends(get_db_session)) -> Auth
     return AuthRepository(session)
 
 # ---------------------------- Stream Dependencies --------------------------- #
-def get_redis_cache_client(conn: HTTPConnection, settings: Settings = Depends(get_settings)):
+def get_redis_cache_client(conn: HTTPConnection, settings: APISettings = Depends(get_api_settings)):
     return conn.app.state.redis_cache_client
 
 def get_kafka_producer(conn: HTTPConnection):
@@ -130,7 +129,7 @@ def get_user_queries(
     user_data_repository: UserDataRepository = Depends(get_user_data_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
     cache_service: CacheService = Depends(get_cache_service),
-    settings: Settings = Depends(get_settings)
+    settings: APISettings = Depends(get_api_settings)
 ) -> UserQueries:
     return UserQueries(
         session=session, 
@@ -147,7 +146,7 @@ def get_chat_queries(
     chat_data_repository: ChatDataRepository = Depends(get_chat_data_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
     cache_service: CacheService = Depends(get_cache_service),
-    settings: Settings = Depends(get_settings)
+    settings: APISettings = Depends(get_api_settings)
 ) -> ChatQueries:
     return ChatQueries(
         session=session, 
@@ -189,7 +188,7 @@ def get_chat_commands(
     session: AsyncSession = Depends(get_db_session),
     chat_data_repository: ChatDataRepository = Depends(get_chat_data_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
-    settings: Settings = Depends(get_settings)
+    settings: APISettings = Depends(get_api_settings)
 ) -> ChatCommands:
     return ChatCommands(
         session=session, 
@@ -202,7 +201,7 @@ def get_message_commands(
     chat_history_repository: ChatHistoryRepository = Depends(get_chat_history_repository),
     chat_queries: ChatQueries = Depends(get_chat_queries),
     user_queries: UserQueries = Depends(get_user_queries),
-    settings: Settings = Depends(get_settings),
+    settings: APISettings = Depends(get_api_settings),
     kafka_producer: AIOKafkaProducer = Depends(get_kafka_producer),
 ) -> MessageCommands:
     return MessageCommands(
@@ -218,7 +217,7 @@ def get_auth_service(
     user_commands: UserCommands = Depends(get_user_commands),
     user_queries: UserQueries = Depends(get_user_queries),
     auth_repository: AuthRepository = Depends(get_auth_repository),
-    settings: Settings = Depends(get_settings)
+    settings: APISettings = Depends(get_api_settings)
 ) -> AuthService:
     return AuthService(
         session=session, 

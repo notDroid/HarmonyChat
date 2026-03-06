@@ -7,7 +7,7 @@ from harmony.app.schemas import (
     UserResponse, 
     UserChatsResponse
 )
-from harmony.app.core import get_settings, Settings
+from harmony.app.core import get_api_settings, APISettings
 from .dependencies import get_auth_service, get_current_user, get_user_commands, get_user_queries
 
 router = APIRouter()
@@ -101,7 +101,7 @@ async def get_current_user_details(
 
 def get_user_search_limit(
     limit: int | None = Query(default=None, ge=1, description="Search result limit"),
-    settings: Settings = Depends(get_settings)
+    settings: APISettings = Depends(get_api_settings)
 ) -> int:
     """
     Resolves and strictly validates the user search limit against configured maximums.

@@ -3,7 +3,7 @@ from contextlib import AsyncExitStack
 import signal
 import structlog
 
-from harmony.app.core import get_settings, setup_logging
+from harmony.app.core import get_consumer_settings, setup_logging
 from harmony.app.init import cache_connector, dynamodb_connector
 from harmony.app.repositories import ChatHistoryRepository
 from harmony.app.services import ChatEventHandler, UserEventHandler, MessageEventHandler
@@ -15,7 +15,7 @@ from .handlers import setup_router
 logger = structlog.get_logger(__name__)
 
 async def main():
-    settings = get_settings()
+    settings = get_consumer_settings()
     setup_logging(is_local_dev=(settings.app_env == "development"))
     
     async with AsyncExitStack() as stack:
@@ -36,8 +36,7 @@ async def main():
 
         # 4. Start Consumer
         consumer = CDCConsumer(
-            kafka_bootstrap_servers=settings.kafka.bootstrap_servers,
-            topics=settings.kafka.topics,
+            config=settings.kafka_consumer,
             router=router
         )
         
