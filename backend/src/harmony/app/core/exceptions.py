@@ -29,3 +29,7 @@ class ValidationError(HarmonyError):
 class LimitExceededError(ValidationError):
     """Raised when an operation exceeds defined system limits."""
     pass
+
+class InternalServerError(HarmonyError):
+    """Raised when an unexpected server error occurs."""
+    pass

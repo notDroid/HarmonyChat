@@ -4,7 +4,7 @@ from harmony.app.core.settings import ChatConfig
 from ulid import ULID
 from typing import Optional
 from datetime import datetime, timezone
-from fastapi import HTTPException, status
+from harmony.app.core.exceptions import AuthorizationError, InternalServerError
 import structlog
 
 from harmony.app.schemas import ChatMessage, ChatMessageResponse
@@ -34,7 +34,7 @@ class MessageCommands:
         # 1. Authorize
         is_member = await self.chat_queries.check_user_in_chat(user_id=user_id, chat_id=chat_id)
         if not is_member:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "User is not a member of this chat.")
+            raise AuthorizationError("User is not a member of this chat.")
 
         # 2. Construct Message Data
         ulid_val = ULID()
@@ -68,4 +68,4 @@ class MessageCommands:
             
         except Exception as e:
             logger.exception("message_send_failed", chat_id=str(chat_id), user_id=str(user_id))
-            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Failed to send message.")
+            raise InternalServerError("Failed to send message.")

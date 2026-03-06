@@ -8,7 +8,8 @@ from harmony.app.core.exceptions import (
     AuthenticationError,
     ConflictError,
     ValidationError,
-    LimitExceededError
+    LimitExceededError,
+    InternalServerError
 )
 
 logger = structlog.get_logger(__name__)
@@ -41,4 +42,20 @@ def register_exception_handlers(app: FastAPI):
 
     @app.exception_handler(LimitExceededError)
     async def limit_exceeded_handler(request: Request, exc: LimitExceededError):
-        return JSONResponse(status_code=400, content={"detail": exc.message})
+        return JSONResponse(status_code=422, content={"detail": exc.message})
+
+    @app.exception_handler(InternalServerError)
+    async def internal_server_error_handler(request: Request, exc: InternalServerError):
+        return JSONResponse(status_code=500, content={"detail": exc.message})
+    
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception):
+        """
+        Catches any unexpected Python exceptions that aren't wrapped in a HarmonyError.
+        Prevents stack traces from leaking to the client.
+        """
+        logger.exception("unhandled_system_error", path=request.url.path, error=str(exc))
+        return JSONResponse(
+            status_code=500, 
+            content={"detail": "An unexpected server error occurred."}
+        )

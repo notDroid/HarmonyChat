@@ -1,7 +1,7 @@
 import uuid
 import asyncio
 from typing import Optional, List
-from fastapi import HTTPException, status
+from harmony.app.core.exceptions import NotFoundError, ValidationError, InternalServerError
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
@@ -56,7 +56,7 @@ class UserQueries:
         user = await self.user_data_repo.get_user_by_id(user_id)
         if not user:
             logger.warning("get_user_not_found", user_id=str(user_id))
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "User does not exist.")
+            raise NotFoundError("User does not exist.")
         user = UserSchema.model_validate(user)
         
         # 3. Cache the result for future lookups
@@ -75,12 +75,12 @@ class UserQueries:
             email_adapter.validate_python(email)
         except ValueError:
             logger.warning("get_user_by_email_invalid_format", email=email)
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid email format.")
+            raise ValidationError("Invalid email format.")
         
         user = await self.user_data_repo.get_user_by_email(email)
         if not user:
             logger.warning("get_user_by_email_not_found", email=email)
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "User does not exist.")
+            raise NotFoundError("User does not exist.")
         if raw:
             return user
         return UserSchema.model_validate(user)
@@ -107,10 +107,7 @@ class UserQueries:
             return [UserChatItem(chat_id=row.chat_id, meta=row.meta) for row in rows]
         except Exception as e:
             logger.exception("get_user_chats_failed", user_id=str(user_id))
-            raise HTTPException(
-                status.HTTP_500_INTERNAL_SERVER_ERROR, 
-                "An unexpected error occurred while fetching user chats."
-            )
+            raise InternalServerError("An unexpected error occurred while fetching user chats.")
         
     async def get_users_dict(self, user_ids: list[uuid.UUID]) -> dict[uuid.UUID, UserSchema]:
         if not user_ids: 

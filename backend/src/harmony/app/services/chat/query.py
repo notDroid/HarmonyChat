@@ -1,5 +1,5 @@
 import uuid
-from fastapi import HTTPException, status
+from harmony.app.core.exceptions import AuthorizationError, NotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 import structlog
@@ -70,7 +70,7 @@ class ChatQueries:
 
         if not is_member:
             logger.warning("chat_metadata_access_denied", chat_id=str(chat_id), user_id=str(user_id))
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "You must be a member of the chat to view its metadata.")
+            raise AuthorizationError("You must be a member of the chat to view its metadata.")
 
     async def get_chat_metadata(self, user_id: uuid.UUID, chat_id: uuid.UUID) -> ChatSchema:
         # 1. Authorize
@@ -88,7 +88,7 @@ class ChatQueries:
         chat = await self.chat_data_repo.get_chat(chat_id)
         if not chat:
             logger.warning("get_chat_not_found", chat_id=str(chat_id), user_id=str(user_id))
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat does not exist.")
+            raise NotFoundError("Chat does not exist.")
         chat = ChatSchema.model_validate(chat) # Convert from SQLAlchemy model to Pydantic schema
         
         # 4. Populate cache for future requests
@@ -109,6 +109,6 @@ class ChatQueries:
         users = await self.user_chat_repo.get_chat_users(chat_id=chat_id)
         if not users:
             logger.warning("get_chat_members_not_found", chat_id=str(chat_id), user_id=str(user_id))
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat does not exist.")
+            raise NotFoundError("Chat does not exist.")
             
         return users

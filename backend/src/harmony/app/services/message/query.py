@@ -1,5 +1,5 @@
 import uuid
-from fastapi import HTTPException, status
+from harmony.app.core.exceptions import AuthorizationError, InternalServerError
 import structlog
 
 from harmony.app.repositories import ChatHistoryRepository
@@ -26,7 +26,7 @@ class MessageQueries:
         is_member = await self.chat_queries.check_user_in_chat(user_id=user_id, chat_id=chat_id)
         if not is_member:
             logger.warning("history_access_denied", chat_id=chat_id, user_id=user_id)
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "You must be a member of the chat to view history.")
+            raise AuthorizationError("You must be a member of the chat to view history.")
 
         # 2. Fetch from DynamoDB
         try:
@@ -34,7 +34,7 @@ class MessageQueries:
             logger.debug("chat_history_retrieved", chat_id=str(chat_id), message_count=len(messages))
         except Exception as e:
             logger.exception("chat_history_fetch_failed", chat_id=str(chat_id))
-            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Failed to retrieve chat history.")
+            raise InternalServerError("Failed to retrieve chat history.")
         
         # 3. Get user metadata
         user_ids = list(set(m.user_id for m in messages))

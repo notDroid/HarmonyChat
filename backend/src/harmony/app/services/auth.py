@@ -1,6 +1,6 @@
 import asyncio
 from datetime import timedelta, timezone, datetime
-from fastapi import HTTPException, status
+from harmony.app.core.exceptions import ConflictError, AuthenticationError, NotFoundError, ValidationError
 
 from harmony.app.core import (
     get_password_hash, 
@@ -61,15 +61,12 @@ class AuthService(Command):
     async def sign_up(self, user_create: UserCreateRequest) -> str:
         try:
             existing_user = await self.user_queries.get_user_by_email(user_create.email)
-        except HTTPException:
+        except NotFoundError:
             # If get_user_by_email raises an exception (e.g., 404), it means the user doesn't exist
             existing_user = None
 
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A user with this email already exists."
-            )
+            raise ConflictError("A user with this email already exists.")
 
         hashed_pw = get_password_hash(user_create.password)
 
@@ -83,25 +80,12 @@ class AuthService(Command):
     async def authenticate_user(self, email: str, password: str) -> list[Token]:
         try:
             user = await self.user_queries.get_user_by_email(email, raw=True)
-        except HTTPException:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+        except (NotFoundError, ValidationError):
+            raise AuthenticationError("Invalid email or password.")
         if not user or user.tombstone:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
+            raise AuthenticationError("Invalid email or password.")
         if not verify_password(password, user.hashed_password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise AuthenticationError("Invalid email or password.")
 
         # Create tokens
         access_token, refresh_token, hashed_rt, rt_expires_dt = await self._generate_tokens(str(user.user_id))
@@ -150,10 +134,7 @@ class AuthService(Command):
                 # Validate token exists and is not expired
                 consumed_token = await self.auth_repository.get_token(token_hash)
                 if not consumed_token or consumed_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Refresh token expired."
-                    )
+                    raise AuthenticationError("Refresh token expired.")
                 user_id = consumed_token.user_id
 
                 # Generate new tokens
@@ -165,12 +146,8 @@ class AuthService(Command):
                     user_id=user_id,
                     expires_at=rt_expires_dt
                 )
-        except HTTPException:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired refresh token.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+        except AuthenticationError:
+            raise AuthenticationError("Invalid or expired refresh token.")
 
         return [access_token, refresh_token]
     
