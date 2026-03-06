@@ -1,5 +1,4 @@
 import uuid
-from fastapi import HTTPException, status
 from harmony.app.models.outbox import OutboxEvent
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog

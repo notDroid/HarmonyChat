@@ -1,18 +1,7 @@
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from ..settings import get_settings, PostgresConfig
+from harmony.app.core import PostgresConfig
 from harmony.app.models import Base
-
-async def init_postgres(app, stack):
-    """
-    Initializes the Postgres connection and session factory, storing it in app.state.
-    """
-    settings = get_settings()
-    if not settings.features.postgres:
-        return
-
-    session_factory = await stack.enter_async_context(postgres_connector(settings.app_env == "development", settings.postgres))
-    app.state.session_factory = session_factory
 
 @asynccontextmanager
 async def postgres_connector(dev_mode: bool, cfg: PostgresConfig):

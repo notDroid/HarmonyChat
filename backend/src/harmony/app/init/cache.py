@@ -2,21 +2,9 @@ from contextlib import asynccontextmanager
 from redis.asyncio import Redis
 import structlog
 
-from ..settings import get_settings, RedisConfig
+from harmony.app.core import get_settings, RedisConfig
 
 logger = structlog.get_logger(__name__)
-
-async def init_cache(app, stack):
-    """
-    Initializes the Redis Cache client and stores it in app.state.
-    """
-    settings = get_settings()
-    if not settings.features.cache_redis:
-        app.state.redis_cache_client = None
-        return
-
-    redis_client = await stack.enter_async_context(cache_connector(settings.redis))
-    app.state.redis_cache_client = redis_client
 
 @asynccontextmanager
 async def cache_connector(cfg: RedisConfig):

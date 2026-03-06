@@ -1,17 +1,6 @@
 import aioboto3
 from contextlib import asynccontextmanager
-from ..settings import get_settings, DynamoDBConfig, AWSConfig
-
-async def init_dynamodb(app, stack):
-    """
-    Initializes the DynamoDB client and stores it in app.state.
-    """
-    settings = get_settings()
-    if not settings.features.dynamodb:
-        return
-
-    dynamodb_client = await stack.enter_async_context(dynamodb_connector(settings.dynamodb, settings.aws))
-    app.state.dynamodb = dynamodb_client
+from harmony.app.core import DynamoDBConfig, AWSConfig
 
 @asynccontextmanager
 async def dynamodb_connector(dynamodb_cfg: DynamoDBConfig, aws_cfg: AWSConfig):

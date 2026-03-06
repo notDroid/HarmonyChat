@@ -1,23 +1,9 @@
 from contextlib import asynccontextmanager
 from aiokafka import AIOKafkaProducer
-from ..settings import KafkaConfig
+from harmony.app.core import KafkaConfig
 import structlog
 
-from harmony.app.core import get_settings
-
 logger = structlog.get_logger(__name__)
-
-async def init_kafka(app, stack):
-    """
-    Initializes the AIOKafkaProducer and stores it in app.state.
-    """
-    settings = get_settings()
-    
-    if not settings.features.kafka:
-        return
-
-    producer = await stack.enter_async_context(kafka_connector(settings.kafka))
-    app.state.kafka_producer = producer
 
 @asynccontextmanager
 async def kafka_connector(cfg: KafkaConfig):

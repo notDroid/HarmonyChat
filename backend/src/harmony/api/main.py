@@ -8,8 +8,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from .core import get_settings, setup_logging, lifespan
-from .api.v1 import router as api_v1_router
+from harmony.app.core import get_settings, setup_logging, lifespan
+from .v1 import router as api_v1_router
 
 # Initialize logging
 settings = get_settings()

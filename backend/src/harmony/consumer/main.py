@@ -3,7 +3,7 @@ from contextlib import AsyncExitStack
 import structlog
 
 from harmony.app.core import get_settings, setup_logging
-from harmony.app.core.init import cache_connector, dynamodb_connector
+from harmony.app.init import cache_connector, dynamodb_connector
 from harmony.app.repositories import ChatHistoryRepository
 from harmony.app.services import ChatEventHandler, UserEventHandler, MessageEventHandler
 from harmony.app.services.cache import CacheService

@@ -1,5 +1,5 @@
 import json
-from harmony.app.main import app
+from harmony.api.main import app
 
 # Prints the OpenAPI schema to stdout, which can be redirected to a file in the Taskfile
 def export_openapi(app):    

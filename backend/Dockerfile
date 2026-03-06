@@ -30,4 +30,4 @@ USER appuser
 EXPOSE 8000
 
 # Run the application
-CMD ["uvicorn", "harmony.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "harmony.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

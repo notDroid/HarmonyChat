@@ -3,7 +3,6 @@ import jwt
 from pwdlib import PasswordHash
 import hashlib
 import secrets
-from fastapi import HTTPException, status
 
 password_hash = PasswordHash.recommended()
 

@@ -112,7 +112,7 @@ def get_auth_repository(session: AsyncSession = Depends(get_db_session)) -> Auth
     return AuthRepository(session)
 
 # ---------------------------- Stream Dependencies --------------------------- #
-def get_redis_cache_client(conn: HTTPConnection):
+def get_redis_cache_client(conn: HTTPConnection, settings: Settings = Depends(get_settings)):
     return conn.app.state.redis_cache_client
 
 def get_kafka_producer(conn: HTTPConnection):
