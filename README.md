@@ -16,6 +16,12 @@ We intentionally keep the application level simple to practice the more complex 
 - **Frontend:** TypeScript, Next.js (App Router), React Query, Tailwind CSS, Orval
 - **Infrastructure:** Apache Kafka, PostgreSQL, DynamoDB, Redis, Centrifugo, Debezium, Docker, Kafka Connect
 
+## Frontend Screenshots
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/238529c1-dc3d-4c7b-a0fc-0773d54d578a" width="45%" alt="Frontend Chat Screen Dark Mode">
+  <img src="https://github.com/user-attachments/assets/c14729b9-d942-4710-b18e-17fd992c1247" width="45%" alt="Frontend Chat Screen Light Mode">
+</p>
+
 ---
 
 ## Architecture & Implementation Details
