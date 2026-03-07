@@ -62,7 +62,7 @@ task
 - [x] Implement redis caching layer for metadata.
 - [x] Migrate websocket handling to centrifugo+redis.
 - [x] Implement kafka-based event sourcing for chat messages with integrated centrifugo consumer and kafka connect integration for dynamodb with transform
-- [ ] Implement CDC with postgres+debzium -> kafka and handle events caused by state changes with eventual consistency.
+- [x] Implement CDC with postgres+debzium -> kafka and handle events caused by state changes with eventual consistency.
 - [ ] Deploy app to AWS with terraform and set up CI/CD pipeline
 
 ## Implementation Documentation
