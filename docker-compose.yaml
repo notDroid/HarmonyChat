@@ -2,31 +2,8 @@ services:
   api:
     build: backend
     container_name: backend
-    environment:
-      # - APP_ENV=production
-
-      # --- Feature Flags ---
-      - FEATURES__POSTGRES=True
-      - FEATURES__DYNAMODB=True
-      - FEATURES__CENTRIFUGO=True
-      - FEATURES__CACHE_REDIS=True
-      - FEATURES__EVENT_HANDLERS=False
-      - FEATURES__KAFKA=True
-
-      # --- Connection Strings ---
-      - DYNAMODB__URL=http://dynamodb:8000
-      - REDIS__URL=redis://redis:6379/1
-      - POSTGRES__URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
-      - CENT__URL=http://centrifugo:8000/api
-      - KAFKA_PRODUCER__BOOTSTRAP_SERVERS=kafka:9092
-
-      - CENT__API_KEY=test-cent-api-key
-
-      # --- AWS Config ---
-      - AWS__ACCESS_KEY_ID=test
-      - AWS__SECRET_ACCESS_KEY=test
-      - AWS__DEFAULT_REGION=us-east-1
-      - AWS__REGION=us-east-1
+    env_file:
+      - .env.api
     depends_on:
       redis:
         condition: service_healthy
@@ -42,14 +19,8 @@ services:
   consumer:
     build: backend
     container_name: consumer
-    environment:
-      - DYNAMODB__URL=http://dynamodb:8000
-      - REDIS__URL=redis://redis:6379/1
-      - POSTGRES__URL=postgresql+asyncpg://harmony:harmony@postgres:5432/harmony
-      - KAFKA_CONSUMER__BOOTSTRAP_SERVERS=kafka:9092
-      - AWS__ACCESS_KEY_ID=test
-      - AWS__SECRET_ACCESS_KEY=test
-      - AWS__DEFAULT_REGION=us-east-1
+    env_file:
+      - .env.consumer
     depends_on:
       kafka:
         condition: service_healthy
@@ -57,7 +28,7 @@ services:
         condition: service_healthy
       dynamodb:
         condition: service_started
-    command: python -m harmony.consumer.main 
+    command: python -m harmony.consumer.main
 
   # frontend:
   #   build: 
@@ -109,7 +80,7 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
-      timeout: 3s
+      timeout: 5s
       retries: 5
 
   centrifugo:
@@ -131,23 +102,25 @@ services:
       - KAFKA_NODE_ID=1
       - KAFKA_PROCESS_ROLES=broker,controller
       - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
-      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+
+      - KAFKA_LISTENERS=INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk 
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
-
       - KAFKA_LOG_DIRS=/var/lib/kafka/data
     ports:
       - "9092:9092"
     volumes:
-      - kafka_data:/var/lib/kafka/data
+        - kafka_data:/var/lib/kafka/data
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
@@ -160,10 +133,8 @@ services:
         condition: service_healthy
       dynamodb:
         condition: service_started
-    ports:
-      - "8083:8083"
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: "kafka:9092"
+      CONNECT_BOOTSTRAP_SERVERS: "kafka:29092"
       CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
       CONNECT_REST_PORT: 8083
       CONNECT_GROUP_ID: compose-connect-group
@@ -185,10 +156,10 @@ services:
       AWS_SECRET_ACCESS_KEY: test
       AWS_REGION: us-east-1
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8083/connectors"]
+      interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 5
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -197,7 +168,7 @@ services:
       - "8080:8080"
     environment:
       - KAFKA_CLUSTERS_0_NAME=harmony-local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
     depends_on:
       kafka:
         condition: service_healthy
@@ -214,7 +185,7 @@ services:
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
       - TABLE_FILE=infra/config/dynamodb-tables.json
 
-      - CONNECT_URL=http://kafka-connect:8083/connectors
+      - KAFKA_CONNECT_URL=http://kafka-connect:8083/connectors
       - DYNAMODB_SINK_CONFIG_FILE=infra/config/dynamodb-sink.json
       - DEBEZIUM_SOURCE_CONFIG_FILE=infra/config/debezium-source.json
     depends_on:

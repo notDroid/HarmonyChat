@@ -9,7 +9,7 @@
     "table.name.format": "ChatHistory",
     "aws.credentials.provider.class": "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
     
-    "confluent.topic.bootstrap.servers": "kafka:9092",
+    "confluent.topic.bootstrap.servers": "kafka:29092",
     "confluent.topic.replication.factor": "1",
 
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
