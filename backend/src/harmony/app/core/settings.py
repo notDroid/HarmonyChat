@@ -19,6 +19,7 @@ class KafkaConsumerConfig(BaseModel):
     max_poll_records: int = Field(default=500, description="Max messages per batch")
     fetch_max_bytes: int = Field(default=52428800, description="50MB max fetch size")
     session_timeout_ms: int = Field(default=10_000, description="Consumer session timeout in milliseconds")
+    poll_timeout_ms: int = Field(default=1000, description="Time to wait for messages in each poll cycle in milliseconds")
 
 
 class DynamoDBConfig(BaseModel):

@@ -20,7 +20,7 @@ services:
       - CENT__URL=http://centrifugo:8000/api
       - KAFKA_PRODUCER__BOOTSTRAP_SERVERS=kafka:9092
 
-      - CENT__API_KEY=your-secure-backend-api-key
+      - CENT__API_KEY=test-cent-api-key
 
       # --- AWS Config ---
       - AWS__ACCESS_KEY_ID=test

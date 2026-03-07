@@ -6,13 +6,15 @@ from harmony.app.core.settings import KafkaConsumerConfig
 import structlog
 
 from .router import EventRouter
+from .context import ConsumerContext
 
 logger = structlog.get_logger(__name__)
 
 class CDCConsumer:
-    def __init__(self, config: KafkaConsumerConfig, router: EventRouter):
+    def __init__(self, config: KafkaConsumerConfig, router: EventRouter, context: ConsumerContext):
         self.cfg = config
         self.router = router
+        self.context = context
         self.consumer = AIOKafkaConsumer(
             *self.cfg.topics,
             bootstrap_servers=self.cfg.bootstrap_servers,
@@ -31,7 +33,7 @@ class CDCConsumer:
         
         try:
             while not stop_event.is_set():
-                msg_batch = await self.consumer.getmany(timeout_ms=1000)
+                msg_batch = await self.consumer.getmany(timeout_ms=self.cfg.poll_timeout_ms)
                 
                 for tp, messages in msg_batch.items():
                     for msg in messages:
@@ -59,27 +61,31 @@ class CDCConsumer:
             event_type = headers.get("eventType")
             aggregate_id = msg.key.decode("utf-8") if msg.key else None
 
+            topic = msg.topic
+            offset = msg.offset
+
             if not event_type or not aggregate_id:
-                logger.warning("skipping_invalid_message", topic=msg.topic, offset=msg.offset)
+                logger.warning("skipping_invalid_message", topic=topic, offset=offset)
                 return True
 
             # Bind context variables so all logs in this trace have the ID
             with structlog.contextvars.bound_contextvars(
-                topic=msg.topic, event=event_type, aggregate_id=aggregate_id
+                topic=topic, event=event_type, aggregate_id=aggregate_id
             ):
                 logger.info("processing_cdc_event")
                 
                 try:
-                    await self.router.route_event(msg.topic, event_type, aggregate_id, payload)
+                    await self.router.route_event(topic, event_type, aggregate_id, payload, self.context)
+                    logger.info("cdc_event_processed_successfully")
                     return True
                 except Exception as e:
-                    logger.exception("fatal_processing_error", offset=msg.offset)
+                    logger.exception("fatal_processing_error")
                     return False
 
         except json.JSONDecodeError:
-            logger.error("poison_pill_invalid_json", offset=msg.offset)
+            logger.error("poison_pill_invalid_json", offset=offset)
             # TODO: Send to a Dead Letter Queue for manual inspection
             return True 
         except Exception as e:
-            logger.exception("unexpected_consumer_error", offset=msg.offset)
+            logger.exception("unexpected_consumer_error", offset=offset)
             return False

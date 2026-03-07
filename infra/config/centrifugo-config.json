@@ -23,7 +23,7 @@
     }
   },
   "http_api": {
-    "key": "your-secure-backend-api-key"
+    "key": "test-cent-api-key"
   },
   "admin": {
     "password": "admin",
