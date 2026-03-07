@@ -6,6 +6,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![DynamoDB](https://img.shields.io/badge/Amazon%20DynamoDB-4053D6?style=for-the-badge&logo=Amazon%20DynamoDB&logoColor=white)](https://aws.amazon.com/dynamodb/)
 [![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Centrifugo](https://img.shields.io/badge/Centrifugo-2563EB?style=for-the-badge&logo=centrifugo&logoColor=white)](https://centrifugal.dev/)
 
 Harmony Chat is a fullstack chat application created for learning purposes as an exploration of distributed systems, event-driven architecture, and modern DevOps practices. 
 
