@@ -1,3 +1,6 @@
+# Ignore generated files
+docker/config/
+
 # Ignore environment files
 .env.*
 !.env*j2
