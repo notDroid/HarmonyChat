@@ -3,10 +3,6 @@ import json
 import boto3
 import botocore.exceptions
 
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-DYNAMODB_ENDPOINT = os.getenv("DYNAMODB_ENDPOINT", "http://localhost:8000")
-TABLE_FILE = os.getenv("TABLE_FILE", "dynamodb-tables.json")
-
 def create_tables(dynamodb, table_file):
     with open(table_file, "r") as f:
         table_schemas = json.load(f)
@@ -29,10 +25,10 @@ def create_tables(dynamodb, table_file):
                 print(f"Unexpected error creating {table_name}")
                 raise e
             
-def init_db():
+def init_dynamodb(dynamodb_endpoint, table_file, aws_region="us-east-1"):
     dynamodb = boto3.resource(
         'dynamodb',
-        endpoint_url=DYNAMODB_ENDPOINT,
-        region_name=AWS_REGION,
+        endpoint_url=dynamodb_endpoint,
+        region_name=aws_region,
     )
-    create_tables(dynamodb, TABLE_FILE)
+    create_tables(dynamodb, table_file)

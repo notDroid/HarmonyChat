@@ -1,0 +1,22 @@
+{
+  "name": "dynamodb-chat-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.aws.dynamodb.DynamoDbSinkConnector",
+    "tasks.max": "1",
+    "topics": "chat_messages",
+    "aws.dynamodb.endpoint": "{{ dynamodb.endpoint }}",
+    "aws.dynamodb.region": {{ aws.region | tojson }},
+    "table.name.format": "{{ dynamodb.chat_history_table_name }}",
+    "aws.credentials.provider.class": "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
+
+    "confluent.topic.bootstrap.servers": "{{ kafka.connect_bootstrap }}",
+    "confluent.topic.replication.factor": "1",
+
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "transforms": "StripAuthorMetadata",
+    "transforms.StripAuthorMetadata.type": "org.apache.kafka.connect.transforms.ReplaceField$Value",
+    "transforms.StripAuthorMetadata.exclude": "author_metadata"
+  }
+}

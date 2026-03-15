@@ -14,8 +14,9 @@ from harmony.tests.utils.data_gen import generate_user_data, generate_chat_messa
 # CONFIGURATION
 # ==========================================
 SEED_FILE = "generated_data.json"
-TARGET_USERS = 10
-TARGET_CHATS = 30
+TARGET_USERS = 30
+TARGET_CHATS = 40
+MAX_USERS_PER_CHAT = 25
 LIVE_DELAY_MIN = 0.1*1e-3
 LIVE_DELAY_MAX = 1*1e-3
 
@@ -125,8 +126,8 @@ class PersistentSimManager:
 
         print("Seeding initial chats...")
         while len(self.chats) < TARGET_CHATS:
-            # Pick random participants (2 to 4)
-            participants = random.sample(self.actors, k=random.randint(2, min(4, len(self.actors))))
+            # Pick random participants (2 to 20)
+            participants = random.sample(self.actors, k=random.randint(2, min(MAX_USERS_PER_CHAT, len(self.actors))))
             creator = participants[0]
             others = participants[1:]
             

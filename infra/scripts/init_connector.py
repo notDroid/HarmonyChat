@@ -1,10 +1,8 @@
-import os
+'''
+Initialize kafka connector
+'''
 import urllib.request
 import urllib.error
-
-CONNECT_URL = os.getenv("KAFKA_CONNECT_URL", "http://kafka-connect:8083/connectors")
-DYNAMODB_SINK_CONFIG_FILE = os.getenv("DYNAMODB_SINK_CONFIG_FILE", "infra/config/dynamodb-sink.json")
-DEBEZIUM_SOURCE_CONFIG_FILE = os.getenv("DEBEZIUM_SOURCE_CONFIG_FILE", "infra/config/debezium-source.json")
 
 def register_connector(connect_url, config_file):
     print(f"Registering Connector from {config_file}...")
@@ -28,7 +26,3 @@ def register_connector(connect_url, config_file):
     except Exception as e:
         print("An unexpected error occurred while registering the connector")
         raise
-
-def register_connectors():
-    register_connector(CONNECT_URL, DYNAMODB_SINK_CONFIG_FILE)
-    register_connector(CONNECT_URL, DEBEZIUM_SOURCE_CONFIG_FILE)

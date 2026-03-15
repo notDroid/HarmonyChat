@@ -1,0 +1,55 @@
+{
+  "consumers": [
+    {
+      "name": "chat_kafka_consumer",
+      "type": "kafka",
+      "enabled": true,
+      "kafka": {
+        "brokers": ["{{ kafka.brokers }}"],
+        ...
+      }
+    }
+  ],
+  "engine": {
+    "type": "redis",
+    "redis": {
+      "address": "{{ redis.address }}",
+      "prefix": "centrifugo"
+    }
+  },
+  "http_api": {
+    "key": "{{ centrifugo.api_key }}"
+  },
+  "admin": {
+    "password": "{{ centrifugo.admin_password }}",
+    "secret": "{{ centrifugo.admin_secret }}"
+  },
+  "client": {
+    "allowed_origins": {{ centrifugo.allowed_origins | tojson }},
+    "proxy": {
+      "connect": {
+        "enabled": true,
+        "endpoint": "{{ endpoints.api }}/api/v1/ws/connect",
+        "timeout": "1s",
+        "http_headers": ["Cookie"]
+      }
+    }
+  },
+  "channel": {
+    "namespaces": [
+      {
+        "name": "chat",
+        "subscribe_proxy_enabled": true,
+        "presence": {{ centrifugo.chat.presence_enabled | tojson }},
+        "history_size": {{ centrifugo.chat.history_size }},
+        "history_ttl": {{ centrifugo.chat.history_ttl | tojson }}
+      }
+    ],
+    "proxy": {
+      "subscribe": {
+        "endpoint": "{{ endpoints.api }}/api/v1/ws/subscribe",
+        "timeout": "1s"
+      }
+    }
+  }
+}

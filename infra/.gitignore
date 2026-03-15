@@ -1,3 +1,7 @@
+# Ignore environment files
+.env.*
+!.env*j2
+
 # ----------------------------- PYTHON GITIGNORE ----------------------------- #
 # Byte-compiled / optimized / DLL files
 __pycache__/

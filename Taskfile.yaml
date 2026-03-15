@@ -4,6 +4,7 @@ vars:
   CONDA_ENV: harmony
   PYTHON_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} python"
   PYTEST_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} pytest"
+  DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/.env -f infra/docker/docker-compose.yaml"
 
 tasks:
   default:
@@ -52,25 +53,28 @@ tasks:
   # 2. RUNNING THE APP
   # --------------------------------------------------------------------------
 
+  docker:render:
+    desc: "⚙️  RENDER: Generate all config files from infra/docker/config.yaml"
+    cmds:
+      - "{{.PYTHON_CMD}} infra/scripts/render_config.py infra/docker/config.yaml infra/templates infra/docker/config"
+      - "{{.PYTHON_CMD}} infra/scripts/render_config.py infra/docker/config.yaml infra/docker/templates infra/docker"
+
   run:dev:
     desc: "▶️  START DEV: Runs the local dev environment"
     cmds:
-      - docker compose up --build
-
-  run:sim:
-    desc: "▶️  START SIMULATION: Runs the Prod-mirror environment"
-    cmds:
-      - docker compose -f docker-compose.yaml -f infra/local/docker-compose.yaml up --build
-
+      - task: docker:render
+      - "{{.DOCKER_CMD}} up --build"
+      
   clean:
     desc: "🛑 STOP: Stops all containers and removes volumes"
     cmds:
-      - docker compose down --volumes --remove-orphans
+      - "{{.DOCKER_CMD}} down --volumes --remove-orphans"
         
   build:
     desc: "🚀 BUILD: the docker compose environment"
     cmds:
-      - docker compose build
+      - task: docker:render
+      - "{{.DOCKER_CMD}} build"
 
   # --------------------------------------------------------------------------
   # 3. TESTING
