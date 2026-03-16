@@ -44,7 +44,15 @@ export function useSidebarCache() {
     });
   };
 
+  const removeChat = (chat_id: string) => {
+    queryClient.setQueryData<UserChatsResponse['chats']>(queryKey, (oldChats) => {
+      if (!oldChats) return oldChats;
+      return oldChats.filter(chat => chat.chat_id !== chat_id);
+    });
+  };
+
   return {
-    addChat
+    addChat,
+    removeChat
   };
 }
