@@ -5,6 +5,17 @@ docker/config/
 .env.*
 !.env*j2
 
+# Helm / helmfile generated secrets
+k8s/environments/**/secrets.yaml
+k8s/environments/**/.helmfile.lock
+
+# helmfile cache
+.helmfile/
+
+# kind kubeconfig
+kubeconfig-harmony.yaml
+
+
 # ----------------------------- PYTHON GITIGNORE ----------------------------- #
 # Byte-compiled / optimized / DLL files
 __pycache__/

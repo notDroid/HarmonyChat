@@ -12,7 +12,6 @@ def create_tables(dynamodb, table_file):
             print(f"Creating {table_name}...")
             table = dynamodb.create_table(**table_params)
             
-            # Only wait if we actually triggered a creation
             print(f"Waiting for {table_name} to become active...")
             table.wait_until_exists()
             print(f"Table {table_name} created successfully.")
@@ -21,11 +20,15 @@ def create_tables(dynamodb, table_file):
             if e.response['Error']['Code'] == 'ResourceInUseException':
                 print(f"Table {table_name} already exists. Skipping.")
             else:
-                # Re-raise other unexpected errors
                 print(f"Unexpected error creating {table_name}")
                 raise e
             
-def init_dynamodb(dynamodb_endpoint, table_file, aws_region="us-east-1"):
+if __name__ == "__main__":
+    aws_region = os.getenv("AWS_REGION", "us-east-1")
+    dynamodb_endpoint = os.getenv("DYNAMODB_ENDPOINT")
+    table_file = os.getenv("TABLE_FILE")
+
+    print(f"Connecting to DynamoDB at {dynamodb_endpoint}...")
     dynamodb = boto3.resource(
         'dynamodb',
         endpoint_url=dynamodb_endpoint,

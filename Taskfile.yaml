@@ -4,7 +4,13 @@ vars:
   CONDA_ENV: harmony
   PYTHON_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} python"
   PYTEST_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} pytest"
+
   DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/.env -f infra/docker/docker-compose.yaml"
+
+  HELMFILE_CMD: "helmfile"
+  KIND_CLUSTER: "harmony"
+  K8S_ENV: "local"
+  K8S_ENV_DIR: "infra/k8s/environments/{{.K8S_ENV}}"
 
 tasks:
   default:
@@ -50,7 +56,7 @@ tasks:
       - npm install
 
   # --------------------------------------------------------------------------
-  # 2. RUNNING THE APP
+  # 2. DOCKER & LOCAL DEVELOPMENT
   # --------------------------------------------------------------------------
 
   docker:render:
@@ -132,3 +138,101 @@ tasks:
     dir: backend
     cmds:
       - conda run -n {{.CONDA_ENV}} pip-compile pyproject.toml --output-file requirements.txt
+
+  # --------------------------------------------------------------------------
+  # 5. KIND
+  # --------------------------------------------------------------------------
+
+  k8s:cluster:create:
+    desc: "☸️  K8S: Create the local kind cluster"
+    cmds:
+      - kind create cluster --config infra/k8s/kind-config.yaml --name {{.KIND_CLUSTER}}
+    status:
+      - kind get clusters | grep {{.KIND_CLUSTER}}
+
+  k8s:cluster:delete:
+    desc: "☸️  K8S: Delete the local kind cluster"
+    cmds:
+      - kind delete cluster --name {{.KIND_CLUSTER}}
+
+  k8s:cluster:status:
+    desc: "☸️  K8S: Show cluster node status"
+    cmds:
+      - kubectl get nodes --context kind-{{.KIND_CLUSTER}}
+
+  # -------------------------- Image build + kind load ------------------------- #
+
+  k8s:build:backend:
+    desc: "🐳 K8S: Build and load the backend image into kind"
+    cmds:
+      - docker build -t harmony-backend:local backend/
+      - kind load docker-image harmony-backend:local --name {{.KIND_CLUSTER}}
+
+  k8s:build:kafka-connect:
+    desc: "🐳 K8S: Build and load the kafka-connect image into kind"
+    cmds:
+      - docker build -t harmony-kafka-connect:local infra/docker/images/kafka-connect/
+      - kind load docker-image harmony-kafka-connect:local --name {{.KIND_CLUSTER}}
+
+  k8s:build:all:
+    desc: "🐳 K8S: Build and load ALL custom images into kind"
+    cmds:
+      - task: k8s:build:backend
+      - task: k8s:build:kafka-connect
+
+  # --------------------------------------------------------------------------
+  # 6. Helm deployments
+  # --------------------------------------------------------------------------
+
+  k8s:helm:repos:
+    desc: "📦 K8S: Add and update all Helm chart repositories"
+    cmds:
+      - helm repo add bitnami https://charts.bitnami.com/bitnami
+      - helm repo add centrifugal https://centrifugal.github.io/helm-charts
+      - helm repo add kafka-ui https://provectus.github.io/kafka-ui-charts
+      - helm repo add redpanda https://charts.redpanda.com
+      - helm repo update
+
+  k8s:deploy:
+    desc: "🚀 K8S: Full deploy — build images + apply all Helm releases"
+    cmds:
+      - task: k8s:build:all
+      - task: k8s:apply
+
+  k8s:apply:
+    desc: "🚀 K8S: Apply Helm releases (helmfile sync)"
+    dir: "{{.K8S_ENV_DIR}}"
+    cmds:
+      - "{{.HELMFILE_CMD}} apply"
+
+  k8s:diff:
+    desc: "🔍 K8S: Diff pending Helm changes"
+    dir: "{{.K8S_ENV_DIR}}"
+    cmds:
+      - "{{.HELMFILE_CMD}} diff"
+
+  k8s:destroy:
+    desc: "🛑 K8S: Tear down all Helm releases (keeps cluster)"
+    dir: "{{.K8S_ENV_DIR}}"
+    cmds:
+      - "{{.HELMFILE_CMD}} destroy"
+
+  k8s:setup:
+    desc: "🚀 K8S: setup cluster + repos + build + deploy"
+    summary: |
+      Runs the full local Kubernetes bootstrap:
+        1. Creates the kind cluster
+        2. Adds Helm repos
+        3. Builds and loads all custom Docker images
+        4. Deploys all releases via helmfile
+    cmds:
+      - task: k8s:cluster:create
+      - task: k8s:helm:repos
+      - task: k8s:build:all
+      - task: k8s:apply
+
+  k8s:teardown:
+    desc: "🛑 K8S: Full teardown — destroy releases then delete cluster"
+    cmds:
+      - task: k8s:destroy
+      - task: k8s:cluster:delete

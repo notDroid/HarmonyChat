@@ -5,7 +5,7 @@
       "type": "kafka",
       "enabled": true,
       "kafka": {
-        "brokers": ["{{ kafka.brokers }}"],
+        "brokers": ["{{ infra.kafka.host }}:{{ infra.kafka.port }}"],
         "topics": ["chat_messages"],
         "consumer_group": "centrifugo",
         "publication_data_mode": {
@@ -18,23 +18,23 @@
   "engine": {
     "type": "redis",
     "redis": {
-      "address": "{{ redis.address }}",
+      "address": "redis://{{ infra.redis.host }}:{{ infra.redis.port }}",
       "prefix": "centrifugo"
     }
   },
   "http_api": {
-    "key": "{{ centrifugo.api_key }}"
+    "key": "{{ infra.centrifugo.api_key }}"
   },
   "admin": {
-    "password": "{{ centrifugo.admin_password }}",
-    "secret": "{{ centrifugo.admin_secret }}"
+    "password": "{{ infra.centrifugo.admin_password }}",
+    "secret": "{{ infra.centrifugo.admin_secret }}"
   },
   "client": {
-    "allowed_origins": {{ centrifugo.allowed_origins | tojson }},
+    "allowed_origins": {{ infra.centrifugo.allowed_origins | tojson }},
     "proxy": {
       "connect": {
         "enabled": true,
-        "endpoint": "{{ endpoints.api }}/api/v1/ws/connect",
+        "endpoint": "{{ app.api.host }}:{{ app.api.port }}/api/v1/ws/connect",
         "timeout": "1s",
         "http_headers": ["Cookie"]
       }
@@ -45,14 +45,14 @@
       {
         "name": "chat",
         "subscribe_proxy_enabled": true,
-        "presence": {{ centrifugo.chat.presence_enabled | tojson }},
-        "history_size": {{ centrifugo.chat.history_size }},
-        "history_ttl": {{ centrifugo.chat.history_ttl | tojson }}
+        "presence": {{ infra.centrifugo.chat.presence_enabled | tojson }},
+        "history_size": {{ infra.centrifugo.chat.history_size }},
+        "history_ttl": {{ infra.centrifugo.chat.history_ttl | tojson }}
       }
     ],
     "proxy": {
       "subscribe": {
-        "endpoint": "{{ endpoints.api }}/api/v1/ws/subscribe",
+        "endpoint": "{{ app.api.host }}:{{ app.api.port }}/api/v1/ws/subscribe",
         "timeout": "1s"
       }
     }

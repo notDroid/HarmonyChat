@@ -4,12 +4,12 @@
     "connector.class": "io.confluent.connect.aws.dynamodb.DynamoDbSinkConnector",
     "tasks.max": "1",
     "topics": "chat_messages",
-    "aws.dynamodb.endpoint": "{{ dynamodb.endpoint }}",
-    "aws.dynamodb.region": {{ aws.region | tojson }},
-    "table.name.format": "{{ dynamodb.chat_history_table_name }}",
+    "aws.dynamodb.endpoint": "http://{{ infra.dynamodb.host }}:{{ infra.dynamodb.port }}",
+    "aws.dynamodb.region": {{ infra.aws.region | tojson }},
+    "table.name.format": "{{ infra.dynamodb.chat_history_table_name }}",
     "aws.credentials.provider.class": "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
 
-    "confluent.topic.bootstrap.servers": "{{ kafka.connect_bootstrap }}",
+    "confluent.topic.bootstrap.servers": "{{ infra.kafka.host }}:{{ infra.kafka.port }}",
     "confluent.topic.replication.factor": "1",
 
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",

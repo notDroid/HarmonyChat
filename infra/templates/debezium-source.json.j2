@@ -3,11 +3,11 @@
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "plugin.name": "pgoutput",
-    "database.hostname": "{{ postgres.hostname }}",
-    "database.port": "{{ postgres.port }}",
-    "database.user": "{{ postgres.user }}",
-    "database.password": "{{ postgres.password }}",
-    "database.dbname": "{{ postgres.dbname }}",
+    "database.hostname": "{{ infra.postgres.host }}",
+    "database.port": "{{ infra.postgres.port }}",
+    "database.user": "{{ infra.postgres.user }}",
+    "database.password": "{{ infra.postgres.password }}",
+    "database.dbname": "{{ infra.postgres.dbname }}",
     "topic.prefix": "harmony",
     "table.include.list": "public.outbox_events",
 
@@ -25,7 +25,7 @@
     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
     "value.converter.schemas.enable": "false",
 
-    "confluent.topic.bootstrap.servers": "{{ kafka.connect_bootstrap }}",
+    "confluent.topic.bootstrap.servers": "{{ infra.kafka.host }}:{{ infra.kafka.port }}",
     "confluent.topic.replication.factor": "1"
   }
 }

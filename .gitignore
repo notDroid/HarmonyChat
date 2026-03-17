@@ -1,5 +1,6 @@
 # Ignore log files
 logs.txt
+digest.txt
 
 # --- Operating System Files ---
 # macOS
