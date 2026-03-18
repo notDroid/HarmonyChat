@@ -24,7 +24,7 @@ class EventRouter:
     async def _route(self, aggregate_type: str, event_type: str, aggregate_id: str, payload: dict, ctx: ConsumerContext):
         handler = self._routes.get((aggregate_type, event_type))
         if not handler:
-            logger.debug("no_handler_registered_for_event", aggregate=aggregate_type, event=event_type)
+            logger.debug("no_handler_registered_for_event")
             return
 
         await handler(aggregate_id, payload, ctx)

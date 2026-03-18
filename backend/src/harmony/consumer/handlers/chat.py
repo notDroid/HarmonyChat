@@ -2,6 +2,9 @@ import uuid
 import asyncio
 from ..router import EventRouter
 from ..context import ConsumerContext
+import structlog
+
+logger = structlog.get_logger()
 
 router = EventRouter()
 
@@ -13,7 +16,7 @@ async def handle_users_added(aggregate_id: str, payload: dict, ctx: ConsumerCont
 
 @router.register("Chat", "USER_LEFT")
 async def handle_user_left(aggregate_id: str, payload: dict, ctx: ConsumerContext):
-    await ctx.chat_handler.on_user_left_chat(uuid.UUID(aggregate_id), uuid.UUID(payload.get("user_id")))
+    await ctx.chat_handler.on_user_left_chat(uuid.UUID(aggregate_id), uuid.UUID(dict(payload).get("user_id")))
 
 @router.register("Chat", "CHAT_DELETED")
 async def handle_chat_deleted(aggregate_id: str, payload: dict, ctx: ConsumerContext):

@@ -56,6 +56,9 @@ class CDCConsumer:
     async def process_message(self, msg) -> bool:
         try:
             payload = json.loads(msg.value.decode("utf-8")) if msg.value else {}
+
+            if isinstance(payload, str):
+                payload = json.loads(payload)
             
             headers = {k: v.decode('utf-8') if v else None for k, v in (msg.headers or [])}
             event_type = headers.get("eventType")
@@ -70,7 +73,7 @@ class CDCConsumer:
 
             # Bind context variables so all logs in this trace have the ID
             with structlog.contextvars.bound_contextvars(
-                topic=topic, event=event_type, aggregate_id=aggregate_id
+                topic=topic, event_type=event_type, aggregate_id=aggregate_id
             ):
                 logger.info("processing_cdc_event")
                 
