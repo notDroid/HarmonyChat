@@ -152,16 +152,6 @@
             }
           },
           {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 50,
-              "title": "Limit"
-            }
-          },
-          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -176,6 +166,25 @@
               ],
               "title": "Cursor"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Number of items to return",
+              "title": "Limit"
+            },
+            "description": "Number of items to return"
           }
         ],
         "responses": {
@@ -416,12 +425,19 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "maximum": 10,
-              "exclusiveMinimum": 0,
-              "default": 10,
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search result limit",
               "title": "Limit"
-            }
+            },
+            "description": "Search result limit"
           }
         ],
         "responses": {
@@ -604,6 +620,84 @@
         }
       }
     },
+    "/api/v1/ws/subscribe": {
+      "post": {
+        "tags": [
+          "pubsub"
+        ],
+        "summary": "Subscribe Proxy",
+        "operationId": "subscribe_proxy_api_v1_ws_subscribe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CentrifugoSubscribeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ws/connect": {
+      "post": {
+        "tags": [
+          "pubsub"
+        ],
+        "summary": "Connect Proxy",
+        "operationId": "connect_proxy_api_v1_ws_connect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CentrifugoConnectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -681,6 +775,67 @@
           "password"
         ],
         "title": "Body_login_api_v1_auth_token_post"
+      },
+      "CentrifugoConnectRequest": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "title": "Client"
+          },
+          "transport": {
+            "type": "string",
+            "title": "Transport"
+          },
+          "protocol": {
+            "type": "string",
+            "title": "Protocol"
+          },
+          "encoding": {
+            "type": "string",
+            "title": "Encoding"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "transport",
+          "protocol",
+          "encoding"
+        ],
+        "title": "CentrifugoConnectRequest"
+      },
+      "CentrifugoSubscribeRequest": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "title": "Client"
+          },
+          "transport": {
+            "type": "string",
+            "title": "Transport"
+          },
+          "protocol": {
+            "type": "string",
+            "title": "Protocol"
+          },
+          "user": {
+            "type": "string",
+            "title": "User"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "transport",
+          "protocol",
+          "user",
+          "channel"
+        ],
+        "title": "CentrifugoSubscribeRequest"
       },
       "ChatCreateRequest": {
         "properties": {
@@ -1070,6 +1225,10 @@
             "format": "email",
             "title": "Email"
           },
+          "tombstone": {
+            "type": "boolean",
+            "title": "Tombstone"
+          },
           "meta": {
             "$ref": "#/components/schemas/UserMetaData"
           }
@@ -1078,6 +1237,7 @@
         "required": [
           "user_id",
           "email",
+          "tombstone",
           "meta"
         ],
         "title": "UserResponse"

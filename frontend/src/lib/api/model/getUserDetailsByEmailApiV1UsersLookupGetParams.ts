@@ -8,8 +8,7 @@
 export type GetUserDetailsByEmailApiV1UsersLookupGetParams = {
   email: string;
   /**
-   * @maximum 10
-   * @exclusiveMinimum 0
+   * Search result limit
    */
-  limit?: number;
+  limit?: number | null;
 };

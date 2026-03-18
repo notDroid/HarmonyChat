@@ -9,5 +9,6 @@ import type { UserMetaData } from "./userMetaData";
 export interface UserResponse {
   user_id: string;
   email: string;
+  tombstone: boolean;
   meta: UserMetaData;
 }

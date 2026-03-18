@@ -5,7 +5,7 @@ vars:
   PYTHON_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} python"
   PYTEST_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} pytest"
 
-  DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/.env -f infra/docker/docker-compose.yaml"
+  DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/env/.env -f infra/docker/docker-compose.yaml"
 
   HELMFILE_CMD: "helmfile"
   KIND_CLUSTER: "harmony"
@@ -61,9 +61,10 @@ tasks:
 
   docker:render:
     desc: "⚙️  RENDER: Generate all config files from infra/docker/config.yaml"
+    dir: infra/
     cmds:
-      - "{{.PYTHON_CMD}} infra/scripts/render_config.py infra/docker/config.yaml infra/templates infra/docker/config"
-      - "{{.PYTHON_CMD}} infra/scripts/render_config.py infra/docker/config.yaml infra/docker/templates infra/docker"
+      - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml templates/config docker/config"
+      - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml templates/envt docker/env"
 
   run:dev:
     desc: "▶️  START DEV: Runs the local dev environment"
@@ -174,15 +175,29 @@ tasks:
       - docker build -t harmony-kafka-connect:local infra/docker/images/kafka-connect/
       - kind load docker-image harmony-kafka-connect:local --name {{.KIND_CLUSTER}}
 
+  k8s:build:init-dynamodb:
+    desc: "🐳 K8S: Build and load the dynamodb-local image into kind"
+    cmds:
+      - docker build -t init-dynamodb:latest infra/docker/images/init-dynamodb/
+      - kind load docker-image init-dynamodb:latest --name {{.KIND_CLUSTER}}
+
   k8s:build:all:
     desc: "🐳 K8S: Build and load ALL custom images into kind"
     cmds:
       - task: k8s:build:backend
       - task: k8s:build:kafka-connect
+      - task: k8s:build:init-dynamodb
 
   # --------------------------------------------------------------------------
   # 6. Helm deployments
   # --------------------------------------------------------------------------
+
+  k8s:render:local:
+    desc: "🔄 K8S: Render local jinja2 templates"
+    dir: infra/
+    cmds:
+      - "{{.PYTHON_CMD}} scripts/render_config.py k8s/environments/local/config.yaml templates/config k8s/environments/local/config"
+      - "{{.PYTHON_CMD}} scripts/render_config.py k8s/environments/local/config.yaml templates/envt k8s/environments/local/env"
 
   k8s:helm:repos:
     desc: "📦 K8S: Add and update all Helm chart repositories"
@@ -203,6 +218,7 @@ tasks:
     desc: "🚀 K8S: Apply Helm releases (helmfile sync)"
     dir: "{{.K8S_ENV_DIR}}"
     cmds:
+      - task: k8s:render:local
       - "{{.HELMFILE_CMD}} apply"
 
   k8s:diff:

@@ -1,4 +1,5 @@
 from functools import lru_cache
+import os
 from typing import Literal
 
 from pydantic import BaseModel, Field, SecretStr
@@ -137,8 +138,10 @@ class ConsumerSettings(BaseAppSettings):
 
 @lru_cache
 def get_api_settings() -> APISettings:
+    os.environ.pop("USER", None) # Macos injects USER env var which crashes pydantic
     return APISettings()
 
 @lru_cache
 def get_consumer_settings() -> ConsumerSettings:
+    os.environ.pop("USER", None) # Macos injects USER env var which crashes pydantic
     return ConsumerSettings()

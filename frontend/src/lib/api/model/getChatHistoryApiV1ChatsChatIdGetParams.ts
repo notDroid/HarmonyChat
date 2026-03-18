@@ -6,6 +6,9 @@
  */
 
 export type GetChatHistoryApiV1ChatsChatIdGetParams = {
-  limit?: number;
   cursor?: string | null;
+  /**
+   * Number of items to return
+   */
+  limit?: number | null;
 };

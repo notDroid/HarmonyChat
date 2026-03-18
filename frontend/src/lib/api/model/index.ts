@@ -6,6 +6,8 @@
  */
 
 export * from "./bodyLoginApiV1AuthTokenPost";
+export * from "./centrifugoConnectRequest";
+export * from "./centrifugoSubscribeRequest";
 export * from "./chatCreatedResponse";
 export * from "./chatCreateRequest";
 export * from "./chatHistoryResponse";
