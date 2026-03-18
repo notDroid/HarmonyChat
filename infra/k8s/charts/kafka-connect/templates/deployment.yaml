@@ -58,6 +58,8 @@ spec:
               value: {{ .Values.aws.secretAccessKey | quote }}
             - name: AWS_REGION
               value: {{ .Values.aws.region | quote }}
+            - name: CONNECT_LOG4J_LOGGERS
+              value: "io.debezium=DEBUG,org.apache.kafka.connect=DEBUG"
           livenessProbe:
             httpGet:
               path: /connectors

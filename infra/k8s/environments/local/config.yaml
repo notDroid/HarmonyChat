@@ -18,6 +18,7 @@ infra:
     user: "harmony"
     password: "harmony_local_password"
     dbname: "harmony"
+    admin_password: "admin_local_password"
     
   redis:
     host: "redis-master"
