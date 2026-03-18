@@ -34,7 +34,7 @@
     "proxy": {
       "connect": {
         "enabled": true,
-        "endpoint": "{{ app.api.host }}:{{ app.api.port }}/api/v1/ws/connect",
+        "endpoint": "http://{{ app.api.host }}:{{ app.api.port }}/api/v1/ws/connect",
         "timeout": "1s",
         "http_headers": ["Cookie"]
       }
@@ -52,7 +52,7 @@
     ],
     "proxy": {
       "subscribe": {
-        "endpoint": "{{ app.api.host }}:{{ app.api.port }}/api/v1/ws/subscribe",
+        "endpoint": "http://{{ app.api.host }}:{{ app.api.port }}/api/v1/ws/subscribe",
         "timeout": "1s"
       }
     }
