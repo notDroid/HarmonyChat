@@ -140,3 +140,19 @@ async def delete_chat(
       to prevent the API from hanging.
     """
     await chat_command_service.delete_chat(user_id=user_id, chat_id=chat_id)
+
+@router.post(
+    "/{chat_id}/leave", 
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Leave a chat",
+    responses=common_chat_errors
+)
+async def leave_chat(
+    chat_id: uuid.UUID,
+    user_id: uuid.UUID = Depends(get_current_user),
+    chat_command_service = Depends(get_chat_commands),
+):
+    """
+    Allows a user to voluntarily leave a chat.
+    """
+    await chat_command_service.leave_chat(user_id=user_id, chat_id=chat_id)

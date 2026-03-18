@@ -269,6 +269,57 @@
         }
       }
     },
+    "/api/v1/chats/{chat_id}/leave": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Leave a chat",
+        "description": "Allows a user to voluntarily leave a chat.",
+        "operationId": "leave_chat_api_v1_chats__chat_id__leave_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "chat_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Chat Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication credentials were not provided or are invalid."
+          },
+          "404": {
+            "description": "Chat not found"
+          },
+          "403": {
+            "description": "User is not a participant of this chat"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/": {
       "post": {
         "tags": [
