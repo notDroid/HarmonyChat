@@ -39,13 +39,8 @@ infra:
     api_key: "local-api-key"
     admin_password: "local-admin-password"
     admin_secret: "local-admin-secret"
-    token_secret: "local-token-secret"
     allowed_origins: ["*"]
     chat:
       presence_enabled: true
       history_size: 100
       history_ttl: "3600s"
-
-  kafka_connect:
-    host: "kafka-connect"
-    port: "8083"

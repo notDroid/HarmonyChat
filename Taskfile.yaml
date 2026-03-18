@@ -169,12 +169,6 @@ tasks:
       - docker build -t harmony-backend:local backend/
       - kind load docker-image harmony-backend:local --name {{.KIND_CLUSTER}}
 
-  k8s:build:kafka-connect:
-    desc: "🐳 K8S: Build and load the kafka-connect image into kind"
-    cmds:
-      - docker build -t harmony-kafka-connect:local infra/docker/images/kafka-connect/
-      - kind load docker-image harmony-kafka-connect:local --name {{.KIND_CLUSTER}}
-
   k8s:build:init-dynamodb:
     desc: "🐳 K8S: Build and load the dynamodb-local image into kind"
     cmds:
@@ -185,7 +179,6 @@ tasks:
     desc: "🐳 K8S: Build and load ALL custom images into kind"
     cmds:
       - task: k8s:build:backend
-      - task: k8s:build:kafka-connect
       - task: k8s:build:init-dynamodb
 
   # --------------------------------------------------------------------------
@@ -204,7 +197,6 @@ tasks:
     cmds:
       - helm repo add bitnami https://charts.bitnami.com/bitnami
       - helm repo add centrifugal https://centrifugal.github.io/helm-charts
-      - helm repo add kafka-ui https://provectus.github.io/kafka-ui-charts
       - helm repo add redpanda https://charts.redpanda.com
       - helm repo update
 

@@ -58,24 +58,30 @@ releases:
       - harmony/redpanda
     wait: true
 
-  - name: kafka-connect
+  - name: connect-cdc
     namespace: harmony
-    chart: ../../charts/kafka-connect
+    chart: redpanda/connect
     values:
-      - values/kafka-connect.yaml.gotmpl
+      - values/connect-cdc.yaml.gotmpl
     set:
-      - name: connectors.debeziumSourceJson
-        file: config/debezium-source.json
-      - name: connectors.dynamodbSinkJson
-        file: config/dynamodb-sink.json
-      - name: connectors.dynamodbTablesJson
-        file: config/dynamodb-tables.json
-      - name: connectors.initScript
-        file: ../../../scripts/init_connectors.sh
+      - name: config
+        file: config/cdc-source.yaml
+    needs:
+      - harmony/redpanda
+      - harmony/postgresql
+    wait: true
+
+  - name: connect-dynamodb
+    namespace: harmony
+    chart: redpanda/connect
+    values:
+      - values/connect-dynamodb.yaml.gotmpl
+    set:
+      - name: config
+        file: config/dynamodb-sink.yaml
     needs:
       - harmony/redpanda
       - harmony/dynamodb-local
-      - harmony/postgresql
     wait: true
 
   - name: backend

@@ -43,7 +43,3 @@ infra:
       presence_enabled: true
       history_size: 100
       history_ttl: "3600s"
-
-  kafka_connect:
-    host: kafka-connect
-    port: "8083"

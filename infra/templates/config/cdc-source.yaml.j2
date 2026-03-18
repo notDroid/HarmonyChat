@@ -1,0 +1,30 @@
+input:
+  label: "postgres_cdc_source"
+  postgres_cdc:
+    dsn: "postgres://{{ infra.postgres.user }}:{{ infra.postgres.password }}@{{ infra.postgres.host }}:{{ infra.postgres.port }}/{{ infra.postgres.dbname }}?sslmode=disable"
+    schema: "public"
+    tables:
+      - "outbox_events"
+    stream_snapshot: true
+    slot_name: "harmony_outbox_slot"
+
+pipeline:
+  processors:
+    - mapping: |
+        root = if meta("operation") != "insert" { deleted() }
+        
+    - mapping: |
+        meta topic = this.aggregate_type
+        meta aggregate_type = this.aggregate_type
+        meta eventType = this.event_type
+        meta kafka_key = this.aggregate_id
+        
+        root = if this.payload.type() == "string" { this.payload.parse_json() } else { this.payload }
+
+output:
+  label: "kafka_producer"
+  redpanda:
+    seed_brokers: 
+      - "{{ infra.kafka.client_host | default(infra.kafka.host) }}:{{ infra.kafka.port }}"
+    topic: ${! meta("topic") }
+    key: ${! meta("kafka_key") }
