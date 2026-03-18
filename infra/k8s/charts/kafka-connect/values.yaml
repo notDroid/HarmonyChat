@@ -1,0 +1,44 @@
+replicaCount: 1
+
+image:
+  repository: harmony-kafka-connect
+  tag: local
+  pullPolicy: Never
+
+env:
+  bootstrapServers: "kafka:9092"
+  groupId: "k8s-connect-group"
+  configStorageTopic: "k8s-connect-configs"
+  offsetStorageTopic: "k8s-connect-offsets"
+  statusStorageTopic: "k8s-connect-status"
+  pluginPath: "/usr/share/java,/usr/share/confluent-hub-components"
+
+aws:
+  accessKeyId: ""
+  secretAccessKey: ""
+  region: "us-east-1"
+
+service:
+  type: ClusterIP
+  port: 8083
+  nodePort: null
+
+connectors:
+  initScript: ""
+  debeziumSource:
+    postgresHostname: "postgresql"
+    postgresPort: "5432"
+    postgresUser: "harmony"
+    postgresPassword: "harmony"
+    postgresDbname: "harmony"
+    kafkaBootstrap: "kafka:9092"
+    topicPrefix: "harmony"
+    tableIncludeList: "public.outbox_events"
+  dynamodbSink:
+    dynamodbEndpoint: "http://dynamodb-local:8000"
+    awsRegion: "us-east-1"
+    chatHistoryTableName: "ChatHistory"
+    kafkaBootstrap: "kafka:9092"
+    topics: "chat_messages"
+
+resources: {}

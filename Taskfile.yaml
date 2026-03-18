@@ -7,10 +7,10 @@ vars:
 
   DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/env/.env -f infra/docker/docker-compose.yaml"
 
-  HELMFILE_CMD: "helmfile"
   KIND_CLUSTER: "harmony"
   K8S_ENV: "local"
   K8S_ENV_DIR: "infra/k8s/environments/{{.K8S_ENV}}"
+  HELMFILE_CMD: "helmfile -e {{.K8S_ENV}}"
 
 tasks:
   default:
@@ -178,7 +178,7 @@ tasks:
   k8s:build:init-dynamodb:
     desc: "🐳 K8S: Build and load the dynamodb-local image into kind"
     cmds:
-      - docker build -t init-dynamodb:latest infra/docker/images/init-dynamodb/
+      - docker build -t init-dynamodb:latest -f infra/docker/images/init-dynamodb/Dockerfile infra/
       - kind load docker-image init-dynamodb:latest --name {{.KIND_CLUSTER}}
 
   k8s:build:all:

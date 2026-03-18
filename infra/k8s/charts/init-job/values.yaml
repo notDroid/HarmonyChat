@@ -1,0 +1,15 @@
+image:
+  dynamodbInit: init-dynamodb:latest
+  curl: curlimages/curl:latest
+  pullPolicy: Never
+
+dynamodb:
+  endpoint: "http://dynamodb-local:8000"
+  region: "us-east-1"
+
+aws:
+  accessKeyId: "local"
+  secretAccessKey: "local"
+
+config:
+  dynamodbTablesJson: ""

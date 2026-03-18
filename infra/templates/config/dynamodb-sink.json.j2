@@ -9,7 +9,7 @@
     "table.name.format": "{{ infra.dynamodb.chat_history_table_name }}",
     "aws.credentials.provider.class": "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
 
-    "confluent.topic.bootstrap.servers": "{{ infra.kafka.host }}:{{ infra.kafka.port }}",
+    "confluent.topic.bootstrap.servers": "{{ infra.kafka.client_host | default(infra.kafka.host) }}:{{ infra.kafka.port }}",
     "confluent.topic.replication.factor": "1",
 
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",

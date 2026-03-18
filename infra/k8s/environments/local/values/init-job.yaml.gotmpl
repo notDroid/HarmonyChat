@@ -1,0 +1,7 @@
+dynamodb:
+  endpoint: "http://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
+  region: {{ .Values.infra.aws.region }}
+
+aws:
+  accessKeyId: {{ .Values.infra.aws.access_key_id }}
+  secretAccessKey: {{ .Values.infra.aws.secret_access_key }}

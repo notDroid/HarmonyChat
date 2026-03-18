@@ -25,7 +25,7 @@
     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
     "value.converter.schemas.enable": "false",
 
-    "confluent.topic.bootstrap.servers": "{{ infra.kafka.host }}:{{ infra.kafka.port }}",
+    "confluent.topic.bootstrap.servers": "{{ infra.kafka.client_host | default(infra.kafka.host) }}:{{ infra.kafka.port }}",
     "confluent.topic.replication.factor": "1"
   }
 }

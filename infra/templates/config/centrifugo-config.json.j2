@@ -5,7 +5,7 @@
       "type": "kafka",
       "enabled": true,
       "kafka": {
-        "brokers": ["{{ infra.kafka.host }}:{{ infra.kafka.port }}"],
+        "brokers": ["{{ infra.kafka.client_host | default(infra.kafka.host) }}:{{ infra.kafka.port }}"],
         "topics": ["chat_messages"],
         "consumer_group": "centrifugo",
         "publication_data_mode": {

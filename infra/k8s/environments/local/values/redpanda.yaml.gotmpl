@@ -1,0 +1,20 @@
+fullnameOverride: {{ .Values.infra.kafka.host }}
+
+statefulset:
+  replicas: 1
+
+config:
+  cluster:
+    auto_create_topics_enabled: true
+  tunable:
+    log_segment_size: 10485760 # 10MB for local dev
+    
+tls:
+  enabled: false
+
+resources:
+  cpu:
+    cores: 500m
+  memory:
+    container:
+      max: 2Gi

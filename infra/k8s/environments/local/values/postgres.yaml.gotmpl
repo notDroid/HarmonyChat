@@ -1,0 +1,15 @@
+fullnameOverride: {{ .Values.infra.postgres.host }}
+
+auth:
+  username: {{ .Values.infra.postgres.user }}
+  password: {{ .Values.infra.postgres.password }}
+  database: {{ .Values.infra.postgres.dbname }}
+
+primary:
+  extendedConfiguration: |
+    wal_level = logical
+    max_replication_slots = 10
+    max_wal_senders = 10
+  persistence:
+    enabled: true
+    size: 2Gi

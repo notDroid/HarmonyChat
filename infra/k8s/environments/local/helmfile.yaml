@@ -1,0 +1,120 @@
+environments:
+  local:
+    values:
+      - config.yaml
+
+helmDefaults:
+  createNamespace: true
+  cleanupOnFail: false
+  wait: true
+  timeout: 600
+
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: redpanda
+    url: https://charts.redpanda.com
+  - name: centrifugal
+    url: https://centrifugal.github.io/helm-charts
+
+---
+
+releases:
+  - name: postgresql
+    namespace: harmony
+    chart: bitnami/postgresql
+    values:
+      - values/postgres.yaml.gotmpl
+    wait: true
+
+  - name: redis
+    namespace: harmony
+    chart: bitnami/redis
+    values:
+      - values/redis.yaml.gotmpl
+    wait: true
+
+  - name: redpanda
+    namespace: harmony
+    chart: redpanda/redpanda
+    values:
+      - values/redpanda.yaml.gotmpl
+    wait: true
+
+  - name: dynamodb-local
+    namespace: harmony
+    chart: ../../charts/dynamodb-local
+    values:
+      - values/dynamodb-local.yaml.gotmpl
+    wait: true
+
+  - name: centrifugo
+    namespace: harmony
+    chart: centrifugal/centrifugo
+    values:
+      - values/centrifugo.yaml.gotmpl
+    needs:
+      - harmony/redis
+      - harmony/redpanda
+    wait: true
+
+  - name: kafka-connect
+    namespace: harmony
+    chart: ../../charts/kafka-connect
+    values:
+      - values/kafka-connect.yaml.gotmpl
+    set:
+      - name: connectors.debeziumSourceJson
+        file: config/debezium-source.json
+      - name: connectors.dynamodbSinkJson
+        file: config/dynamodb-sink.json
+      - name: connectors.dynamodbTablesJson
+        file: config/dynamodb-tables.json
+      - name: connectors.initScript
+        file: ../../../scripts/init_connectors.sh
+    needs:
+      - harmony/redpanda
+      - harmony/dynamodb-local
+      - harmony/postgresql
+    wait: true
+
+  - name: backend
+    namespace: harmony
+    chart: ../../charts/harmony
+    values:
+      - values/backend.yaml.gotmpl
+    set:
+      - name: envFileContent
+        file: env/.env.api
+    needs:
+      - harmony/postgresql
+      - harmony/redis
+      - harmony/redpanda
+      - harmony/dynamodb-local
+    wait: true
+
+  - name: consumer
+    namespace: harmony
+    chart: ../../charts/harmony
+    values:
+      - values/consumer.yaml.gotmpl
+    set:
+      - name: envFileContent
+        file: env/.env.consumer
+    needs:
+      - harmony/redpanda
+      - harmony/redis
+      - harmony/dynamodb-local
+    wait: true
+
+  - name: init-job
+    namespace: harmony
+    chart: ../../charts/init-job
+    values:
+      - values/init-job.yaml.gotmpl
+    set:
+      - name: config.dynamodbTablesJson
+        file: config/dynamodb-tables.json
+    needs:
+      - harmony/dynamodb-local
+    wait: true

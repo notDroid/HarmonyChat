@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "init-job.fullname" . }}-dynamodb
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 30
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-dynamodb
+          image: {{ .Values.image.dynamodbInit }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: DYNAMODB_ENDPOINT
+              value: {{ .Values.dynamodb.endpoint | quote }}
+            - name: AWS_REGION
+              value: {{ .Values.dynamodb.region | quote }}
+            - name: AWS_ACCESS_KEY_ID
+              value: {{ .Values.aws.accessKeyId | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              value: {{ .Values.aws.secretAccessKey | quote }}
+            - name: TABLE_FILE
+              value: "/config/dynamodb-tables.json"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "init-job.fullname" . }}-config

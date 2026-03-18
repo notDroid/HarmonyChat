@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: amazon/dynamodb-local
+  tag: latest
+  pullPolicy: IfNotPresent
+
+args:
+  - "-jar"
+  - "DynamoDBLocal.jar"
+  - "-sharedDb"
+  - "-dbPath"
+  - "/data"
+  - "-cors"
+  - "*"
+
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources: {}

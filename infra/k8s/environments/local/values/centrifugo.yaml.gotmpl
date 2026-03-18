@@ -1,0 +1,15 @@
+fullnameOverride: {{ .Values.infra.centrifugo.host }}
+
+config:
+{{ readFile "../config/centrifugo-config.json" | fromJson | toYaml | indent 2 }}
+
+env:
+  CENTRIFUGO_HTTP_API_KEY: "{{ .Values.infra.centrifugo.api_key }}"
+  CENTRIFUGO_ADMIN_PASSWORD: "{{ .Values.infra.centrifugo.admin_password }}"
+  CENTRIFUGO_ADMIN_SECRET: "{{ .Values.infra.centrifugo.admin_secret }}"
+  CENTRIFUGO_TOKEN_SECRET: "{{ .Values.infra.centrifugo.token_secret }}"
+
+service:
+  type: NodePort
+  port: {{ .Values.infra.centrifugo.port }}
+  nodePort: 30810

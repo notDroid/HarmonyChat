@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "init-job.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "init-job.labels" . | nindent 4 }}
+data:
+  dynamodb-tables.json: |
+{{ .Values.config.dynamodbTablesJson | indent 4 }}

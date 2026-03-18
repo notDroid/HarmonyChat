@@ -1,0 +1,10 @@
+fullnameOverride: {{ .Values.app.api.host }}
+
+command: []
+args: []
+
+service:
+  enabled: true
+  type: NodePort
+  port: {{ .Values.app.api.port }}
+  nodePort: 30800

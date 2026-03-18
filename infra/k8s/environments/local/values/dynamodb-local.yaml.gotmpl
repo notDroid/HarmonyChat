@@ -1,0 +1,19 @@
+fullnameOverride: {{ .Values.infra.dynamodb.host }}
+
+replicaCount: 1
+
+persistence:
+  enabled: true
+  size: 1Gi
+
+service:
+  type: ClusterIP
+  port: {{ .Values.infra.dynamodb.port }}
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    cpu: 200m
+    memory: 512Mi

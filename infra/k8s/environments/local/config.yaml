@@ -1,0 +1,51 @@
+app:
+  env: development
+  api:
+    host: "backend"
+    port: "8000"
+  consumer:
+    name: "Harmony CDC Worker K8s Local"
+
+infra:
+  aws:
+    region: "us-east-1"
+    access_key_id: "local"
+    secret_access_key: "local"
+    
+  postgres:
+    host: "postgresql"
+    port: "5432"
+    user: "harmony"
+    password: "harmony_local_password"
+    dbname: "harmony"
+    
+  redis:
+    host: "redis-master"
+    port: "6379"
+    
+  dynamodb:
+    host: "dynamodb-local"
+    port: "8000"
+    chat_history_table_name: "ChatHistory"
+    
+  kafka:
+    host: "kafka"
+    client_host: "kafka-0.kafka.harmony.svc.cluster.local"
+    port: "9093"
+    
+  centrifugo:
+    host: "centrifugo"
+    port: "8000"
+    api_key: "local-api-key"
+    admin_password: "local-admin-password"
+    admin_secret: "local-admin-secret"
+    token_secret: "local-token-secret"
+    allowed_origins: ["*"]
+    chat:
+      presence_enabled: true
+      history_size: 100
+      history_ttl: "3600s"
+
+  kafka_connect:
+    host: "kafka-connect"
+    port: "8083"
