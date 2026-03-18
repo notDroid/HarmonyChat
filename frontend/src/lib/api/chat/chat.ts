@@ -296,3 +296,66 @@ export const deleteChatApiV1ChatsChatIdDelete = async (
     },
   );
 };
+
+/**
+ * Allows a user to voluntarily leave a chat.
+ * @summary Leave a chat
+ */
+export type leaveChatApiV1ChatsChatIdLeavePostResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type leaveChatApiV1ChatsChatIdLeavePostResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type leaveChatApiV1ChatsChatIdLeavePostResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type leaveChatApiV1ChatsChatIdLeavePostResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type leaveChatApiV1ChatsChatIdLeavePostResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type leaveChatApiV1ChatsChatIdLeavePostResponseSuccess =
+  leaveChatApiV1ChatsChatIdLeavePostResponse204 & {
+    headers: Headers;
+  };
+export type leaveChatApiV1ChatsChatIdLeavePostResponseError = (
+  | leaveChatApiV1ChatsChatIdLeavePostResponse401
+  | leaveChatApiV1ChatsChatIdLeavePostResponse403
+  | leaveChatApiV1ChatsChatIdLeavePostResponse404
+  | leaveChatApiV1ChatsChatIdLeavePostResponse422
+) & {
+  headers: Headers;
+};
+
+export type leaveChatApiV1ChatsChatIdLeavePostResponse =
+  | leaveChatApiV1ChatsChatIdLeavePostResponseSuccess
+  | leaveChatApiV1ChatsChatIdLeavePostResponseError;
+
+export const getLeaveChatApiV1ChatsChatIdLeavePostUrl = (chatId: string) => {
+  return `/api/v1/chats/${chatId}/leave`;
+};
+
+export const leaveChatApiV1ChatsChatIdLeavePost = async (
+  chatId: string,
+  options?: RequestInit,
+): Promise<leaveChatApiV1ChatsChatIdLeavePostResponse> => {
+  return inject<leaveChatApiV1ChatsChatIdLeavePostResponse>(
+    getLeaveChatApiV1ChatsChatIdLeavePostUrl(chatId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
