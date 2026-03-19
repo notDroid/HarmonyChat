@@ -125,5 +125,6 @@ task schema:sync       # Extract FastAPI OpenAPI specs and regenerate TypeScript
 - [x] Migrate WebSocket handling to Centrifugo + Redis
 - [x] Implement Kafka-based event sourcing for chat messages with Kafka Connect DynamoDB sink
 - [x] Implement CDC (Change Data Capture) with Postgres Outbox + Debezium + Kafka
+- [x] Build k8s set up with helm and deploy locally using kind.
 - [ ] Deploy application to AWS via Terraform 
 - [ ] Setup GitHub Actions CI/CD pipelines
