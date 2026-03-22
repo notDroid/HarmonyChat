@@ -20,7 +20,7 @@ dependencies = [
     "aioboto3>=15.5.0",
     "aiofiles>=25.1.0",
     "redis>=7.2.0",
-    "aiokafka>=0.13.0",
+    "aiokafka[snappy]>=0.13.0",
     "sqlalchemy>=2.0.46",
     "asyncpg>=0.31.0",
 

@@ -48,29 +48,33 @@ class CDCConsumer:
                             # TODO: Implement a proper DLQ mechanism. For now, we log and skip the message to prevent blocking.
                             logger.critical("fatal_processing_error", offset=msg.offset)
                             raise Exception(f"Failed to process message {msg.offset}. Crashing consumer to prevent data loss.")
-                            
+        except KafkaError as ke:
+            logger.exception("kafka_consumer_error")
+        except Exception as e:
+            logger.exception("unexpected_consumer_error")
         finally:
-            await self.consumer.stop()
+            # await self.consumer.stop() # doesn't seem to be working reliably
             logger.info("cdc_consumer_stopped")
 
     async def process_message(self, msg) -> bool:
         try:
-            payload = json.loads(msg.value.decode("utf-8")) if msg.value else {}
+            body = json.loads(msg.value.decode("utf-8")) if msg.value else {}
             
-            headers = {k: v.decode('utf-8') if v else None for k, v in (msg.headers or [])}
-            event_type = headers.get("eventType")
-            aggregate_id = msg.key.decode("utf-8") if msg.key else None
+            event_type = body.get("event_type")
+            aggregate_id = body.get("aggregate_id")
+            event_id = body.get("event_id")
+            payload = body.get("payload", {})
 
             topic = msg.topic
             offset = msg.offset
 
-            if not event_type or not aggregate_id:
+            if not event_type or not aggregate_id or not event_id:
                 logger.warning("skipping_invalid_message", topic=topic, offset=offset)
                 return True
 
             # Bind context variables so all logs in this trace have the ID
             with structlog.contextvars.bound_contextvars(
-                topic=topic, event=event_type, aggregate_id=aggregate_id
+                topic=topic, event=event_type, aggregate_id=aggregate_id, event_id=event_id, offset=offset
             ):
                 logger.info("processing_cdc_event")
                 

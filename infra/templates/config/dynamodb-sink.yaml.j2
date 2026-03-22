@@ -1,0 +1,25 @@
+input:
+  label: "kafka_consumer"
+  redpanda:
+    seed_brokers: 
+      - "{{ infra.kafka.client_host | default(infra.kafka.host) }}:{{ infra.kafka.port }}"
+    topics: 
+      - "chat_messages"
+    consumer_group: "dynamodb-sink-group"
+
+pipeline:
+  processors:
+    - mapping: |
+        root = this.without("author_metadata")
+
+output:
+  label: "dynamodb_sink"
+  aws_dynamodb:
+    table: "{{ infra.dynamodb.chat_history_table_name }}"
+    endpoint: "http://{{ infra.dynamodb.host }}:{{ infra.dynamodb.port }}"
+    region: "{{ infra.aws.region | default('us-east-1') }}"
+    credentials:
+      id: "{{ infra.aws.access_key_id }}"
+      secret: "{{ infra.aws.secret_access_key }}"
+    json_map_columns:
+      "": .

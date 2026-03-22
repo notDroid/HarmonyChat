@@ -13,6 +13,11 @@ vars:
   HELMFILE_CMD: "helmfile -e {{.K8S_ENV}}"
 
 tasks:
+  cdc:
+    cmds:
+      - task: docker:render
+      - "{{.DOCKER_CMD}} restart connect-cdc"
+
   default:
     silent: true
     cmds:
@@ -66,7 +71,7 @@ tasks:
       - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml templates/config docker/config"
       - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml templates/envt docker/env"
 
-  run:dev:
+  run:
     desc: "▶️  START DEV: Runs the local dev environment"
     cmds:
       - task: docker:render
@@ -76,6 +81,12 @@ tasks:
     desc: "🛑 STOP: Stops all containers and removes volumes"
     cmds:
       - "{{.DOCKER_CMD}} down --volumes --remove-orphans"
+
+  restart:
+    desc: "🔄 RESTART: Restart all containers"
+    cmds:
+      - task: clean
+      - task: run
         
   build:
     desc: "🚀 BUILD: the docker compose environment"

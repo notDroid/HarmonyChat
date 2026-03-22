@@ -1,0 +1,50 @@
+version: 2.2
+pipelines:
+  - id: postgres-outbox-cdc
+    status: running
+    name: Postgres Outbox CDC
+    description: Stream outbox events from Postgres to Kafka using the outbox pattern
+    connectors:
+      - id: pg-source
+        type: source
+        plugin: builtin:postgres
+        settings:
+          url: "postgres://{{ infra.postgres.user }}:{{ infra.postgres.password }}@{{ infra.postgres.host }}:{{ infra.postgres.port }}/{{ infra.postgres.dbname }}?sslmode=disable&search_path=public"
+          tables: "outbox_events"
+          snapshotMode: "never"
+          logrepl.publicationName: "harmony_pub"
+          logrepl.slotName: "harmony_slot"
+
+      - id: kafka-dest
+        type: destination
+        plugin: builtin:kafka
+        settings:
+          servers: "{{ infra.kafka.host }}:{{ infra.kafka.port }}"
+          topic: '{% raw %}{{ index .Payload.After "aggregate_type" }}{% endraw %}'
+          
+          sdk.record.format: "template"
+          sdk.record.format.options: '{% raw %}{{ if .Payload.After }}{{ toJson .Payload.After }}{{ else }}{{ toJson .Payload.Before }}{{ end }}{% endraw %}'
+
+    processors:
+      - id: use-aggregate-id-as-key
+        plugin: "custom.javascript"
+        settings:
+          sdk.schema.decode.key.enabled: "false"
+          sdk.schema.encode.key.enabled: "false"
+          # This script extracts the aggregate_id from the CDC payload and sets it as the Kafka message key.
+          script: |
+            function process(rec) {
+              if (rec.Payload.After != null && rec.Payload.After["aggregate_id"] != null) {
+                rec.Key = RawData(rec.Payload.After["aggregate_id"]);
+                
+                delete rec.Metadata["opencdc.key.schema.subject"];
+                delete rec.Metadata["opencdc.key.schema.version"];
+              }
+              return rec;
+            }
+
+      # Decode JSONB payload into structured JSON for easier consumption by downstream services
+      - id: parse-json-payload
+        plugin: "json.decode"
+        settings:
+          field: ".Payload.After.payload"

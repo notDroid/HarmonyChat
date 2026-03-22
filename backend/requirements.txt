@@ -18,7 +18,7 @@ aiohttp==3.13.3
     # via aiobotocore
 aioitertools==0.13.0
     # via aiobotocore
-aiokafka==0.13.0
+aiokafka[snappy]==0.13.0
     # via harmony-chat-api (pyproject.toml)
 aiosignal==1.4.0
     # via aiohttp
@@ -53,6 +53,8 @@ cffi==2.0.0
     # via argon2-cffi-bindings
 click==8.3.1
     # via uvicorn
+cramjam==2.11.0
+    # via aiokafka
 dnspython==2.8.0
     # via email-validator
 email-validator==2.3.0
