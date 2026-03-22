@@ -13,11 +13,6 @@ vars:
   HELMFILE_CMD: "helmfile -e {{.K8S_ENV}}"
 
 tasks:
-  cdc:
-    cmds:
-      - task: docker:render
-      - "{{.DOCKER_CMD}} restart connect-cdc"
-
   default:
     silent: true
     cmds:
