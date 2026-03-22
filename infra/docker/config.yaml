@@ -1,32 +1,96 @@
-app:
-  env: development
-  api:
-    host: api
-    port: 8000
-  consumer:
-    name: "Harmony CDC Worker Local"
+# ==========================================
+# Global Metadata
+# ==========================================
+project_name: "Harmony Chat"
+environment: "development" # [development, staging, production]
+log_level: "DEBUG"
 
+# ==========================================
+# 1. APPLICATION DOMAIN CONFIGURATION
+# ==========================================
+app:
+  feature_toggles:
+    use_redis_cache: true
+
+  auth:
+    algorithm: "HS256"
+    access_token_name: "access_token"
+    access_token_expire_minutes: 15
+    refresh_token_name: "refresh_token"
+    refresh_token_expire_days: 7
+    refresh_token_grace_period_sec: 2
+
+    secret_key: "64d54ec76be75e906e03e3fba806e2c1ff5f8da12dfb9226e7eea2a72e477c96" # Secret
+
+  domains:
+    chat:
+      max_users_per_operation: 10
+      default_pagination_limit: 50
+    user:
+      default_search_limit: 10
+      
+  cache_ttls_seconds:
+    default: 300
+    membership: 300
+    chat_metadata: 600
+    user: 300
+
+# ==========================================
+# 2. WORKLOAD CONFIGURATION
+# ==========================================
+workloads:  
+  api:
+    host: "api"
+    port: 8000
+    debug: true
+
+  cdc_consumer:
+    name: "Harmony CDC Worker"
+    max_poll_records: 500
+    fetch_max_bytes: 52428800 # 50 MB
+    session_timeout_ms: 10000 # 10 seconds
+    poll_timeout_ms: 1000 # 1 second
+
+# ==========================================
+# 3. INFRASTRUCTURE & TOPOLOGY
+# ==========================================
 infra:
   aws:
-    region: us-east-1
-    access_key_id: test
-    secret_access_key: test
-    
+    region: "us-east-1"
+    access_key_id: "test"
+    secret_access_key: "test"
+
   postgres:
-    host: postgres
-    port: "5432"
-    user: harmony
-    password: harmony
-    dbname: harmony
-    
+    host: "postgres"
+    port: 5432
+    dbname: "harmony"
+    user: "harmony"
+    password: "harmony" 
+
   redis:
-    host: redis
-    port: "6379"
-    
+    host: "redis"
+    port: 6379
+    db_index: 1
+    health_check_interval: 30
+    request_timeout_ms: 100
+
   dynamodb:
-    host: dynamodb
-    port: "8000"
-    chat_history_table_name: ChatHistory
+    host: "dynamodb"
+    port: 8000
+    chat_history_table_name: "harmony_${environment}_chat_history"
+
+  kafka:
+    host: "kafka"
+    port: 9092
+    cluster_id: "NjM1ZjYxNjYtNjM1Zi00YmU"
+    producer:
+      retry_backoff_ms: 500
+    consumer_groups:
+      cdc_worker: "harmony-cdc-worker-${environment}"
+    topics:
+      chat_messages: "${environment}_chat_messages"
+      user_events: "${environment}_user_events"
+      chat_events: "${environment}_chat_events"
 
   s3:
     endpoint: "http://minio:9000"
@@ -37,24 +101,15 @@ infra:
     buckets:
       automq_data: "automq-data"
       automq_ops: "automq-ops"
-    
-  kafka:
-    host: kafka
-    port: 9092
-    cluster_id: "NjM1ZjYxNjYtNjM1Zi00YmU"
-    
+      
   centrifugo:
-    host: centrifugo
-    port: "8000"
-    api_key: test-cent-api-key
-    admin_password: admin
-    admin_secret: admin
+    host: "centrifugo"
+    port: 8000
+    api_key: "test-cent-api-key"
+    admin_password: "admin"
+    admin_secret: "admin"
     allowed_origins: ["*"]
     chat:
       presence_enabled: true
       history_size: 100
       history_ttl: "3600s"
-
-  kafka_connect:
-    host: kafka-connect
-    port: "8083"

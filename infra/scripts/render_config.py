@@ -4,14 +4,15 @@ Render Jinja2 config templates for a target environment.
 
 import json
 import sys
-import yaml
+from omegaconf import OmegaConf
 import argparse
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
 def render(config_file: str, templates_dir: str, output_dir: str) -> None:
     with open(config_file) as f:
-        variables = yaml.safe_load(f)
+        conf = OmegaConf.load(f)
+    variables = OmegaConf.to_container(conf, resolve=True)
 
     output_root = Path(output_dir)
     templates_dir = Path(templates_dir)

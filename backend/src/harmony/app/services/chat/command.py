@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
 from harmony.app.repositories import ChatDataRepository, UserChatRepository
-from harmony.app.core import ChatConfig
+from harmony.app.core import ChatConfig, UserConfig
 from harmony.app.schemas import ChatMetaData, ChatCreateRequest, ChatResponse
 from ..command import Command
 
@@ -17,12 +17,14 @@ class ChatCommands(Command):
         session: AsyncSession,
         chat_data_repository: ChatDataRepository,
         user_chat_repository: UserChatRepository,
-        chat_config: ChatConfig = ChatConfig()
+        chat_config: ChatConfig,
+        user_config: UserConfig,
     ):
         super().__init__(session, logger)
         self.chat_data_repo = chat_data_repository
         self.user_chat_repo = user_chat_repository
         self.cfg = chat_config
+        self.user_cfg = user_config
 
     async def _require_membership(self, user_id: uuid.UUID, chat_id: uuid.UUID):
         is_member = await self.user_chat_repo.check_user_in_chat(chat_id=chat_id, user_id=user_id, lock=True)
@@ -69,14 +71,14 @@ class ChatCommands(Command):
             await self.user_chat_repo.add_users_to_chat(chat_id=chat_id, user_id_list=user_id_list)
 
             self.session.add(OutboxEvent(
-                aggregate_type="Chat",
+                aggregate_type=self.cfg.topic,
                 aggregate_id=str(chat_id),
                 event_type="USERS_ADDED",
                 payload={"added_by": str(user_id), "user_id_list": [str(uid) for uid in user_id_list]}
             ))
             for new_user_id in user_id_list:
                 self.session.add(OutboxEvent(
-                    aggregate_type="User",
+                    aggregate_type=self.user_cfg.topic,
                     aggregate_id=str(new_user_id),
                     event_type="ADDED_TO_CHAT",
                     payload={"added_by": str(user_id), "chat_id": str(chat_id)}
@@ -89,13 +91,13 @@ class ChatCommands(Command):
             await self.user_chat_repo.remove_user_from_chat(chat_id=chat_id, user_id=user_id)
 
             self.session.add(OutboxEvent(
-                aggregate_type="Chat",
+                aggregate_type=self.cfg.topic,
                 aggregate_id=str(chat_id),
                 event_type="USER_LEFT",
                 payload={"user_id": str(user_id)}
             ))
             self.session.add(OutboxEvent(
-                aggregate_type="User",
+                aggregate_type=self.user_cfg.topic,
                 aggregate_id=str(user_id),
                 event_type="LEFT_CHAT",
                 payload={"chat_id": str(chat_id)}
@@ -109,7 +111,7 @@ class ChatCommands(Command):
             await self.chat_data_repo.delete_chat(chat_id)
 
             self.session.add(OutboxEvent(
-                aggregate_type="Chat",
+                aggregate_type=self.cfg.topic,
                 aggregate_id=str(chat_id),
                 event_type="CHAT_DELETED",
                 payload={"deleted_by": str(user_id)}

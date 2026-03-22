@@ -177,11 +177,13 @@ def get_user_commands(
     session: AsyncSession = Depends(get_db_session),
     user_data_repository: UserDataRepository = Depends(get_user_data_repository),
     user_chat_repository: UserChatRepository = Depends(get_user_chat_repository),
+    settings: APISettings = Depends(get_api_settings)
 ) -> UserCommands:
     return UserCommands(
         session=session, 
         user_data_repository=user_data_repository, 
         user_chat_repository=user_chat_repository, 
+        user_config=settings.user
     )
 
 def get_chat_commands(
@@ -194,7 +196,8 @@ def get_chat_commands(
         session=session, 
         chat_data_repository=chat_data_repository, 
         user_chat_repository=user_chat_repository, 
-        chat_config=settings.chat
+        chat_config=settings.chat,
+        user_config=settings.user
     )
 
 def get_message_commands(

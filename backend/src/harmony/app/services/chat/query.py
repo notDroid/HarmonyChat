@@ -31,9 +31,9 @@ class ChatQueries:
         session: AsyncSession,
         chat_data_repository: ChatDataRepository,
         user_chat_repository: UserChatRepository,
+        cache_config: CacheConfig,
         cache_service: Optional[CacheService] = None,
         task_queue: Optional[TaskQueue] = None,
-        cache_config: CacheConfig = CacheConfig()
     ):
         self.session = session
         self.chat_data_repo = chat_data_repository

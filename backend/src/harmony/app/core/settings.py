@@ -10,12 +10,14 @@ class FeatureToggles(BaseModel):
     """Flags to enable or disable specific architectural components."""
     cache_redis: bool = Field(default=False, description="Enable Redis caching")
 
+class ConsumerTopics(BaseModel):
+    chat: str = Field(default="Chat", description="Kafka topic for chat events")
+    user: str = Field(default="User", description="Kafka topic for user events")
 
 class KafkaConsumerConfig(BaseModel):
     """Configuration for the CDC Consumer."""
     bootstrap_servers: str = Field(default="localhost:9092")
     group_id: str = Field(default="harmony-cdc-worker")
-    topics: list[str] = Field(default_factory=lambda: ["Chat", "User"])
     
     max_poll_records: int = Field(default=500, description="Max messages per batch")
     fetch_max_bytes: int = Field(default=52428800, description="50MB max fetch size")
@@ -33,12 +35,14 @@ class ChatConfig(BaseModel):
     """Configuration for chat-related limits and queues."""
     max_users_per_operation: int = Field(default=10, ge=1, description="Maximum number of users processed per batch")
     default_pagination_limit: int = Field(default=50, ge=1, description="Default item limit for paginated chat endpoints")
+    topic: str = Field(default="Chat", description="Topic name for chat events")
     message_topic: str = Field(default="chat_messages", description="Topic name for chat messages")
 
 
 class UserConfig(BaseModel):
     """Configuration for user-related domains."""
     default_user_search_limit: int = Field(default=10, ge=1, description="Default limit for user search queries")
+    topic: str = Field(default="User", description="Topic name for user events")
 
 
 class AWSConfig(BaseModel):
@@ -134,6 +138,7 @@ class ConsumerSettings(BaseAppSettings):
     consumer_name: str = Field(default="Harmony CDC Worker")
 
     kafka_consumer: KafkaConsumerConfig = KafkaConsumerConfig()
+    topics: ConsumerTopics = ConsumerTopics()
 
 
 @lru_cache

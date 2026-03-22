@@ -6,7 +6,7 @@
       "enabled": true,
       "kafka": {
         "brokers": ["{{ infra.kafka.client_host | default(infra.kafka.host) }}:{{ infra.kafka.port }}"],
-        "topics": ["chat_messages"],
+        "topics": ["{{ infra.kafka.topics.chat_messages }}"],
         "consumer_group": "centrifugo",
         "publication_data_mode": {
           "enabled": true,
@@ -34,7 +34,7 @@
     "proxy": {
       "connect": {
         "enabled": true,
-        "endpoint": "http://{{ app.api.host }}:{{ app.api.port }}/api/v1/ws/connect",
+        "endpoint": "http://{{ workloads.api.host }}:{{ workloads.api.port }}/api/v1/ws/connect",
         "timeout": "1s",
         "http_headers": ["Cookie"]
       }
@@ -52,7 +52,7 @@
     ],
     "proxy": {
       "subscribe": {
-        "endpoint": "http://{{ app.api.host }}:{{ app.api.port }}/api/v1/ws/subscribe",
+        "endpoint": "http://{{ workloads.api.host }}:{{ workloads.api.port }}/api/v1/ws/subscribe",
         "timeout": "1s"
       }
     }

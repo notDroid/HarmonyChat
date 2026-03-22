@@ -23,7 +23,8 @@ async def lifespan():
         context = ConsumerContext(
             chat_handler=ChatEventHandler(cache_service),
             user_handler=UserEventHandler(cache_service),
-            msg_handler=MessageEventHandler(chat_history_repo)
+            msg_handler=MessageEventHandler(chat_history_repo),
+            settings=settings
         )
         
         yield context

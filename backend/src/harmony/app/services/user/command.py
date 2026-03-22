@@ -1,4 +1,5 @@
 import uuid
+from harmony.app.core.settings import UserConfig
 from harmony.app.models.outbox import OutboxEvent
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
@@ -15,10 +16,12 @@ class UserCommands(Command):
         session: AsyncSession,
         user_data_repository: UserDataRepository,
         user_chat_repository: UserChatRepository,
+        user_config: UserConfig,
     ):
         super().__init__(session, logger)
         self.user_data_repo = user_data_repository
         self.user_chat_repo = user_chat_repository
+        self.cfg = user_config
 
     async def create_user(self, req: UserCreateRequest, hashed_password: str) -> uuid.UUID:
         # 1. Handle request->metadata transformation
@@ -44,7 +47,7 @@ class UserCommands(Command):
             await self.user_data_repo.make_user_tombstone(user_id=user_id)
 
             self.session.add(OutboxEvent(
-                aggregate_type="User",
+                aggregate_type=self.cfg.topic,
                 aggregate_id=str(user_id),
                 event_type="TOMBSTONED",
                 payload={}

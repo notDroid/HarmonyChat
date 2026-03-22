@@ -15,8 +15,9 @@ class CDCConsumer:
         self.cfg = config
         self.router = router
         self.context = context
+        self.topics = list(self.context.settings.topics.model_dump().values())
         self.consumer = AIOKafkaConsumer(
-            *self.cfg.topics,
+            *self.topics,
             bootstrap_servers=self.cfg.bootstrap_servers,
             group_id=self.cfg.group_id,
             enable_auto_commit=False,
@@ -29,7 +30,7 @@ class CDCConsumer:
 
     async def start(self, stop_event: asyncio.Event):
         await self.consumer.start()
-        logger.info("cdc_consumer_started", topics=self.cfg.topics)
+        logger.info("cdc_consumer_started", topics=self.topics)
         
         try:
             while not stop_event.is_set():

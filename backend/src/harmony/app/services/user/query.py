@@ -31,9 +31,9 @@ class UserQueries:
         session: AsyncSession,
         user_data_repository: UserDataRepository,
         user_chat_repository: UserChatRepository,
+        cache_config: CacheConfig,
         cache_service: Optional[CacheService] = None,
         task_queue: Optional[TaskQueue] = None,
-        cache_config: CacheConfig = CacheConfig()
     ):
         self.session = session
         self.user_data_repo = user_data_repository
