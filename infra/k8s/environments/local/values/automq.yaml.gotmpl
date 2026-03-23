@@ -1,0 +1,70 @@
+global:
+  security:
+    allowInsecureImages: true
+
+extraEnvVars:
+  # AutoMQ needs the S3 credentials to connect to Minio, not the generic AWS keys
+  - name: AWS_ACCESS_KEY_ID
+    value: {{ .Values.infra.s3.access_key | quote }}
+  - name: AWS_SECRET_ACCESS_KEY
+    value: {{ .Values.infra.s3.secret_key | quote }}
+
+image:
+  registry: automqinc
+  repository: automq
+  tag: 1.6.0-bitnami
+  pullPolicy: Always
+
+# no tls
+listeners:
+  client:
+    protocol: PLAINTEXT
+  controller:
+    protocol: PLAINTEXT
+  interbroker:
+    protocol: PLAINTEXT
+
+controller:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "1"
+      memory: "4Gi"
+  heapOpts: "-Xmx1g -Xms1g -XX:MaxDirectMemorySize=1g -XX:MetaspaceSize=96m"
+  extraConfig: |
+    elasticstream.enable=true
+    s3.ops.buckets=1@s3://{{ .Values.infra.s3.buckets.automq_ops }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
+    s3.data.buckets=0@s3://{{ .Values.infra.s3.buckets.automq_data }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
+    s3.wal.path=0@s3://{{ .Values.infra.s3.buckets.automq_data }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
+    s3.wal.cache.size=536870912
+    s3.block.cache.size=268435456
+    s3.stream.allocator.policy=POOLED_DIRECT
+  persistence:
+    storageClass: "standard"
+    size: 10Gi
+
+broker:
+  minId: 1000
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "1"
+      memory: "4Gi"
+  heapOpts: "-Xmx1g -Xms1g -XX:MaxDirectMemorySize=1g -XX:MetaspaceSize=96m"
+  extraConfig: |
+    elasticstream.enable=true
+    s3.ops.buckets=1@s3://{{ .Values.infra.s3.buckets.automq_ops }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
+    s3.data.buckets=0@s3://{{ .Values.infra.s3.buckets.automq_data }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
+    s3.wal.path=0@s3://{{ .Values.infra.s3.buckets.automq_data }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
+    s3.wal.cache.size=536870912
+    s3.block.cache.size=268435456
+    s3.stream.allocator.policy=POOLED_DIRECT
+  persistence:
+    storageClass: "standard"
+    size: 10Gi

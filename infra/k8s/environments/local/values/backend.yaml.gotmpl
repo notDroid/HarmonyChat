@@ -1,4 +1,4 @@
-fullnameOverride: {{ .Values.app.api.host }}
+fullnameOverride: {{ .Values.workloads.api.host }}
 
 command: []
 args: []
@@ -6,5 +6,5 @@ args: []
 service:
   enabled: true
   type: NodePort
-  port: {{ .Values.app.api.port }}
+  port: {{ .Values.workloads.api.port }}
   nodePort: 30800

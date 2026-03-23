@@ -12,6 +12,8 @@ helmDefaults:
 repositories:
   - name: bitnami
     url: https://charts.bitnami.com/bitnami
+  - name: minio
+    url: https://charts.min.io/
   - name: redpanda
     url: https://charts.redpanda.com
   - name: centrifugal
@@ -20,6 +22,23 @@ repositories:
 ---
 
 releases:
+  - name: minio
+    namespace: harmony
+    chart: minio/minio
+    values:
+      - values/minio.yaml.gotmpl
+    wait: true
+
+  - name: automq
+    namespace: harmony
+    chart: oci://registry-1.docker.io/bitnamicharts/kafka
+    version: 31.5.0
+    values:
+      - values/automq.yaml.gotmpl
+    needs:
+      - harmony/minio
+    wait: true
+
   - name: postgresql
     namespace: harmony
     chart: bitnami/postgresql
@@ -34,13 +53,6 @@ releases:
       - values/redis.yaml.gotmpl
     wait: true
 
-  - name: redpanda
-    namespace: harmony
-    chart: redpanda/redpanda
-    values:
-      - values/redpanda.yaml.gotmpl
-    wait: true
-
   - name: dynamodb-local
     namespace: harmony
     chart: ../../charts/dynamodb-local
@@ -48,34 +60,18 @@ releases:
       - values/dynamodb-local.yaml.gotmpl
     wait: true
 
-  - name: centrifugo
+  - name: consumer
     namespace: harmony
-    chart: centrifugal/centrifugo
+    chart: ../../charts/harmony
     values:
-      - values/centrifugo.yaml.gotmpl
-    needs:
-      - harmony/redis
-      - harmony/redpanda
-    wait: true
-
-  - name: kafka-connect
-    namespace: harmony
-    chart: ../../charts/kafka-connect
-    values:
-      - values/kafka-connect.yaml.gotmpl
+      - values/consumer.yaml.gotmpl
     set:
-      - name: connectors.debeziumSourceJson
-        file: config/debezium-source.json
-      - name: connectors.dynamodbSinkJson
-        file: config/dynamodb-sink.json
-      - name: connectors.dynamodbTablesJson
-        file: config/dynamodb-tables.json
-      - name: connectors.initScript
-        file: ../../../scripts/init_connectors.sh
+      - name: envFileContent
+        file: env/.env.consumer
     needs:
-      - harmony/redpanda
+      - harmony/automq
+      - harmony/redis
       - harmony/dynamodb-local
-      - harmony/postgresql
     wait: true
 
   - name: backend
@@ -89,23 +85,48 @@ releases:
     needs:
       - harmony/postgresql
       - harmony/redis
-      - harmony/redpanda
+      - harmony/automq
       - harmony/dynamodb-local
     wait: true
 
-  - name: consumer
+  - name: centrifugo
     namespace: harmony
-    chart: ../../charts/harmony
+    chart: centrifugal/centrifugo
     values:
-      - values/consumer.yaml.gotmpl
-    set:
-      - name: envFileContent
-        file: env/.env.consumer
+      - values/centrifugo.yaml.gotmpl
     needs:
-      - harmony/redpanda
       - harmony/redis
-      - harmony/dynamodb-local
+      - harmony/automq
     wait: true
+
+  # - name: conduit-cdc
+  #   namespace: harmony
+  #   chart: ../../charts/conduit 
+  #   values:
+  #     - values/conduit.yaml.gotmpl
+  #   set:
+  #     # Inject the rendered pipeline config into the chart
+  #     - name: pipelineConfig
+  #       file: config/postgres-cdc.yaml
+  #   needs:
+  #     - harmony/postgresql
+  #     - harmony/automq
+  #   wait: true
+
+  # - name: redpanda-connect
+  #   namespace: harmony
+  #   # Using the official Redpanda Connect chart from the repo in your Taskfile
+  #   chart: redpanda/connect 
+  #   version: "1.0.1" # Use the latest available chart version
+  #   values:
+  #     - values/redpanda-connect.yaml.gotmpl
+  #   set:
+  #     - name: config
+  #       file: config/dynamodb-sink.yaml
+  #   needs:
+  #     - harmony/automq
+  #     - harmony/dynamodb-local
+  #   wait: true
 
   - name: init-job
     namespace: harmony

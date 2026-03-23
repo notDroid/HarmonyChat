@@ -1,0 +1,23 @@
+mode: standalone
+replicas: 1
+
+rootUser: {{ .Values.infra.s3.access_key | quote }}
+rootPassword: {{ .Values.infra.s3.secret_key | quote }}
+
+resources:
+  requests:
+    memory: "512Mi"
+
+persistence:
+  enabled: true
+  storageClass: "standard"
+  size: "10Gi"
+
+# Pre-create the required buckets for AutoMQ
+buckets:
+  - name: "automq-data"
+    policy: "none"
+    purge: false
+  - name: "automq-ops"
+    policy: "none"
+    purge: false
