@@ -18,6 +18,8 @@ repositories:
     url: https://charts.redpanda.com
   - name: centrifugal
     url: https://centrifugal.github.io/helm-charts
+  - name: kafbat
+    url: https://kafbat.github.io/helm-charts
 
 ---
 
@@ -71,7 +73,6 @@ releases:
     needs:
       - harmony/automq
       - harmony/redis
-      - harmony/dynamodb-local
     wait: true
 
   - name: backend
@@ -95,38 +96,35 @@ releases:
     values:
       - values/centrifugo.yaml.gotmpl
     needs:
-      - harmony/redis
+      - harmony/backend
+    wait: true
+
+  - name: conduit-cdc
+    namespace: harmony
+    chart: ../../charts/conduit 
+    values:
+      - values/conduit.yaml.gotmpl
+    set:
+      - name: pipelineConfig
+        file: config/postgres-cdc.yaml
+    needs:
+      - harmony/postgresql
       - harmony/automq
     wait: true
 
-  # - name: conduit-cdc
-  #   namespace: harmony
-  #   chart: ../../charts/conduit 
-  #   values:
-  #     - values/conduit.yaml.gotmpl
-  #   set:
-  #     # Inject the rendered pipeline config into the chart
-  #     - name: pipelineConfig
-  #       file: config/postgres-cdc.yaml
-  #   needs:
-  #     - harmony/postgresql
-  #     - harmony/automq
-  #   wait: true
-
-  # - name: redpanda-connect
-  #   namespace: harmony
-  #   # Using the official Redpanda Connect chart from the repo in your Taskfile
-  #   chart: redpanda/connect 
-  #   version: "1.0.1" # Use the latest available chart version
-  #   values:
-  #     - values/redpanda-connect.yaml.gotmpl
-  #   set:
-  #     - name: config
-  #       file: config/dynamodb-sink.yaml
-  #   needs:
-  #     - harmony/automq
-  #     - harmony/dynamodb-local
-  #   wait: true
+  - name: redpanda-connect
+    namespace: harmony
+    chart: redpanda/connect 
+    version: "3.1.0"
+    values:
+      - values/redpanda-connect.yaml.gotmpl
+    set:
+      - name: config
+        file: config/dynamodb-sink.yaml
+    needs:
+      - harmony/automq
+      - harmony/dynamodb-local
+    wait: true
 
   - name: init-job
     namespace: harmony
@@ -138,4 +136,13 @@ releases:
         file: config/dynamodb-tables.json
     needs:
       - harmony/dynamodb-local
+    wait: true
+
+  - name: kafbat-ui
+    namespace: harmony
+    chart: kafbat/kafka-ui
+    values:
+      - values/kafbat-ui.yaml.gotmpl
+    needs:
+      - harmony/automq
     wait: true

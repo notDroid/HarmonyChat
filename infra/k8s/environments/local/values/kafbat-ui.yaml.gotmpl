@@ -1,0 +1,19 @@
+image:
+  registry: ghcr.io
+  repository: kafbat/kafka-ui
+  tag: latest
+  pullPolicy: IfNotPresent
+
+yamlApplicationConfig:
+  kafka:
+    clusters:
+      - name: "harmony-cluster"
+        bootstrapServers: "{{ .Values.infra.kafka.host }}:{{ .Values.infra.kafka.port }}"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

@@ -200,6 +200,7 @@ tasks:
       - helm repo add centrifugal https://centrifugal.github.io/helm-charts
       - helm repo add redpanda https://charts.redpanda.com
       - helm repo add minio https://charts.min.io/
+      - helm repo add kafbat https://kafbat.github.io/helm-charts
       - helm repo update
 
   k8s:deploy:
@@ -213,7 +214,7 @@ tasks:
     dir: "{{.K8S_ENV_DIR}}"
     cmds:
       - task: k8s:render:local
-      - "{{.HELMFILE_CMD}} sync"
+      - "{{.HELMFILE_CMD}} apply"
 
   k8s:diff:
     desc: "🔍 K8S: Diff pending Helm changes"

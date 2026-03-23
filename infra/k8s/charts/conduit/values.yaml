@@ -1,0 +1,11 @@
+replicaCount: 1
+
+image:
+  repository: conduit.docker.scarf.sh/conduitio/conduit
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Imported through helmfile template rendering
+pipelineConfig: ""
+
+resources: {}

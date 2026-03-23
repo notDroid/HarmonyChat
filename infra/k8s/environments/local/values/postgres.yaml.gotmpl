@@ -14,3 +14,9 @@ primary:
   persistence:
     enabled: true
     size: 2Gi
+  initdb:
+    scripts:
+      01-grant-replication.sh: |
+        #!/bin/sh
+        export PGPASSWORD=$POSTGRES_POSTGRES_PASSWORD
+        psql -U postgres -d {{ .Values.infra.postgres.dbname }} -c "ALTER ROLE {{ .Values.infra.postgres.user }} WITH REPLICATION;"
