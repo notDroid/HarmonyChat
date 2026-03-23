@@ -67,9 +67,6 @@ releases:
     chart: ../../charts/harmony
     values:
       - values/consumer.yaml.gotmpl
-    set:
-      - name: envFileContent
-        file: env/.env.consumer
     needs:
       - harmony/automq
       - harmony/redis
@@ -80,9 +77,6 @@ releases:
     chart: ../../charts/harmony
     values:
       - values/backend.yaml.gotmpl
-    set:
-      - name: envFileContent
-        file: env/.env.api
     needs:
       - harmony/postgresql
       - harmony/redis

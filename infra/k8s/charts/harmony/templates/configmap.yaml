@@ -3,12 +3,6 @@ kind: ConfigMap
 metadata:
   name: {{ include "harmony-app.fullname" . }}-env
 data:
-  {{- if .Values.envFileContent }}
-  {{- range $line := splitList "\n" .Values.envFileContent }}
-  {{- $trimmed := trim $line }}
-  {{- if and $trimmed (not (hasPrefix "#" $trimmed)) }}
-  {{- $kv := regexSplit "=" $trimmed 2 }}
-  {{ index $kv 0 }}: {{ index $kv 1 | replace "\"" "" | quote }}
-  {{- end }}
-  {{- end }}
+  {{- range $key, $value := .Values.env }}
+  {{ $key }}: {{ $value | quote }}
   {{- end }}

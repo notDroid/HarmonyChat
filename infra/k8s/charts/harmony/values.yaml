@@ -5,14 +5,11 @@ image:
   tag: local
   pullPolicy: Never
 
-# command = [] for api server, command = [python -m harmony.consumer.main] for consumer
 command: []
 args: []
 
-# Imported through template rendering
-envFileContent: ""
+env: {}
 
-# service.enabled = true for api server, service.enabled = false for consumer
 service:
   enabled: false
   type: ClusterIP

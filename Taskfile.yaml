@@ -10,7 +10,7 @@ vars:
   KIND_CLUSTER: "harmony"
   K8S_ENV: "local"
   K8S_ENV_DIR: "infra/k8s/environments/{{.K8S_ENV}}"
-  HELMFILE_CMD: "helmfile -e {{.K8S_ENV}}"
+  HELMFILE_CMD: "helmfile -e {{.K8S_ENV}} --skip-deps"
 
 tasks:
   default:
@@ -191,7 +191,6 @@ tasks:
     dir: infra/
     cmds:
       - "{{.PYTHON_CMD}} scripts/render_config.py k8s/environments/local/config.yaml templates/config k8s/environments/local/config"
-      - "{{.PYTHON_CMD}} scripts/render_config.py k8s/environments/local/config.yaml templates/envt k8s/environments/local/env"
 
   k8s:helm:repos:
     desc: "📦 K8S: Add and update all Helm chart repositories"

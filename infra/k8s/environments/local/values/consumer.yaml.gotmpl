@@ -3,3 +3,33 @@ args: ["-m", "harmony.consumer.main"]
 
 service:
   enabled: false
+
+env:
+  CONSUMER_NAME: {{ .Values.workloads.cdc_consumer.name | quote }}
+  APP_ENV: {{ .Values.environment | quote }}
+
+  FEATURES__CACHE_REDIS: {{ .Values.app.feature_toggles.use_redis_cache | quote }}
+
+  REDIS__URL: "redis://{{ .Values.infra.redis.host }}:{{ .Values.infra.redis.port }}/{{ .Values.infra.redis.db_index }}"
+  REDIS__HEALTH_CHECK_INTERVAL: {{ .Values.infra.redis.health_check_interval | quote }}
+  REDIS__REQUEST_TIMEOUT_MS: {{ .Values.infra.redis.request_timeout_ms | quote }}
+
+  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:{{ .Values.infra.postgres.password }}@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}"
+
+  AWS__REGION: {{ .Values.infra.aws.region | quote }}
+  AWS__DEFAULT_REGION: {{ .Values.infra.aws.region | quote }}
+  AWS__ACCESS_KEY_ID: {{ .Values.infra.aws.access_key_id | quote }}
+  AWS__SECRET_ACCESS_KEY: {{ .Values.infra.aws.secret_access_key | quote }}
+
+  DYNAMODB__URL: "http://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
+  DYNAMODB__CHAT_HISTORY_TABLE_NAME: {{ .Values.infra.dynamodb.chat_history_table_name | replace "${environment}" .Values.environment | quote }}
+
+  KAFKA_CONSUMER__BOOTSTRAP_SERVERS: "{{ .Values.infra.kafka.host }}:{{ .Values.infra.kafka.port }}"
+  KAFKA_CONSUMER__GROUP_ID: {{ .Values.infra.kafka.consumer_groups.cdc_worker | replace "${environment}" .Values.environment | quote }}
+  KAFKA_CONSUMER__MAX_POLL_RECORDS: {{ .Values.workloads.cdc_consumer.max_poll_records | quote }}
+  KAFKA_CONSUMER__FETCH_MAX_BYTES: {{ .Values.workloads.cdc_consumer.fetch_max_bytes | quote }}
+  KAFKA_CONSUMER__SESSION_TIMEOUT_MS: {{ .Values.workloads.cdc_consumer.session_timeout_ms | quote }}
+  KAFKA_CONSUMER__POLL_TIMEOUT_MS: {{ .Values.workloads.cdc_consumer.poll_timeout_ms | quote }}
+
+  TOPICS__USER: {{ .Values.infra.kafka.topics.user_events | replace "${environment}" .Values.environment | quote }}
+  TOPICS__CHAT: {{ .Values.infra.kafka.topics.chat_events | replace "${environment}" .Values.environment | quote }}
