@@ -1,7 +1,7 @@
 fullnameOverride: {{ .Values.infra.centrifugo.host }}
 
 config:
-{{ readFile "../config/centrifugo-config.json" | fromJson | toYaml | indent 2 }}
+{{ readFile (printf "../../%s/config/centrifugo-config.json" .Environment.Name) | fromJson | toYaml | indent 2 }}
 
 service:
   type: NodePort

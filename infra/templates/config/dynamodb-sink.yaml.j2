@@ -18,8 +18,8 @@ output:
     table: "{{ infra.dynamodb.chat_history_table_name }}"
     endpoint: "http://{{ infra.dynamodb.host }}:{{ infra.dynamodb.port }}"
     region: "{{ infra.aws.region | default('us-east-1') }}"
-    credentials:
-      id: "{{ infra.aws.access_key_id }}"
-      secret: "{{ infra.aws.secret_access_key }}"
+    # credentials:
+    #   id: "{{ infra.aws.access_key_id }}"
+    #   secret: "{{ infra.aws.secret_access_key }}"
     json_map_columns:
       "": .

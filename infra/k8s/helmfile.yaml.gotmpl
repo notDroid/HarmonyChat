@@ -1,0 +1,179 @@
+environments:
+  local:
+    values:
+      - environments/local/config.yaml
+  staging:
+    values:
+      - environments/staging/config.yaml
+
+helmDefaults:
+  createNamespace: true
+  cleanupOnFail: false
+  wait: true
+  timeout: 600
+
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: minio
+    url: https://charts.min.io/
+  - name: redpanda
+    url: https://charts.redpanda.com
+  - name: centrifugal
+    url: https://centrifugal.github.io/helm-charts
+  - name: kafbat
+    url: https://kafbat.github.io/helm-charts
+
+---
+
+releases:
+  # ---------------------------------------------------------------------------
+  # DATASTORES & INFRASTRUCTURE
+  # ---------------------------------------------------------------------------
+  - name: minio
+    namespace: harmony
+    chart: minio/minio
+    installed: {{ eq .Environment.Name "local" }}
+    values:
+      - environments/{{ .Environment.Name }}/values/minio.yaml.gotmpl
+    wait: true
+
+  - name: postgresql
+    namespace: harmony
+    chart: bitnami/postgresql
+    installed: {{ eq .Environment.Name "local" }}
+    values:
+      - environments/{{ .Environment.Name }}/values/postgres.yaml.gotmpl
+    wait: true
+
+  - name: redis
+    namespace: harmony
+    chart: bitnami/redis
+    installed: {{ eq .Environment.Name "local" }}
+    values:
+      - environments/{{ .Environment.Name }}/values/redis.yaml.gotmpl
+    wait: true
+
+  - name: dynamodb-local
+    namespace: harmony
+    chart: charts/dynamodb-local
+    installed: {{ eq .Environment.Name "local" }}
+    values:
+      - environments/{{ .Environment.Name }}/values/dynamodb-local.yaml.gotmpl
+    wait: true
+
+  # ---------------------------------------------------------------------------
+  # CORE MESSAGE BROKER
+  # ---------------------------------------------------------------------------
+  - name: automq
+    namespace: harmony
+    chart: oci://registry-1.docker.io/bitnamicharts/kafka
+    version: 31.5.0
+    missingFileHandler: Info
+    values:
+      - environments/base/values/automq.yaml.gotmpl
+      - environments/{{ .Environment.Name }}/values/automq-override.yaml.gotmpl
+    needs:
+      - harmony/minio
+    wait: true
+
+  # ---------------------------------------------------------------------------
+  # APPLICATION SERVICES
+  # ---------------------------------------------------------------------------
+  - name: backend
+    namespace: harmony
+    chart: charts/harmony
+    missingFileHandler: Info
+    values:
+      - environments/base/values/backend.yaml.gotmpl
+      - environments/{{ .Environment.Name }}/values/backend-override.yaml.gotmpl
+    needs:
+      - harmony/postgresql
+      - harmony/redis
+      - harmony/automq
+      - harmony/dynamodb-local
+    wait: true
+
+  - name: consumer
+    namespace: harmony
+    chart: charts/harmony
+    missingFileHandler: Info
+    values:
+      - environments/base/values/consumer.yaml.gotmpl
+      - environments/{{ .Environment.Name }}/values/consumer-override.yaml.gotmpl
+    needs:
+      - harmony/automq
+      - harmony/redis
+    wait: true
+
+  - name: centrifugo
+    namespace: harmony
+    chart: centrifugal/centrifugo
+    missingFileHandler: Info
+    values:
+      - environments/base/values/centrifugo.yaml.gotmpl
+      - environments/{{ .Environment.Name }}/values/centrifugo-override.yaml.gotmpl
+    needs:
+      - harmony/backend
+    wait: true
+
+  # ---------------------------------------------------------------------------
+  # DATA PIPELINES & CDC
+  # ---------------------------------------------------------------------------
+  - name: conduit-cdc
+    namespace: harmony
+    chart: charts/conduit 
+    missingFileHandler: Info
+    values:
+      - environments/base/values/conduit.yaml.gotmpl
+      - environments/{{ .Environment.Name }}/values/conduit-override.yaml.gotmpl
+    set:
+      - name: pipelineConfig
+        file: environments/{{ .Environment.Name }}/config/postgres-cdc.yaml
+    needs:
+      - harmony/postgresql
+      - harmony/automq
+    wait: true
+
+  - name: redpanda-connect
+    namespace: harmony
+    chart: redpanda/connect 
+    version: "3.1.0"
+    missingFileHandler: Info
+    values:
+      - environments/base/values/redpanda-connect.yaml.gotmpl
+      - environments/{{ .Environment.Name }}/values/redpanda-connect-override.yaml.gotmpl
+    set:
+      - name: config
+        file: environments/{{ .Environment.Name }}/config/dynamodb-sink.yaml
+    needs:
+      - harmony/automq
+      - harmony/dynamodb-local
+    wait: true
+
+  # ---------------------------------------------------------------------------
+  # UTILITIES & INITIALIZATION
+  # ---------------------------------------------------------------------------
+  - name: init-job
+    namespace: harmony
+    chart: charts/init-job
+    installed: {{ eq .Environment.Name "local" }}
+    values:
+      - environments/{{ .Environment.Name }}/values/init-job.yaml.gotmpl
+    set:
+      - name: config.dynamodbTablesJson
+        file: environments/{{ .Environment.Name }}/config/dynamodb-tables.json
+    needs:
+      - harmony/dynamodb-local
+    wait: true
+
+  - name: kafbat-ui
+    namespace: harmony
+    chart: kafbat/kafka-ui
+    missingFileHandler: Info
+    values:
+      - environments/base/values/kafbat-ui.yaml.gotmpl
+      - environments/{{ .Environment.Name }}/values/kafbat-ui-override.yaml.gotmpl
+    needs:
+      - harmony/automq
+    wait: true

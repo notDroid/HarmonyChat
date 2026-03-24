@@ -9,7 +9,7 @@ pipelines:
         type: source
         plugin: builtin:postgres
         settings:
-          url: "postgres://{{ infra.postgres.user }}:{{ infra.postgres.password }}@{{ infra.postgres.host }}:{{ infra.postgres.port }}/{{ infra.postgres.dbname }}?sslmode=disable&search_path=public"
+          url: "postgres://{{ infra.postgres.user }}:${POSTGRES_PASSWORD}@{{ infra.postgres.host }}:{{ infra.postgres.port }}/{{ infra.postgres.dbname }}?sslmode=disable&search_path=public"
           tables: "outbox_events"
           snapshotMode: "never"
           logrepl.publicationName: "harmony_pub"

@@ -8,8 +8,7 @@ vars:
   DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/env/.env -f infra/docker/docker-compose.yaml"
 
   KIND_CLUSTER: "harmony"
-  K8S_ENV: "local"
-  K8S_ENV_DIR: "infra/k8s/environments/{{.K8S_ENV}}"
+  K8S_ENV: '{{default "local" .K8S_ENV}}'
   HELMFILE_CMD: "helmfile -e {{.K8S_ENV}} --skip-deps"
 
 tasks:
@@ -153,7 +152,7 @@ tasks:
   kind:cluster:create:
     desc: "☸️  K8S: Create the local kind cluster"
     cmds:
-      - kind create cluster --config infra/k8s/kind-config.yaml --name {{.KIND_CLUSTER}}
+      - kind create cluster --config infra/k8s/environments/local/kind-config.yaml --name {{.KIND_CLUSTER}}
     status:
       - kind get clusters | grep {{.KIND_CLUSTER}}
 
@@ -190,7 +189,7 @@ tasks:
     desc: "🔄 K8S: Render local jinja2 templates"
     dir: infra/
     cmds:
-      - "{{.PYTHON_CMD}} scripts/render_config.py k8s/environments/local/config.yaml templates/config k8s/environments/local/config"
+      - "{{.PYTHON_CMD}} scripts/render_config.py k8s/environments/{{.K8S_ENV}}/config.yaml templates/config k8s/environments/{{.K8S_ENV}}/config"
 
   k8s:helm:repos:
     desc: "📦 K8S: Add and update all Helm chart repositories"
@@ -210,20 +209,20 @@ tasks:
 
   k8s:apply:
     desc: "🚀 K8S: Apply Helm releases (helmfile sync)"
-    dir: "{{.K8S_ENV_DIR}}"
+    dir: infra/k8s
     cmds:
       - task: k8s:render:local
       - "{{.HELMFILE_CMD}} apply"
 
   k8s:diff:
     desc: "🔍 K8S: Diff pending Helm changes"
-    dir: "{{.K8S_ENV_DIR}}"
+    dir: infra/k8s
     cmds:
       - "{{.HELMFILE_CMD}} diff"
 
   k8s:destroy:
     desc: "🛑 K8S: Tear down all Helm releases (keeps cluster)"
-    dir: "{{.K8S_ENV_DIR}}"
+    dir: infra/k8s
     cmds:
       - "{{.HELMFILE_CMD}} destroy"
 

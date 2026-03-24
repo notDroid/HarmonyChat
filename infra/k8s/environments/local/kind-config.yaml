@@ -4,7 +4,7 @@ name: harmony
 nodes:
   - role: control-plane
     extraPortMappings:
-      # Backend FastAPI
+      # API Server
       - containerPort: 30800
         hostPort: 8000
         protocol: TCP
