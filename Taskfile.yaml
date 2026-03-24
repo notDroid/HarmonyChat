@@ -63,7 +63,7 @@ tasks:
     dir: infra/
     cmds:
       - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml templates/config docker/config"
-      - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml templates/envt docker/env"
+      - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml docker/secrets.yaml templates/envt docker/env"
 
   run:
     desc: "▶️  START DEV: Runs the local dev environment"

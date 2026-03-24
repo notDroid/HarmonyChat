@@ -22,13 +22,6 @@
       "prefix": "centrifugo"
     }
   },
-  "http_api": {
-    "key": "{{ infra.centrifugo.api_key }}"
-  },
-#   "admin": {
-#     "password": "{{ infra.centrifugo.admin_password }}",
-#     "secret": "{{ infra.centrifugo.admin_secret }}"
-#   },
   "client": {
     "allowed_origins": {{ infra.centrifugo.allowed_origins | tojson }},
     "proxy": {

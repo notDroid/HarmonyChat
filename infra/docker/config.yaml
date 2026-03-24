@@ -20,7 +20,7 @@ app:
     refresh_token_expire_days: 7
     refresh_token_grace_period_sec: 2
 
-    secret_key: "64d54ec76be75e906e03e3fba806e2c1ff5f8da12dfb9226e7eea2a72e477c96" # Secret
+    # secret_key: "64d54ec76be75e906e03e3fba806e2c1ff5f8da12dfb9226e7eea2a72e477c96" # Secret
 
   domains:
     chat:
@@ -57,15 +57,15 @@ workloads:
 infra:
   aws:
     region: "us-east-1"
-    access_key_id: "test"
-    secret_access_key: "test"
+    # access_key_id: "test"
+    # secret_access_key: "test"
 
   postgres:
     host: "postgres"
     port: 5432
     dbname: "harmony"
     user: "harmony"
-    password: "harmony" 
+    # password: "harmony" 
 
   redis:
     host: "redis"
@@ -95,8 +95,8 @@ infra:
   s3:
     endpoint: "http://minio:9000"
     region: "us-east-1"
-    access_key: "minioadmin"
-    secret_key: "minioadmin"
+    # access_key: "minioadmin"
+    # secret_key: "minioadmin"
     path_style: "true"
     buckets:
       automq_data: "automq-data"
@@ -105,9 +105,9 @@ infra:
   centrifugo:
     host: "centrifugo"
     port: 8000
-    api_key: "test-cent-api-key"
-    admin_password: "admin"
-    admin_secret: "admin"
+    # api_key: "test-cent-api-key"
+    # admin_password: "admin"
+    # admin_secret: "admin"
     allowed_origins: ["*"]
     chat:
       presence_enabled: true

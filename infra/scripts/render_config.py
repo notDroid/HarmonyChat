@@ -9,9 +9,13 @@ import argparse
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
-def render(config_file: str, templates_dir: str, output_dir: str) -> None:
-    with open(config_file) as f:
-        conf = OmegaConf.load(f)
+def render(config_files: list[str], templates_dir: str, output_dir: str) -> None:
+    loaded_configs = []
+    for config_file in config_files:
+        with open(config_file) as f:
+            loaded_configs.append(OmegaConf.load(f))
+    
+    conf = OmegaConf.merge(*loaded_configs)
     variables = OmegaConf.to_container(conf, resolve=True)
 
     output_root = Path(output_dir)
@@ -39,11 +43,11 @@ def render(config_file: str, templates_dir: str, output_dir: str) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Render Jinja2 config templates")
-    parser.add_argument("config_file", help="Path to the config YAML file")
+    parser.add_argument("config_files", nargs="+", help="Paths to the config YAML files")
     parser.add_argument("templates_dir", help="Path to the templates directory")
     parser.add_argument("output_dir", help="Path to the output directory")
     args = parser.parse_args()
 
-    print(f"Rendering templates from {args.templates_dir} to {args.output_dir} using variables from {args.config_file}...\n")
+    print(f"Rendering templates from {args.templates_dir} to {args.output_dir} using variables from {', '.join(args.config_files)}...\n")
 
-    render(config_file=args.config_file, templates_dir=args.templates_dir, output_dir=args.output_dir)
+    render(config_files=args.config_files, templates_dir=args.templates_dir, output_dir=args.output_dir)

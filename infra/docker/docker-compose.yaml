@@ -11,6 +11,11 @@ services:
       - harmony-net
     env_file:
       - infra/docker/env/.env.api
+    environment:
+      AUTH__SECRET_KEY: ${AUTH_SECRET_KEY}
+      AWS__ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS__SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      POSTGRES__URL: ${POSTGRES_URL}
     depends_on:
       redis:
         condition: service_healthy
@@ -38,6 +43,10 @@ services:
       - harmony-net
     env_file:
       - infra/docker/env/.env.consumer
+    environment:
+      AWS__ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS__SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      POSTGRES__URL: ${POSTGRES_URL}
     depends_on:
       kafka:
         condition: service_healthy
@@ -69,6 +78,10 @@ services:
     container_name: centrifugo
     networks:
       - harmony-net
+    environment:
+      CENTRIFUGO_API_KEY: ${CENTRIFUGO_API_KEY}
+      CENTRIFUGO_ADMIN_PASSWORD: ${CENTRIFUGO_ADMIN_PASSWORD}
+      CENTRIFUGO_ADMIN_SECRET: ${CENTRIFUGO_ADMIN_SECRET}
     volumes:
       - ./infra/docker/config/centrifugo-config.json:/centrifugo/config.json
     command: centrifugo -c /centrifugo/config.json
@@ -218,6 +231,8 @@ services:
     container_name: connect-cdc
     networks:
       - harmony-net
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./infra/docker/config/postgres-cdc.yaml:/app/pipelines/postgres-cdc.yaml:ro
     depends_on:
@@ -236,6 +251,9 @@ services:
     container_name: connect-dynamodb
     networks:
       - harmony-net
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     depends_on:
       kafka:
         condition: service_healthy
