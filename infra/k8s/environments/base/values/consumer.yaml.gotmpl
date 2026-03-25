@@ -14,12 +14,9 @@ env:
   REDIS__HEALTH_CHECK_INTERVAL: {{ .Values.infra.redis.health_check_interval | quote }}
   REDIS__REQUEST_TIMEOUT_MS: {{ .Values.infra.redis.request_timeout_ms | quote }}
 
-  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:{{ .Values.infra.postgres.password }}@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}"
+  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:$(POSTGRES_PASSWORD)@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}"
 
   AWS__REGION: {{ .Values.infra.aws.region | quote }}
-  AWS__DEFAULT_REGION: {{ .Values.infra.aws.region | quote }}
-  AWS__ACCESS_KEY_ID: {{ .Values.infra.aws.access_key_id | quote }}
-  AWS__SECRET_ACCESS_KEY: {{ .Values.infra.aws.secret_access_key | quote }}
 
   DYNAMODB__URL: "http://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
   DYNAMODB__CHAT_HISTORY_TABLE_NAME: {{ .Values.infra.dynamodb.chat_history_table_name | replace "${environment}" .Values.environment | quote }}
@@ -33,3 +30,16 @@ env:
 
   TOPICS__USER: {{ .Values.infra.kafka.topics.user_events | replace "${environment}" .Values.environment | quote }}
   TOPICS__CHAT: {{ .Values.infra.kafka.topics.chat_events | replace "${environment}" .Values.environment | quote }}
+
+secretEnv:
+  - name: AWS__ACCESS_KEY_ID
+    secretName: aws-auth-secret
+    secretKey: access_key_id
+
+  - name: AWS__SECRET_ACCESS_KEY
+    secretName: aws-auth-secret
+    secretKey: secret_access_key
+
+  - name: POSTGRES_PASSWORD
+    secretName: postgres-auth-secret
+    secretKey: postgres_password

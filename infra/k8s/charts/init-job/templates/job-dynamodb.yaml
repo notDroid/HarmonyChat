@@ -22,9 +22,15 @@ spec:
             - name: AWS_REGION
               value: {{ .Values.dynamodb.region | quote }}
             - name: AWS_ACCESS_KEY_ID
-              value: {{ .Values.aws.accessKeyId | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: aws-auth-secret
+                  key: access_key_id
             - name: AWS_SECRET_ACCESS_KEY
-              value: {{ .Values.aws.secretAccessKey | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: aws-auth-secret
+                  key: secret_access_key
             - name: TABLE_FILE
               value: "/config/dynamodb-tables.json"
           volumeMounts:

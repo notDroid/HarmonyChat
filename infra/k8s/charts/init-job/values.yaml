@@ -7,9 +7,5 @@ dynamodb:
   endpoint: "http://dynamodb-local:8000"
   region: "us-east-1"
 
-aws:
-  accessKeyId: "local"
-  secretAccessKey: "local"
-
 config:
   dynamodbTablesJson: ""

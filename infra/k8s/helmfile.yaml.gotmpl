@@ -2,9 +2,13 @@ environments:
   local:
     values:
       - environments/local/config.yaml
+    secrets:
+      - environments/local/secrets.yaml
   staging:
     values:
       - environments/staging/config.yaml
+    secrets:
+      - environments/staging/secrets.yaml
 
 helmDefaults:
   createNamespace: true
@@ -28,6 +32,16 @@ repositories:
 
 releases:
   # ---------------------------------------------------------------------------
+  # SECRETS
+  # ---------------------------------------------------------------------------
+  - name: secrets
+    namespace: harmony
+    chart: charts/secrets
+    values:
+      - secrets: {{ toYaml .Values.secrets | nindent 10 }}
+    wait: true
+
+  # ---------------------------------------------------------------------------
   # DATASTORES & INFRASTRUCTURE
   # ---------------------------------------------------------------------------
   - name: minio
@@ -36,6 +50,8 @@ releases:
     installed: {{ eq .Environment.Name "local" }}
     values:
       - environments/{{ .Environment.Name }}/values/minio.yaml.gotmpl
+    needs:
+      - harmony/secrets
     wait: true
 
   - name: postgresql
@@ -44,6 +60,8 @@ releases:
     installed: {{ eq .Environment.Name "local" }}
     values:
       - environments/{{ .Environment.Name }}/values/postgres.yaml.gotmpl
+    needs:
+      - harmony/secrets
     wait: true
 
   - name: redis
@@ -75,6 +93,7 @@ releases:
       - environments/{{ .Environment.Name }}/values/automq-override.yaml.gotmpl
     needs:
       - harmony/minio
+      - harmony/secrets
     wait: true
 
   # ---------------------------------------------------------------------------
@@ -92,6 +111,7 @@ releases:
       - harmony/redis
       - harmony/automq
       - harmony/dynamodb-local
+      - harmony/secrets
     wait: true
 
   - name: consumer
@@ -104,6 +124,7 @@ releases:
     needs:
       - harmony/automq
       - harmony/redis
+      - harmony/secrets
     wait: true
 
   - name: centrifugo

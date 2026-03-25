@@ -1,10 +1,12 @@
 fullnameOverride: {{ .Values.infra.postgres.host }}
 
 auth:
-  postgresPassword: {{ .Values.infra.postgres.password }}
   username: {{ .Values.infra.postgres.user }}
-  password: {{ .Values.infra.postgres.password }}
   database: {{ .Values.infra.postgres.dbname }}
+  existingSecret: "postgres-auth-secret"
+  secretKeys:
+    adminPasswordKey: "postgres_password"
+    userPasswordKey: "postgres_password"
 
 primary:
   extendedConfiguration: |

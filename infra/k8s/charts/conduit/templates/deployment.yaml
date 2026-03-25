@@ -23,6 +23,12 @@ spec:
         - name: conduit
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth-secret
+                  key: postgres_password
           volumeMounts:
             - name: pipeline-config
               mountPath: /app/pipelines/postgres-cdc.yaml

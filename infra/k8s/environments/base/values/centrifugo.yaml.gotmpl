@@ -3,6 +3,20 @@ fullnameOverride: {{ .Values.infra.centrifugo.host }}
 config:
 {{ readFile (printf "../../%s/config/centrifugo-config.json" .Environment.Name) | fromJson | toYaml | indent 2 }}
 
+envSecret:
+  - name: CENTRIFUGO_API_KEY
+    secretKeyRef:
+      name: centrifugo-auth-secret
+      key: api_key
+  - name: CENTRIFUGO_ADMIN_PASSWORD
+    secretKeyRef:
+      name: centrifugo-auth-secret
+      key: admin_password
+  - name: CENTRIFUGO_ADMIN_SECRET
+    secretKeyRef:
+      name: centrifugo-auth-secret
+      key: admin_secret
+
 service:
   type: NodePort
   port: {{ .Values.infra.centrifugo.port }}

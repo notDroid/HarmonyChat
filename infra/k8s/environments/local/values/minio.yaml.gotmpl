@@ -1,8 +1,9 @@
 mode: standalone
 replicas: 1
 
-rootUser: {{ .Values.infra.s3.access_key | quote }}
-rootPassword: {{ .Values.infra.s3.secret_key | quote }}
+# This is only used locally (no need for secret reference)
+rootUser: {{ .Values.secrets.s3.access_key | quote }}
+rootPassword: {{ .Values.secrets.s3.secret_key | quote }}
 
 resources:
   requests:

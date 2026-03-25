@@ -24,7 +24,6 @@ env:
   USER__DEFAULT_USER_SEARCH_LIMIT: {{ .Values.app.domains.user.default_search_limit | quote }}
   USER__TOPIC: {{ .Values.infra.kafka.topics.user_events | replace "${environment}" .Values.environment | quote }}
 
-  AUTH__SECRET_KEY: {{ .Values.app.auth.secret_key | quote }}
   AUTH__ALGORITHM: {{ .Values.app.auth.algorithm | quote }}
   AUTH__ACCESS_TOKEN_NAME: {{ .Values.app.auth.access_token_name | quote }}
   AUTH__ACCESS_TOKEN_EXPIRE_MINUTES: {{ .Values.app.auth.access_token_expire_minutes | quote }}
@@ -41,15 +40,29 @@ env:
   REDIS__HEALTH_CHECK_INTERVAL: {{ .Values.infra.redis.health_check_interval | quote }}
   REDIS__REQUEST_TIMEOUT_MS: {{ .Values.infra.redis.request_timeout_ms | quote }}
 
-  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:{{ .Values.infra.postgres.password }}@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}"
+  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:$(POSTGRES_PASSWORD)@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}"
 
   AWS__REGION: {{ .Values.infra.aws.region | quote }}
-  AWS__DEFAULT_REGION: {{ .Values.infra.aws.region | quote }}
-  AWS__ACCESS_KEY_ID: {{ .Values.infra.aws.access_key_id | quote }}
-  AWS__SECRET_ACCESS_KEY: {{ .Values.infra.aws.secret_access_key | quote }}
-
+  
   DYNAMODB__URL: "http://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
   DYNAMODB__CHAT_HISTORY_TABLE_NAME: {{ .Values.infra.dynamodb.chat_history_table_name | replace "${environment}" .Values.environment | quote }}
 
   KAFKA_PRODUCER__BOOTSTRAP_SERVERS: "{{ .Values.infra.kafka.host }}:{{ .Values.infra.kafka.port }}"
   KAFKA_PRODUCER__RETRY_BACKOFF_MS: {{ .Values.infra.kafka.producer.retry_backoff_ms | quote }}
+
+secretEnv:
+  - name: AUTH__SECRET_KEY
+    secretName: app-auth-secret
+    secretKey: secret_key
+
+  - name: AWS__ACCESS_KEY_ID
+    secretName: aws-auth-secret
+    secretKey: access_key_id
+
+  - name: AWS__SECRET_ACCESS_KEY
+    secretName: aws-auth-secret
+    secretKey: secret_access_key
+
+  - name: POSTGRES_PASSWORD
+    secretName: postgres-auth-secret
+    secretKey: postgres_password

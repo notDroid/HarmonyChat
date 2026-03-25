@@ -3,11 +3,16 @@ global:
     allowInsecureImages: true
 
 extraEnvVars:
-  # AutoMQ needs the S3 credentials to connect to Minio, not the generic AWS keys
   - name: AWS_ACCESS_KEY_ID
-    value: {{ .Values.infra.s3.access_key | quote }}
+    valueFrom:
+      secretKeyRef:
+        name: s3-auth-secret
+        key: access_key
   - name: AWS_SECRET_ACCESS_KEY
-    value: {{ .Values.infra.s3.secret_key | quote }}
+    valueFrom:
+      secretKeyRef:
+        name: s3-auth-secret
+        key: secret_key
 
 image:
   registry: automqinc
