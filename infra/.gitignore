@@ -1,13 +1,16 @@
-# Ignore generated files
+# Ignore docker generated files
 docker/config/
+
 
 # Ignore environment files
 .env.*
 !.env*j2
 
-# Helm / helmfile generated secrets
+# Helm / helmfile generated files or secrets
 k8s/environments/**/secrets.yaml
+!k8s/environments/local/secrets.yaml
 k8s/environments/**/.helmfile.lock
+k8s/environments/**/config/
 
 # helmfile cache
 .helmfile/

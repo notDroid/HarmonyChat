@@ -1,4 +1,0 @@
-# Hide secrets and generated files
-env/
-config/
-secrets.yaml

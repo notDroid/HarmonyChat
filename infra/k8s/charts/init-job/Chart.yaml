@@ -1,6 +1,6 @@
 apiVersion: v2
 name: init-job
-description: One-shot init job to register Kafka Connect connectors and create DynamoDB tables
+description: init job to create DynamoDB tables (likely to be used for local development only)
 type: application
 version: 0.1.0
 appVersion: "local"

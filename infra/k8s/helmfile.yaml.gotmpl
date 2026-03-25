@@ -2,8 +2,8 @@ environments:
   local:
     values:
       - environments/local/config.yaml
-    secrets:
       - environments/local/secrets.yaml
+  # Probably going to move away from helmfile for staging and prod in favor of ArgoCD  
   staging:
     values:
       - environments/staging/config.yaml

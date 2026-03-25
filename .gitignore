@@ -1,7 +1,8 @@
-# Ignore sensitive files and common generated files
+# Ignore sensitive files and generated files
 logs.txt
 digest.txt
 keys.txt
+*repomix*
 
 # --- Operating System Files ---
 # macOS
