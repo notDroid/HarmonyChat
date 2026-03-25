@@ -1,5 +1,8 @@
 version: '3'  
 
+env:
+  SOPS_AGE_KEY_FILE: "{{.ROOT_DIR}}/keys.txt"
+
 vars:
   CONDA_ENV: harmony
   PYTHON_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} python"
@@ -245,3 +248,28 @@ tasks:
     cmds:
       - task: k8s:destroy
       - task: kind:cluster:delete
+  
+  # --------------------------------------------------------------------------
+  # 7. SECRETS & ENCRYPTION
+  # --------------------------------------------------------------------------
+
+  secrets:setup:
+    desc: "🔑 SECRETS: Generate an age keypair and configure .sops.yaml"
+    cmds:
+      - "{{.PYTHON_CMD}} infra/scripts/setup_sops.py"
+
+  secrets:generate:
+    desc: "🔐 SECRETS: Generate a new secrets.yaml file for the target K8S_ENV"
+    cmds:
+      - "{{.PYTHON_CMD}} infra/scripts/generate_secrets.py infra/k8s/environments/{{.K8S_ENV}}/secrets.yaml --env {{.K8S_ENV}}"
+
+  secrets:encrypt:
+    desc: "🔒 SOPS: Encrypt secrets.yaml in place for the target K8S_ENV"
+    cmds:
+      - sops -e -i infra/k8s/environments/{{.K8S_ENV}}/secrets.yaml
+
+  secrets:decrypt:
+    desc: "🔓 SOPS: Decrypt secrets.yaml in place for the target K8S_ENV"
+    cmds:
+      - echo ${SOPS_AGE_KEY_FILE}
+      - sops -d -i infra/k8s/environments/{{.K8S_ENV}}/secrets.yaml

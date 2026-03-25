@@ -1,6 +1,7 @@
-# Ignore log files
+# Ignore sensitive files and common generated files
 logs.txt
 digest.txt
+keys.txt
 
 # --- Operating System Files ---
 # macOS
