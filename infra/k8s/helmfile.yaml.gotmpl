@@ -3,18 +3,11 @@ environments:
     values:
       - environments/local/config.yaml
       - environments/local/secrets.yaml
-  # Probably going to move away from helmfile for staging and prod in favor of ArgoCD  
   staging:
     values:
       - environments/staging/config.yaml
     secrets:
       - environments/staging/secrets.yaml
-
-helmDefaults:
-  createNamespace: true
-  cleanupOnFail: false
-  wait: true
-  timeout: 600
 
 repositories:
   - name: bitnami
