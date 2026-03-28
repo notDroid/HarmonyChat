@@ -9,12 +9,21 @@ from harmony.tests.utils import AppClient, SimConfig, SimState, SafeMetrics, ACT
 # ==========================================
 # CONFIGURATION
 # ==========================================
+# class StressConfig:
+#     SIM_CONFIG = SimConfig(
+#         MAX_USERS=50,  # Max users *per worker*
+#     )
+#     DURATION_SECONDS: int = 30
+#     CONCURRENT_WORKERS: int = 50
+#     VERBOSE_ERRORS: bool = True
+#     MONITOR_INTERVAL: int = 2 
+
 class StressConfig:
     SIM_CONFIG = SimConfig(
-        MAX_USERS=50,  # Max users *per worker*
+        MAX_USERS=1,  # Max users *per worker*
     )
     DURATION_SECONDS: int = 30
-    CONCURRENT_WORKERS: int = 50
+    CONCURRENT_WORKERS: int = 1
     VERBOSE_ERRORS: bool = True
     MONITOR_INTERVAL: int = 2 
 

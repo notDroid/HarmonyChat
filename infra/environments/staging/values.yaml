@@ -2,7 +2,7 @@
 # Global Metadata
 # ==========================================
 project_name: "Harmony Chat"
-environment: "staging"
+environment: "development"
 log_level: "INFO"
 
 # ==========================================
@@ -53,7 +53,7 @@ workloads:
 # ==========================================
 infra:
   k8s:
-    storage_class: "gp2"
+    storage_class: "gp3"
   aws:
     region: "us-east-1"
   vpc:
@@ -62,7 +62,7 @@ infra:
   compute:
     cluster_name: "harmony-staging-eks"
     cluster_version: "1.35"
-    instance_types: ["t3.large"]
+    instance_types: ["t4g.micro"]
     min_size: 2
     max_size: 5
   postgres:

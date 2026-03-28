@@ -42,6 +42,8 @@ resource "aws_s3_bucket" "automq" {
   for_each = local.automq_buckets
   bucket   = each.value
 
+  force_destroy = true
+
   tags = {
     Environment = var.environment
     ManagedBy   = "Terraform"

@@ -49,7 +49,7 @@ env:
 
   AWS__REGION: {{ .Values.infra.aws.region | quote }}
   
-  DYNAMODB__URL: "http://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
+  DYNAMODB__URL: "{{ .Values.infra.dynamodb.scheme | default "http" }}://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
   DYNAMODB__CHAT_HISTORY_TABLE_NAME: {{ .Values.infra.dynamodb.chat_history_table_name | replace "${environment}" .Values.environment | quote }}
 
   KAFKA_PRODUCER__BOOTSTRAP_SERVERS: "{{ .Values.infra.kafka.host }}:{{ .Values.infra.kafka.port }}"

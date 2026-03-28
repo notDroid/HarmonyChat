@@ -315,6 +315,12 @@ tasks:
     cmds:
       - terragrunt output -json > tf-outputs.json
 
+  tf:destroy:
+    desc: "🛑 TF: Destroy Terragrunt infrastructure for the target K8S_ENV"
+    dir: infra/terraform/environments/{{.K8S_ENV}}
+    cmds:
+      - terragrunt destroy
+
   # --------------------------------------------------------------------------
   # 9. PIPELINES
   # --------------------------------------------------------------------------
