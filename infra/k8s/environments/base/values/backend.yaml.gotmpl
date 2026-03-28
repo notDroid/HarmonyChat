@@ -1,5 +1,10 @@
 fullnameOverride: {{ .Values.workloads.api.host }}
 
+image:
+  repository: {{ .Values.workloads.image.repository | quote }}
+  tag: {{ .Values.workloads.image.tag | quote }}
+  pullPolicy: {{ .Values.workloads.image.pullPolicy | quote }}
+
 command: []
 args: []
 
@@ -40,7 +45,7 @@ env:
   REDIS__HEALTH_CHECK_INTERVAL: {{ .Values.infra.redis.health_check_interval | quote }}
   REDIS__REQUEST_TIMEOUT_MS: {{ .Values.infra.redis.request_timeout_ms | quote }}
 
-  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:$(POSTGRES_PASSWORD)@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}"
+  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:$(POSTGRES_PASSWORD)@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}?ssl={{ .Values.infra.postgres.sslmode }}"
 
   AWS__REGION: {{ .Values.infra.aws.region | quote }}
   

@@ -1,13 +1,14 @@
 environments:
   local:
     values:
-      - environments/local/config.yaml
-      - environments/local/secrets.yaml
+      - ../environments/local/values.yaml
+      - ../environments/local/secrets.yaml
   staging:
     values:
-      - environments/staging/config.yaml
+      - ../environments/staging/values.yaml
+      - environments/staging/values-override.yaml.gotmpl
     secrets:
-      - environments/staging/secrets.yaml
+      - ../environments/staging/secrets.yaml
 
 repositories:
   - name: bitnami
@@ -85,7 +86,9 @@ releases:
       - environments/base/values/automq.yaml.gotmpl
       - environments/{{ .Environment.Name }}/values/automq-override.yaml.gotmpl
     needs:
+      {{- if eq .Environment.Name "local" }}
       - harmony/minio
+      {{- end }}
       - harmony/secrets
     wait: true
 
@@ -100,10 +103,12 @@ releases:
       - environments/base/values/backend.yaml.gotmpl
       - environments/{{ .Environment.Name }}/values/backend-override.yaml.gotmpl
     needs:
+      {{- if eq .Environment.Name "local" }}
       - harmony/postgresql
       - harmony/redis
-      - harmony/automq
       - harmony/dynamodb-local
+      {{- end }}
+      - harmony/automq
       - harmony/secrets
     wait: true
 
@@ -115,8 +120,10 @@ releases:
       - environments/base/values/consumer.yaml.gotmpl
       - environments/{{ .Environment.Name }}/values/consumer-override.yaml.gotmpl
     needs:
-      - harmony/automq
+      {{- if eq .Environment.Name "local" }}
       - harmony/redis
+      {{- end }}
+      - harmony/automq
       - harmony/secrets
     wait: true
 
@@ -141,11 +148,10 @@ releases:
     values:
       - environments/base/values/conduit.yaml.gotmpl
       - environments/{{ .Environment.Name }}/values/conduit-override.yaml.gotmpl
-    set:
-      - name: pipelineConfig
-        file: environments/{{ .Environment.Name }}/config/postgres-cdc.yaml
     needs:
+      {{- if eq .Environment.Name "local" }}
       - harmony/postgresql
+      {{- end }}
       - harmony/automq
     wait: true
 
@@ -157,12 +163,11 @@ releases:
     values:
       - environments/base/values/redpanda-connect.yaml.gotmpl
       - environments/{{ .Environment.Name }}/values/redpanda-connect-override.yaml.gotmpl
-    set:
-      - name: config
-        file: environments/{{ .Environment.Name }}/config/dynamodb-sink.yaml
     needs:
-      - harmony/automq
+      {{- if eq .Environment.Name "local" }}
       - harmony/dynamodb-local
+      {{- end }}
+      - harmony/automq
     wait: true
 
   # ---------------------------------------------------------------------------
@@ -174,9 +179,6 @@ releases:
     installed: {{ eq .Environment.Name "local" }}
     values:
       - environments/{{ .Environment.Name }}/values/init-job.yaml.gotmpl
-    set:
-      - name: config.dynamodbTablesJson
-        file: environments/{{ .Environment.Name }}/config/dynamodb-tables.json
     needs:
       - harmony/dynamodb-local
     wait: true

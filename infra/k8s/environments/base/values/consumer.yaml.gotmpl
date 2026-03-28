@@ -1,3 +1,8 @@
+image:
+  repository: {{ .Values.workloads.image.repository | quote }}
+  tag: {{ .Values.workloads.image.tag | quote }}
+  pullPolicy: {{ .Values.workloads.image.pullPolicy | quote }}
+
 command: ["python"]
 args: ["-m", "harmony.consumer.main"]
 
@@ -18,7 +23,7 @@ env:
 
   AWS__REGION: {{ .Values.infra.aws.region | quote }}
 
-  DYNAMODB__URL: "http://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
+  DYNAMODB__URL: "{{ .Values.infra.dynamodb.scheme | default "http" }}://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
   DYNAMODB__CHAT_HISTORY_TABLE_NAME: {{ .Values.infra.dynamodb.chat_history_table_name | replace "${environment}" .Values.environment | quote }}
 
   KAFKA_CONSUMER__BOOTSTRAP_SERVERS: "{{ .Values.infra.kafka.host }}:{{ .Values.infra.kafka.port }}"

@@ -1,19 +1,14 @@
-output "chat_history_table_name" {
-  description = "The DynamoDB table name for Chat History"
-  value       = module.storage.dynamodb_chat_history_table_name
+output "rds_endpoint" {
+  description = "The endpoint for the PostgreSQL RDS instance"
+  value       = module.stateful.rds_endpoint
 }
 
-output "automq_data_bucket_name" {
-  description = "The globally unique S3 bucket name for AutoMQ Data"
-  value       = module.storage.s3_automq_data_bucket_name
+output "redis_endpoint" {
+  description = "The endpoint for the ElastiCache Redis cluster"
+  value       = module.stateful.redis_endpoint
 }
 
-output "automq_ops_bucket_name" {
-  description = "The globally unique S3 bucket name for AutoMQ Ops"
-  value       = module.storage.s3_automq_ops_bucket_name
-}
-
-output "eks_cluster_name" {
-  description = "The name of the staging EKS cluster"
-  value       = module.compute.cluster_name
+output "ecr_repository_url" {
+  description = "The URL of the ECR repository from Bootstrap"
+  value       = data.aws_ecr_repository.backend.repository_url
 }

@@ -2,8 +2,8 @@
 # Global Metadata
 # ==========================================
 project_name: "Harmony Chat"
-environment: "development" # [development, staging, production]
-log_level: "DEBUG"
+environment: "staging"
+log_level: "INFO"
 
 # ==========================================
 # 1. APPLICATION DOMAIN CONFIGURATION
@@ -11,7 +11,6 @@ log_level: "DEBUG"
 app:
   feature_toggles:
     use_redis_cache: true
-
   auth:
     algorithm: "HS256"
     access_token_name: "access_token"
@@ -19,16 +18,12 @@ app:
     refresh_token_name: "refresh_token"
     refresh_token_expire_days: 7
     refresh_token_grace_period_sec: 2
-
-    # secret_key: "64d54ec76be75e906e03e3fba806e2c1ff5f8da12dfb9226e7eea2a72e477c96"
-
   domains:
     chat:
-      max_users_per_operation: 10
+      max_users_per_operation: 50
       default_pagination_limit: 50
     user:
-      default_search_limit: 10
-      
+      default_search_limit: 20
   cache_ttls_seconds:
     default: 300
     membership: 300
@@ -39,46 +34,62 @@ app:
 # 2. WORKLOAD CONFIGURATION
 # ==========================================
 workloads:  
+  image:
+    tag: "latest"
+    pullPolicy: "Always"
   api:
     host: "api"
     port: 8000
-    debug: true
-
+    debug: false
   cdc_consumer:
-    name: "Harmony CDC Worker"
-    max_poll_records: 500
-    fetch_max_bytes: 52428800 # 50 MB
-    session_timeout_ms: 10000 # 10 seconds
-    poll_timeout_ms: 1000 # 1 second
+    name: "Harmony CDC Worker staging"
+    max_poll_records: 1000
+    fetch_max_bytes: 52428800
+    session_timeout_ms: 10000
+    poll_timeout_ms: 1000
 
 # ==========================================
 # 3. INFRASTRUCTURE & TOPOLOGY
 # ==========================================
 infra:
+  k8s:
+    storage_class: "gp2"
   aws:
     region: "us-east-1"
-    # access_key_id: "test1234"
-    # secret_access_key: "test1234"
-
+  vpc:
+    cidr: "10.0.0.0/16"
+    azs_count: 3
+  compute:
+    cluster_name: "harmony-staging-eks"
+    cluster_version: "1.35"
+    instance_types: ["t3.large"]
+    min_size: 2
+    max_size: 5
   postgres:
-    host: "postgres"
-    port: 5432
+    sslmode: "require"
     dbname: "harmony"
     user: "harmony"
-    # password: "harmony" 
-
+    port: 5432
+    instance_class: "db.t4g.micro"
+    allocated_storage_gb: 20
   redis:
-    host: "redis-master"
     port: 6379
     db_index: 1
     health_check_interval: 30
     request_timeout_ms: 100
-
+    node_type: "cache.t4g.micro"
   dynamodb:
-    host: "dynamodb"
-    port: 8000
-    chat_history_table_name: "harmony_${environment}_chat_history"
-
+    scheme: "https"
+    host: "dynamodb.us-east-1.amazonaws.com"
+    port: 443
+    chat_history_table_name: "chat_history_staging" 
+  s3:
+    endpoint: "https://s3.us-east-1.amazonaws.com"
+    path_style: "false"
+    region: "us-east-1"
+    buckets:
+      automq_data: "harmony-chat-automq-data-staging-wm123" 
+      automq_ops: "harmony-chat-automq-ops-staging-wm123"
   kafka:
     host: "automq-kafka"
     port: 9092
@@ -86,28 +97,14 @@ infra:
     producer:
       retry_backoff_ms: 500
     consumer_groups:
-      cdc_worker: "harmony-cdc-worker-${environment}"
+      cdc_worker: "harmony-cdc-worker-staging"
     topics:
-      chat_messages: "${environment}_chat_messages"
-      user_events: "${environment}_user_events"
-      chat_events: "${environment}_chat_events"
-
-  s3:
-    endpoint: "http://minio:9000"
-    region: "us-east-1"
-    # access_key: "minioadmin"
-    # secret_key: "minioadmin"
-    path_style: "true"
-    buckets:
-      automq_data: "automq-data"
-      automq_ops: "automq-ops"
-      
+      chat_messages: "staging_chat_messages"
+      user_events: "staging_user_events"
+      chat_events: "staging_chat_events"
   centrifugo:
     host: "centrifugo"
     port: 8000
-    # api_key: "test-cent-api-key"
-    # admin_password: "admin"
-    # admin_secret: "admin"
     allowed_origins: ["*"]
     chat:
       presence_enabled: true

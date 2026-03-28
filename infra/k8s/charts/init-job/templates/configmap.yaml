@@ -6,5 +6,5 @@ metadata:
   labels:
     {{- include "init-job.labels" . | nindent 4 }}
 data:
-  dynamodb-tables.json: |
-{{ .Values.config.dynamodbTablesJson | indent 4 }}
+  dynamodb-tables.json: |-
+{{- toPrettyJson .Values.config.dynamodbTables | nindent 4 }}

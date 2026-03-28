@@ -1,17 +1,11 @@
-resource "random_string" "s3_suffix" {
-  length  = 8
-  special = false
-  upper   = false
-}
-
 # ------------------------------------------------------------------------------
 # DynamoDB Table
 # ------------------------------------------------------------------------------
 resource "aws_dynamodb_table" "chat_history" {
-  name         = "harmony_${var.environment}_chat_history"
+  name         = var.chat_history_table_name
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "chat_id"
-  range_key    = "message_id"
+  range_key    = "ulid"
 
   attribute {
     name = "chat_id"
@@ -19,7 +13,7 @@ resource "aws_dynamodb_table" "chat_history" {
   }
 
   attribute {
-    name = "message_id"
+    name = "ulid"
     type = "S"
   }
 
@@ -39,8 +33,8 @@ resource "aws_dynamodb_table" "chat_history" {
 # ------------------------------------------------------------------------------
 locals {
   automq_buckets = {
-    data = "harmony-automq-data-${var.environment}-${random_string.s3_suffix.result}"
-    ops  = "harmony-automq-ops-${var.environment}-${random_string.s3_suffix.result}"
+    data = var.automq_data_bucket_name
+    ops  = var.automq_ops_bucket_name
   }
 }
 
@@ -79,7 +73,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "automq_encryption
   }
 }
 
-# Control versioning based on the environment toggle
 resource "aws_s3_bucket_versioning" "automq_versioning" {
   for_each = aws_s3_bucket.automq
 

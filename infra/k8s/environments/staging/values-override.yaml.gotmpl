@@ -1,0 +1,14 @@
+{{- $tf := (readFile "../../../terraform/environments/staging/tf-outputs.json" | mustFromJson) -}}
+{{- $rdsEndpoint := $tf.rds_endpoint.value -}}
+{{- $rdsHost := regexReplaceAll ":\\d+$" $rdsEndpoint "" -}}
+
+workloads:
+  image:
+    repository: {{ $tf.ecr_repository_url.value | quote }}
+    tag: {{ env "IMAGE_TAG" | default "latest" | quote }}
+
+infra:
+  postgres:
+    host: {{ $rdsHost | quote }}
+  redis:
+    host: {{ $tf.redis_endpoint.value }}

@@ -48,7 +48,7 @@ controller:
     s3.block.cache.size=268435456
     s3.stream.allocator.policy=POOLED_DIRECT
   persistence:
-    storageClass: "standard"
+    storageClass: {{ .Values.infra.k8s.storage_class | default "standard" | quote }}
     size: 10Gi
 
 broker:
@@ -71,5 +71,5 @@ broker:
     s3.block.cache.size=268435456
     s3.stream.allocator.policy=POOLED_DIRECT
   persistence:
-    storageClass: "standard"
+    storageClass: {{ .Values.infra.k8s.storage_class | default "standard" | quote }}
     size: 10Gi

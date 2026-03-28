@@ -1,0 +1,12 @@
+{
+  "rds_endpoint": {
+    "sensitive": false,
+    "type": "string",
+    "value": "harmony-staging-postgres.csju64iqi2yn.us-east-1.rds.amazonaws.com:5432"
+  },
+  "redis_endpoint": {
+    "sensitive": false,
+    "type": "string",
+    "value": "harmony-staging-redis.1biv8y.0001.use1.cache.amazonaws.com"
+  }
+}

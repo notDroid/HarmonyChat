@@ -40,3 +40,7 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
+
+variable "db_instance_class" { type = string }
+variable "db_allocated_storage" { type = number }
+variable "redis_node_type" { type = string }

@@ -7,10 +7,8 @@ docker/config/
 !.env*j2
 
 # Helm / helmfile generated files or secrets
-k8s/environments/**/secrets.yaml
-!k8s/environments/local/secrets.yaml
 k8s/environments/**/.helmfile.lock
-k8s/environments/**/config/
+tf-outputs.json
 
 # helmfile cache
 .helmfile/

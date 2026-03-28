@@ -1,7 +1,43 @@
 fullnameOverride: {{ .Values.infra.centrifugo.host }}
 
 config:
-{{ readFile (printf "../../%s/config/centrifugo-config.json" .Environment.Name) | fromJson | toYaml | indent 2 }}
+  consumers:
+    - name: "chat_kafka_consumer"
+      type: "kafka"
+      enabled: true
+      kafka:
+        brokers: 
+          - "{{ if hasKey .Values.infra.kafka "client_host" }}{{ .Values.infra.kafka.client_host }}{{ else }}{{ .Values.infra.kafka.host }}{{ end }}:{{ .Values.infra.kafka.port }}"
+        topics: 
+          - "{{ .Values.infra.kafka.topics.chat_messages }}"
+        consumer_group: "centrifugo"
+        publication_data_mode:
+          enabled: true
+          channels_header: "x-centrifugo-channels"
+  engine:
+    type: "redis"
+    redis:
+      address: "redis://{{ .Values.infra.redis.host }}:{{ .Values.infra.redis.port }}"
+      prefix: "centrifugo"
+  client:
+    allowed_origins: {{ .Values.infra.centrifugo.allowed_origins | toJson }}
+    proxy:
+      connect:
+        enabled: true
+        endpoint: "http://{{ .Values.workloads.api.host }}:{{ .Values.workloads.api.port }}/api/v1/ws/connect"
+        timeout: "1s"
+        http_headers: ["Cookie"]
+  channel:
+    namespaces:
+      - name: "chat"
+        subscribe_proxy_enabled: true
+        presence: {{ .Values.infra.centrifugo.chat.presence_enabled }}
+        history_size: {{ .Values.infra.centrifugo.chat.history_size }}
+        history_ttl: {{ .Values.infra.centrifugo.chat.history_ttl | quote }}
+    proxy:
+      subscribe:
+        endpoint: "http://{{ .Values.workloads.api.host }}:{{ .Values.workloads.api.port }}/api/v1/ws/subscribe"
+        timeout: "1s"
 
 envSecret:
   - name: CENTRIFUGO_API_KEY

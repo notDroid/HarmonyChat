@@ -5,7 +5,16 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
-# Imported through helmfile template rendering
-pipelineConfig: ""
+postgresSecret:
+  name: postgres-auth-secret
+  key: postgres_password
+
+pipeline:
+  filename: postgres-cdc.yaml
+  mountDir: /app/pipelines
+
+pipelineConfig: {}
 
 resources: {}
+
+podAnnotations: {}

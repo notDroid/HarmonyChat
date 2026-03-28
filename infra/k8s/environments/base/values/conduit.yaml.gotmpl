@@ -1,5 +1,18 @@
 replicaCount: 1
 
+image:
+  repository: conduit.docker.scarf.sh/conduitio/conduit
+  tag: latest
+  pullPolicy: IfNotPresent
+
+postgresSecret:
+  name: postgres-auth-secret
+  key: postgres_password
+
+pipeline:
+  filename: postgres-cdc.yaml
+  mountDir: /app/pipelines
+
 resources:
   requests:
     cpu: 100m
@@ -7,3 +20,53 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
+
+pipelineConfig:
+  version: 2.2
+  pipelines:
+    - id: postgres-outbox-cdc
+      status: running
+      name: Postgres Outbox CDC
+      description: Stream outbox events from Postgres to Kafka using the outbox pattern
+      connectors:
+        - id: pg-source
+          type: source
+          plugin: builtin:postgres
+          settings:
+            url: "postgres://{{ .Values.infra.postgres.user }}:${POSTGRES_PASSWORD}@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}?sslmode={{ .Values.infra.postgres.sslmode }}&search_path=public"
+            tables: "outbox_events"
+            snapshotMode: "never"
+            logrepl.publicationName: "harmony_pub"
+            logrepl.slotName: "harmony_slot"
+
+        - id: kafka-dest
+          type: destination
+          plugin: builtin:kafka
+          settings:
+            servers: "{{ .Values.infra.kafka.host }}:{{ .Values.infra.kafka.port }}"
+            topic: '{{`{{ index .Payload.After "aggregate_type" }}`}}'
+            
+            sdk.record.format: "template"
+            sdk.record.format.options: '{{`{{ if .Payload.After }}{{ toJson .Payload.After }}{{ else }}{{ toJson .Payload.Before }}{{ end }}`}}'
+
+      processors:
+        - id: use-aggregate-id-as-key
+          plugin: "custom.javascript"
+          settings:
+            sdk.schema.decode.key.enabled: "false"
+            sdk.schema.encode.key.enabled: "false"
+            script: |
+              function process(rec) {
+                if (rec.Payload.After != null && rec.Payload.After["aggregate_id"] != null) {
+                  rec.Key = RawData(rec.Payload.After["aggregate_id"]);
+                  
+                  delete rec.Metadata["opencdc.key.schema.subject"];
+                  delete rec.Metadata["opencdc.key.schema.version"];
+                }
+                return rec;
+              }
+
+        - id: parse-json-payload
+          plugin: "json.decode"
+          settings:
+            field: ".Payload.After.payload"

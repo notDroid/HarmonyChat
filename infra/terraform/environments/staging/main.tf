@@ -1,91 +1,84 @@
 terraform {
   required_version = ">= 1.5.0"
-
-  backend "s3" {
-    bucket         = "harmony-chat-tf-state"
-    key            = "staging/networking/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "harmony-chat-tf-locks"
-    encrypt        = true
-  }
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.5"
-    }
-  }
+  required_providers { aws = { source = "hashicorp/aws", version = "~> 5.0" } }
 }
 
-provider "aws" {
-  region = "us-east-1"
-}
+# Variables mapped from Terragrunt
+variable "project_name" { type = string }
+variable "environment" { type = string }
+variable "vpc_cidr" { type = string }
+variable "azs_count" { type = number }
 
-# Generate a secure random password for PostgreSQL
-resource "random_password" "db_password" {
-  length           = 16
-  special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
-}
+variable "cluster_name" { type = string }
+variable "cluster_version" { type = string }
+variable "instance_types" { type = list(string) }
+variable "min_size" { type = number }
+variable "max_size" { type = number }
 
-# Fetch AZs
+variable "db_name" { type = string }
+variable "db_user" { type = string }
+variable "db_password" {
+  type      = string
+  sensitive = true
+}
+variable "db_instance_class" { type = string }
+variable "db_allocated_storage" { type = number }
+
+variable "redis_node_type" { type = string }
+
+variable "chat_history_table_name" { type = string }
+variable "automq_data_bucket_name" { type = string }
+variable "automq_ops_bucket_name" { type = string }
+
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# VPC CIDRs
-locals {
-  vpc_cidr         = "10.0.0.0/16"
-  public_subnets   = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  private_subnets  = ["10.0.10.0/24", "10.0.11.0/24", "10.0.12.0/24"]
-  database_subnets = ["10.0.20.0/24", "10.0.21.0/24", "10.0.22.0/24"]
-}
-
 module "networking" {
-  source = "../../modules/networking"
-
-  vpc_name         = "harmony-staging-vpc"
-  environment      = "staging"
-  vpc_cidr         = local.vpc_cidr
-  azs              = slice(data.aws_availability_zones.available.names, 0, 3)
-  public_subnets   = local.public_subnets
-  private_subnets  = local.private_subnets
-  database_subnets = local.database_subnets
+  source      = "../../modules/networking"
+  vpc_name    = "harmony-${var.environment}-vpc"
+  environment = var.environment
+  vpc_cidr    = var.vpc_cidr
+  azs         = slice(data.aws_availability_zones.available.names, 0, var.azs_count)
 }
 
 module "stateful" {
-  source = "../../modules/stateful"
-
-  environment = "staging"
-  vpc_id      = module.networking.vpc_id
-
+  source                     = "../../modules/stateful"
+  environment                = var.environment
+  vpc_id                     = module.networking.vpc_id
   database_subnet_group_name = module.networking.database_subnet_group_name
   database_subnet_ids        = module.networking.database_subnet_ids
+  private_subnet_cidrs       = module.networking.private_subnets_cidr_blocks
 
-  private_subnet_cidrs = local.private_subnets
-
-  db_password = random_password.db_password.result
+  db_name              = var.db_name
+  db_username          = var.db_user
+  db_password          = var.db_password
+  db_instance_class    = var.db_instance_class
+  db_allocated_storage = var.db_allocated_storage
+  redis_node_type      = var.redis_node_type
 }
 
 module "storage" {
-  source = "../../modules/storage"
-
-  environment          = "staging"
-  project_name         = "Harmony Chat"
-  enable_s3_versioning = false
+  source                  = "../../modules/storage"
+  environment             = var.environment
+  project_name            = var.project_name
+  chat_history_table_name = var.chat_history_table_name
+  automq_data_bucket_name = var.automq_data_bucket_name
+  automq_ops_bucket_name  = var.automq_ops_bucket_name
 }
 
 module "compute" {
-  source = "../../modules/compute"
-
-  environment        = "staging"
+  source             = "../../modules/compute"
+  environment        = var.environment
   vpc_id             = module.networking.vpc_id
   private_subnet_ids = module.networking.private_subnet_ids
-  
-  cluster_version = "1.35"
-  instance_types  = ["t3.large"]
+  cluster_name       = var.cluster_name
+  cluster_version    = var.cluster_version
+  instance_types     = var.instance_types
+  min_size           = var.min_size
+  max_size           = var.max_size
+}
+
+data "aws_ecr_repository" "backend" {
+  name = "harmony-backend"
 }

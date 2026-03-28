@@ -1,23 +1,25 @@
+locals {
+  public_subnets   = [for k, v in var.azs : cidrsubnet(var.vpc_cidr, 8, k + 1)]
+  private_subnets  = [for k, v in var.azs : cidrsubnet(var.vpc_cidr, 8, k + 11)]
+  database_subnets = [for k, v in var.azs : cidrsubnet(var.vpc_cidr, 8, k + 21)]
+}
+
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 5.0"
 
-  # VPC
   name = var.vpc_name
   cidr = var.vpc_cidr
 
-  # Subnets and AZs
   azs                          = var.azs
-  public_subnets               = var.public_subnets
-  private_subnets              = var.private_subnets
-  database_subnets             = var.database_subnets
+  public_subnets               = local.public_subnets
+  private_subnets              = local.private_subnets
+  database_subnets             = local.database_subnets
   create_database_subnet_group = true
 
-  # DNS
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  # NAT Gateway Configuration
   enable_nat_gateway     = true
   single_nat_gateway     = true
   one_nat_gateway_per_az = false

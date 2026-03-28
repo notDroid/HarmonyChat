@@ -15,6 +15,9 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       labels:
         app.kubernetes.io/name: {{ include "conduit.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
@@ -27,13 +30,17 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-auth-secret
-                  key: postgres_password
+                  name: {{ .Values.postgresSecret.name }}
+                  key: {{ .Values.postgresSecret.key }}
           volumeMounts:
             - name: pipeline-config
-              mountPath: /app/pipelines/postgres-cdc.yaml
-              subPath: postgres-cdc.yaml
+              mountPath: {{ .Values.pipeline.mountDir }}/{{ .Values.pipeline.filename }}
+              subPath: {{ .Values.pipeline.filename }}
               readOnly: true
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
       volumes:
         - name: pipeline-config
           configMap:

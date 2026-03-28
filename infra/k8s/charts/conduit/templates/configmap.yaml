@@ -3,5 +3,5 @@ kind: ConfigMap
 metadata:
   name: {{ include "conduit.fullname" . }}-config
 data:
-  postgres-cdc.yaml: |
-{{ .Values.pipelineConfig | indent 4 }}
+  pipeline.yaml: |-
+    {{- toYaml .Values.pipelineConfig | nindent 4 }}

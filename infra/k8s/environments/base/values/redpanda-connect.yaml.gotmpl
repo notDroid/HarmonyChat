@@ -1,3 +1,30 @@
+config:
+  input:
+    label: "kafka_consumer"
+    redpanda:
+      seed_brokers: 
+        - "{{ if hasKey .Values.infra.kafka "client_host" }}{{ .Values.infra.kafka.client_host }}{{ else }}{{ .Values.infra.kafka.host }}{{ end }}:{{ .Values.infra.kafka.port }}"
+      topics: 
+        - {{ .Values.infra.kafka.topics.chat_messages | replace "${environment}" .Values.environment | quote }}
+      consumer_group: "dynamodb-sink-group"
+
+  pipeline:
+    processors:
+      - mapping: |
+          root = this.without("author_metadata")
+
+  output:
+    label: "dynamodb_sink"
+    aws_dynamodb:
+      table: {{ .Values.infra.dynamodb.chat_history_table_name | replace "${environment}" .Values.environment | quote }}
+      endpoint: "{{ .Values.infra.dynamodb.scheme | default "http" }}://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
+      region: {{ .Values.infra.aws.region | default "us-east-1" | quote }}
+      credentials:
+        id: "${AWS_ACCESS_KEY_ID}"
+        secret: "${AWS_SECRET_ACCESS_KEY}"
+      json_map_columns:
+        "": .
+
 env:
   - name: AWS_ACCESS_KEY_ID
     valueFrom:

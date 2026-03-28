@@ -52,13 +52,14 @@ resource "aws_db_instance" "postgres" {
   identifier        = "harmony-${var.environment}-postgres"
   engine            = "postgres"
   engine_version    = "15"
-  instance_class    = "db.t3.micro"
-  allocated_storage = 20
+  
+  instance_class    = var.db_instance_class
+  allocated_storage = var.db_allocated_storage
+  
   storage_type      = "gp3"
-
-  db_name  = var.db_name
-  username = var.db_username
-  password = var.db_password
+  db_name           = var.db_name
+  username          = var.db_username
+  password          = var.db_password
 
   # Network & Security
   db_subnet_group_name   = var.database_subnet_group_name
@@ -92,7 +93,9 @@ resource "aws_elasticache_cluster" "redis" {
   cluster_id      = "harmony-${var.environment}-redis"
   engine          = "redis"
   engine_version  = "7.0"
-  node_type       = "cache.t3.micro"
+  
+  node_type       = var.redis_node_type
+  
   num_cache_nodes = 1
   port            = 6379
 
