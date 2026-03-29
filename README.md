@@ -72,38 +72,30 @@ Authentication utilizes rotating JWT access and refresh tokens.
 
 ## Local Development & Setup
 
-### Prerequisites
-1. [Conda](https://docs.conda.io/en/latest/) (for Python environment management)
-2. [Taskfile](https://taskfile.dev/) (a simpler alternative to Makefiles)
-3. Docker & Docker Compose
-4. Node.js & npm
+### Dependencies
+We use devbox to manage all development dependencies. Use `devbox shell` to download and enter the devbox environment.
+We use task to manage all development commands, which are defined in the `Taskfile.yaml` at the root of the repository
 
 ### Initial Setup
-Bootstrap the local development environment by running:
+Download pyton and node dependencies for both the frontend and backend by running (uv sync and npm install):
 ```bash
 task setup
 ```
-*This command creates the Conda environment, installs the backend in editable mode, and installs all frontend dependencies.*
 
-### Run the Application
-To spin up the entire distributed infrastructure (Postgres, DynamoDB Local, Kafka, Zookeeper, Redis, Centrifugo) alongside the API and CDC Consumer:
+### Run the Application with Docker Compose
 ```bash
 task run:dev
 ```
-*Note: In local development, the Next.js frontend is typically run separately via `npm run dev` in the frontend directory for hot-reloading.*
+
+### Run the Application with Kind
+```bash
+task kind:setup
+```
 
 ### Explore Available Tasks
 To see a full list of available development tasks (like running tests, generating fake data, compiling environments, or syncing OpenAPI schemas):
 ```bash
 task
-```
-
-### Useful Development Commands
-```bash
-task test:integration  # Run API integration tests
-task test:stress       # Run system stress tests
-task data:generate     # Continuously inject dummy load into the DB
-task schema:sync       # Extract FastAPI OpenAPI specs and regenerate TypeScript SDKs via Orval
 ```
 
 ---
