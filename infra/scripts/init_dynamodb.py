@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#     "boto3",
+# ]
+# ///
+
 import os
 import json
 import boto3

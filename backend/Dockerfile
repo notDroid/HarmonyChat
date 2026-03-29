@@ -1,33 +1,28 @@
 FROM python:3.12-slim
 
-# PYTHONDONTWRITEBYTECODE: Prevents Python from writing pyc files to disc
-# PYTHONUNBUFFERED: Ensures logs are flushed directly to stdout
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+# Copy uv from the official image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Set the working directory in the container and install system dependencies
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_COMPILE_BYTECODE=1 \
+    PATH="/app/.venv/bin:$PATH"
+
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Download application dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
-
-# Copy the entire project context
-COPY . .
+# Install dependencies
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev
 
 # Install the application
-RUN pip install --no-cache-dir .
+COPY . .
+RUN uv sync --frozen --no-dev
 
-# Create a non-root user for security
 RUN useradd -m appuser
 USER appuser
 
-# Expose the port the app runs on
 EXPOSE 8000
-
-# Run the application
 CMD ["uvicorn", "harmony.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

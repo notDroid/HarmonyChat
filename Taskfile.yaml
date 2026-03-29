@@ -10,9 +10,8 @@ vars:
     sh: git rev-parse --short HEAD 2>/dev/null || echo "latest"
   AWS_REGION: "us-east-1"
 
-  CONDA_ENV: harmony
-  PYTHON_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} python"
-  PYTEST_CMD: "conda run --no-capture-output -n {{.CONDA_ENV}} pytest"
+  PYTHON_CMD: "uv run"
+  PYTEST_CMD: "uv run pytest"
 
   DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/env/.env -f infra/docker/docker-compose.yaml"
 
@@ -32,29 +31,15 @@ tasks:
 
   setup:
     desc: "🚀 SETUP: the development environment"
-    summary: |
-      1. Creates the 'harmony' Conda environment.
-      2. Installs the backend in editable mode.
-      3. Installs frontend Node modules.
     cmds:
-      - task: setup:conda
       - task: setup:backend
       - task: setup:frontend
-    status:
-      - test -d frontend/node_modules
-      - conda env list | grep {{.CONDA_ENV}}
-
-  setup:conda:
-    desc: "🚀 SETUP CONDA: Create/Sync Conda environment"
-    cmds:
-      - conda env create -f environment.yaml || echo "Env likely exists, updating..."
-      - conda env update --name {{.CONDA_ENV}} --file environment.yaml --prune
   
   setup:backend:
-    internal: true
-    desc: "Install Backend Dependencies"
+    desc: "🚀 SETUP BACKEND: Sync environment with uv"
+    dir: backend
     cmds:
-      - "{{.PYTHON_CMD}} -m pip install -e backend"
+      - uv sync
 
   setup:frontend:
     internal: true
@@ -72,7 +57,7 @@ tasks:
     dir: infra/
     cmds:
       - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml docker/templates/config docker/config"
-      - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml docker/secrets.yaml templates/envt docker/env"
+      - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml docker/secrets.yaml docker/templates/envt docker/env"
 
   run:
     desc: "▶️  START DEV: Runs the local dev environment"
@@ -138,17 +123,6 @@ tasks:
     cmds:
       - "{{.PYTHON_CMD}} backend/specs/extract_openapi.py > frontend/openapi.json"
       - cd frontend && npx orval
-
-  env:freeze:
-    desc: "🔄 FREEZE: Update environment.yaml from current setup"
-    cmds:
-      - 'conda run -n {{.CONDA_ENV}} conda env export --no-builds | grep -v -e "prefix: " -e "harmony-chat-api" > environment.yaml'
-
-  env:compile:
-    desc: "🔄 COMPILE: generate requirements.txt from pyproject.toml"
-    dir: backend
-    cmds:
-      - conda run -n {{.CONDA_ENV}} pip-compile pyproject.toml --output-file requirements.txt
 
   # --------------------------------------------------------------------------
   # 5. IMAGES

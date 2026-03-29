@@ -1,3 +1,8 @@
+# /// script
+# requires-python = ">=3.8"
+# dependencies = []
+# ///
+
 import os
 import subprocess
 import re

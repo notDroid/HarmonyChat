@@ -1,6 +1,10 @@
-"""
-Render Jinja2 config templates for a target environment.
-"""
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#     "jinja2",
+#     "omegaconf",
+# ]
+# ///
 
 import json
 import sys
