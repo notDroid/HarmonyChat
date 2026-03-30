@@ -1,10 +1,10 @@
 version: '3'  
 
+dotenv:
+  - .env
+
 env:
-  K8S_ENV: '{{.K8S_ENV | default "local"}}'
-  SECRETS_NAME: "wali-secrets-{{.K8S_ENV}}"
   SOPS_AGE_KEY_FILE: "{{.ROOT_DIR}}/keys.txt"
-  API_ENDPOINT: "http://localhost:8000"
 
 vars:
   IMAGE_TAG:
@@ -17,8 +17,11 @@ vars:
   DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/env/.env -f infra/docker/docker-compose.yaml"
 
   KIND_CLUSTER: "harmony"
-  K8S_ENV: '{{default "local" .K8S_ENV}}'
+  K8S_ENV: '{{.K8S_ENV | default "local"}}'
   HELMFILE_CMD: "helmfile -e {{.K8S_ENV}} --skip-deps"
+
+  SECRETS_USER: '{{.SECRETS_USER | default "wali"}}'
+  SECRETS_NAME: "{{.SECRETS_USER}}-secrets-{{.K8S_ENV}}"
 
 tasks:
   default:
@@ -90,18 +93,24 @@ tasks:
   test:integration:
     desc: "🧪 Run integration tests"
     dir: backend/src/harmony/tests
+    env:
+      API_ENDPOINT: "http://localhost:8000"
     cmds:
       - "{{.PYTEST_CMD}} -n auto -m integration"
 
   test:stress:
     desc: "🧪 Run stress tests"
     dir: backend/src/harmony/tests
+    env:
+      API_ENDPOINT: "http://localhost:8000"
     cmds:
       - "{{.PYTEST_CMD}} -m stress -s -v"
 
   data:generate:
     desc: "🎲 GENERATE: dummy data for the DB"
     dir: backend/src/harmony/tests/tools
+    env:
+      API_ENDPOINT: "http://localhost:8000"
     cmds:
       - "{{.PYTEST_CMD}} generate.py -s"
 
