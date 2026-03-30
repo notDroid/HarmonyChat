@@ -280,9 +280,7 @@ tasks:
       AWS_ACCOUNT_ID:
         sh: aws sts get-caller-identity --query Account --output text
     cmds:
-      - terraform init \
-          -backend-config="bucket=harmony-chat-tf-state-{{.AWS_ACCOUNT_ID}}" \
-          -backend-config="dynamodb_table=harmony-chat-tf-locks-{{.AWS_ACCOUNT_ID}}"
+      - terraform init
       - terraform apply -auto-approve
 
   tf:init:
