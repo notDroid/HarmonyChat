@@ -10,7 +10,7 @@ config:
           - "{{ if hasKey .Values.infra.kafka "client_host" }}{{ .Values.infra.kafka.client_host }}{{ else }}{{ .Values.infra.kafka.host }}{{ end }}:{{ .Values.infra.kafka.port }}"
         topics: 
           - "{{ .Values.infra.kafka.topics.chat_messages }}"
-        consumer_group: "centrifugo"
+        consumer_group: "{{ .Values.infra.kafka.consumer_groups.centrifugo_consumer }}"
         publication_data_mode:
           enabled: true
           channels_header: "x-centrifugo-channels"

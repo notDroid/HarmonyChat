@@ -1,13 +1,20 @@
 # /// script
 # requires-python = ">=3.8"
-# dependencies = []
+# dependencies = ["pyyaml"]
 # ///
 
 import os
 import subprocess
 import re
+import argparse
+import yaml
 
 def main():
+    parser = argparse.ArgumentParser(description="Configure SOPS for a specific secret.")
+    parser.add_argument("secret_name", type=str, help="The base name of the secret (e.g. wali-secrets-local)")
+    args = parser.parse_args()
+
+    secret_name = args.secret_name
     key_file = "keys.txt"
     sops_file = ".sops.yaml"
 
@@ -18,32 +25,63 @@ def main():
             subprocess.run(["age-keygen", "-o", key_file], check=True)
         except FileNotFoundError:
             print("❌ Error: 'age-keygen' is not installed or not in your PATH.")
-            print("Please install it first (e.g., 'brew install age' or 'apt install age').")
+            print("Please install it first (e.g., 'brew install age').")
             return
     else:
-        print(f"{key_file} already exists. Skipping generation.")
+        print(f"🔑 {key_file} already exists. Skipping generation.")
 
     # 2. Extract the public key
     with open(key_file, "r") as f:
         content = f.read()
     
-    # age-keygen outputs the public key as a comment: "# public key: age1..."
     match = re.search(r"# public key: (age1[a-z0-9]+)", content)
     if not match:
         print(f"❌ Error: Could not find a valid age public key in {key_file}")
         return
 
     pub_key = match.group(1)
-    print(f"Configuring {sops_file} with public key: {pub_key}")
+    print(f"⚙️ Configuring {sops_file} for '{secret_name}' with public key: {pub_key}")
 
-    # 3. Write the .sops.yaml file
-    sops_config = f"""creation_rules:
-  - path_regex: secrets\\.yaml
-    encrypted_regex: '^(secrets)$'
-    age: '{pub_key}'
-"""
+    # 3. Read existing .sops.yaml or create new structure
+    sops_data = {"creation_rules": []}
+    if os.path.exists(sops_file):
+        with open(sops_file, "r") as f:
+            try:
+                loaded_data = yaml.safe_load(f)
+                if loaded_data and "creation_rules" in loaded_data:
+                    sops_data = loaded_data
+            except yaml.YAMLError:
+                print(f"⚠️ Warning: {sops_file} is invalid YAML. Starting fresh.")
+
+    # 4. Append or Overwrite rule for this specific secret
+    # This regex ensures exclusivity: it strictly maps THIS key to THIS exact file.
+    target_regex = f"infra/secrets/{secret_name}\\.yaml$"
+    
+    rule_found = False
+    for rule in sops_data.get("creation_rules", []):
+        if rule.get("path_regex") == target_regex:
+            rule["age"] = pub_key
+            rule["encrypted_regex"] = '^(secrets)$'
+            rule_found = True
+            print(f"🔄 Updated existing rule for {target_regex}")
+            break
+            
+    if not rule_found:
+        # Insert at the top so specific rules evaluate before any catch-all rules
+        sops_data["creation_rules"].insert(0, {
+            "path_regex": target_regex,
+            "encrypted_regex": '^(secrets)$',
+            "age": pub_key
+        })
+        print(f"➕ Added new exclusive rule for {target_regex}")
+
+    # 5. Write back to .sops.yaml cleanly
+    class Dumper(yaml.Dumper):
+        def increase_indent(self, flow=False, *args, **kwargs):
+            return super().increase_indent(flow=flow, indentless=False)
+
     with open(sops_file, "w") as f:
-        f.write(sops_config)
+        yaml.dump(sops_data, f, Dumper=Dumper, default_flow_style=False, sort_keys=False)
     
     print("✅ SOPS configured successfully!")
 

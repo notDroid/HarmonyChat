@@ -5,7 +5,7 @@ input:
       - "{{ infra.kafka.client_host | default(infra.kafka.host) }}:{{ infra.kafka.port }}"
     topics: 
       - "{{ infra.kafka.topics.chat_messages }}"
-    consumer_group: "dynamodb-sink-group"
+    consumer_group: "{{ infra.kafka.consumer_groups.dynamodb_sink }}"
 
 pipeline:
   processors:

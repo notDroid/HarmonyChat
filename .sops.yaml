@@ -1,4 +1,4 @@
 creation_rules:
-  - path_regex: secrets\.yaml
-    encrypted_regex: '^(secrets)$'
-    age: 'age14v7sn2jseh9g29uchreyn5gxlm0fy3qasdwvghwrq6ae4qsdv9hsk0p3yh'
+  - path_regex: infra/secrets/wali-secrets-staging\.yaml$
+    encrypted_regex: ^(secrets)$
+    age: age14v7sn2jseh9g29uchreyn5gxlm0fy3qasdwvghwrq6ae4qsdv9hsk0p3yh

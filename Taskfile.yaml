@@ -2,6 +2,7 @@ version: '3'
 
 env:
   K8S_ENV: '{{.K8S_ENV | default "local"}}'
+  SECRETS_NAME: "wali-secrets-{{.K8S_ENV}}"
   SOPS_AGE_KEY_FILE: "{{.ROOT_DIR}}/keys.txt"
   API_ENDPOINT: "http://localhost:8000"
 
@@ -237,23 +238,28 @@ tasks:
   secrets:setup:
     desc: "🔑 SECRETS: Generate an age keypair and configure .sops.yaml"
     cmds:
-      - "{{.PYTHON_CMD}} infra/scripts/setup_sops.py"
+      - "{{.PYTHON_CMD}} infra/scripts/setup_sops.py {{.SECRETS_NAME}}"
 
   secrets:generate:
     desc: "🔐 SECRETS: Generate a new secrets.yaml file for the target K8S_ENV"
     cmds:
-      - "{{.PYTHON_CMD}} infra/scripts/generate_secrets.py infra/environments/{{.K8S_ENV}}/secrets.yaml --env {{.K8S_ENV}}"
+      - "{{.PYTHON_CMD}} infra/scripts/generate_secrets.py infra/secrets/{{.SECRETS_NAME}}.yaml --env {{.K8S_ENV}}"
 
   secrets:encrypt:
-    desc: "🔒 SOPS: Encrypt secrets.yaml in place for the target K8S_ENV"
+    desc: "🔒 SOPS: Encrypt secrets.yaml in place"
     cmds:
-      - sops -e -i infra/environments/{{.K8S_ENV}}/secrets.yaml
+      - sops -e -i infra/secrets/{{.SECRETS_NAME}}.yaml
 
   secrets:decrypt:
-    desc: "🔓 SOPS: Decrypt secrets.yaml in place for the target K8S_ENV"
+    desc: "🔓 SOPS: Decrypt secrets.yaml in place"
     cmds:
       - echo ${SOPS_AGE_KEY_FILE}
-      - sops -d -i infra/environments/{{.K8S_ENV}}/secrets.yaml
+      - sops -d -i infra/secrets/{{.SECRETS_NAME}}.yaml
+
+  secrets:use:
+    desc: "🔑 SECRETS: Move secrets to environment folder"
+    cmds:
+      - cp infra/secrets/{{.SECRETS_NAME}}.yaml infra/environments/{{.K8S_ENV}}/secrets.yaml
 
   # --------------------------------------------------------------------------
   # 8. TERRAFORM

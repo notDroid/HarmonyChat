@@ -94,7 +94,9 @@ infra:
     producer:
       retry_backoff_ms: 500
     consumer_groups:
-      cdc_worker: "harmony-cdc-worker-${environment}"
+      cdc_worker: "${environment}_cdc_consumer"
+      dynamodb_sink: "${environment}_dynamodb_sink"
+      centrifugo_consumer: "${environment}_centrifugo_consumer"
     topics:
       chat_messages: "${environment}_chat_messages"
       user_events: "${environment}_user_events"

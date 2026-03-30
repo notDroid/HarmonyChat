@@ -7,7 +7,7 @@
       "kafka": {
         "brokers": ["{{ infra.kafka.client_host | default(infra.kafka.host) }}:{{ infra.kafka.port }}"],
         "topics": ["{{ infra.kafka.topics.chat_messages }}"],
-        "consumer_group": "centrifugo",
+        "consumer_group": "{{ infra.kafka.consumer_groups.centrifugo_consumer }}",
         "publication_data_mode": {
           "enabled": true,
           "channels_header": "x-centrifugo-channels" 
