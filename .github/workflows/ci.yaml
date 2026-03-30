@@ -1,10 +1,14 @@
-name: Integration Tests CI
+name: API Integration Tests CI
 
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - "backend/src/harmony/**"
   pull_request:
     branches: [ "main" ]
+    paths:
+      - "backend/src/harmony/**"
 
 jobs:
   integration-tests:
