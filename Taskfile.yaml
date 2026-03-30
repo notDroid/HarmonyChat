@@ -276,8 +276,13 @@ tasks:
   tf:bootstrap:
     desc: "🚀 TF: Bootstrap Terraform state infrastructure (S3 bucket + DynamoDB table)"
     dir: infra/terraform/bootstrap
+    vars:
+      AWS_ACCOUNT_ID:
+        sh: aws sts get-caller-identity --query Account --output text
     cmds:
-      - terraform init
+      - terraform init \
+          -backend-config="bucket=harmony-chat-tf-state-{{.AWS_ACCOUNT_ID}}" \
+          -backend-config="dynamodb_table=harmony-chat-tf-locks-{{.AWS_ACCOUNT_ID}}"
       - terraform apply -auto-approve
 
   tf:init:
