@@ -3,7 +3,7 @@ version: '3'
 env:
   K8S_ENV: '{{.K8S_ENV | default "local"}}'
   SOPS_AGE_KEY_FILE: "{{.ROOT_DIR}}/keys.txt"
-  API_ENDPOINT: "http://localhost:11000"
+  API_ENDPOINT: "http://localhost:8000"
 
 vars:
   IMAGE_TAG:
@@ -90,7 +90,7 @@ tasks:
     desc: "🧪 Run integration tests"
     dir: backend/src/harmony/tests
     cmds:
-      - "{{.PYTEST_CMD}} -m integration"
+      - "{{.PYTEST_CMD}} -n auto -m integration"
 
   test:stress:
     desc: "🧪 Run stress tests"

@@ -1,10 +1,10 @@
 input:
   label: "kafka_consumer"
-  redpanda:
-    seed_brokers: 
+  kafka:
+    addresses:
       - "{{ infra.kafka.client_host | default(infra.kafka.host) }}:{{ infra.kafka.port }}"
     topics: 
-      - "chat_messages"
+      - "{{ infra.kafka.topics.chat_messages }}"
     consumer_group: "dynamodb-sink-group"
 
 pipeline:
