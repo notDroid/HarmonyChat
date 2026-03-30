@@ -23,11 +23,11 @@ env:
 
   CHAT__MAX_USERS_PER_OPERATION: {{ .Values.app.domains.chat.max_users_per_operation | quote }}
   CHAT__DEFAULT_PAGINATION_LIMIT: {{ .Values.app.domains.chat.default_pagination_limit | quote }}
-  CHAT__MESSAGE_TOPIC: {{ .Values.infra.kafka.topics.chat_messages | replace "${environment}" .Values.environment | quote }}
-  CHAT__TOPIC: {{ .Values.infra.kafka.topics.chat_events | replace "${environment}" .Values.environment | quote }}
+  CHAT__MESSAGE_TOPIC: {{ .Values.infra.kafka.topics.chat_messages | quote }}
+  CHAT__TOPIC: {{ .Values.infra.kafka.topics.chat_events | quote }}
 
   USER__DEFAULT_USER_SEARCH_LIMIT: {{ .Values.app.domains.user.default_search_limit | quote }}
-  USER__TOPIC: {{ .Values.infra.kafka.topics.user_events | replace "${environment}" .Values.environment | quote }}
+  USER__TOPIC: {{ .Values.infra.kafka.topics.user_events | quote }}
 
   AUTH__ALGORITHM: {{ .Values.app.auth.algorithm | quote }}
   AUTH__ACCESS_TOKEN_NAME: {{ .Values.app.auth.access_token_name | quote }}
@@ -50,7 +50,7 @@ env:
   AWS__REGION: {{ .Values.infra.aws.region | quote }}
   
   DYNAMODB__URL: "{{ .Values.infra.dynamodb.scheme | default "http" }}://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
-  DYNAMODB__CHAT_HISTORY_TABLE_NAME: {{ .Values.infra.dynamodb.chat_history_table_name | replace "${environment}" .Values.environment | quote }}
+  DYNAMODB__CHAT_HISTORY_TABLE_NAME: {{ .Values.infra.dynamodb.chat_history_table_name | quote }}
 
   KAFKA_PRODUCER__BOOTSTRAP_SERVERS: "{{ .Values.infra.kafka.host }}:{{ .Values.infra.kafka.port }}"
   KAFKA_PRODUCER__RETRY_BACKOFF_MS: {{ .Values.infra.kafka.producer.retry_backoff_ms | quote }}

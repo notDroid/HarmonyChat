@@ -1,11 +1,11 @@
 environments:
   local:
     values:
-      - ../environments/local/values.yaml
+      - ../environments/local/expanded-values.yaml.gotmpl
       - ../environments/local/secrets.yaml
   staging:
     values:
-      - ../environments/staging/values.yaml
+      - ../environments/staging/expanded-values.yaml.gotmpl
       - environments/staging/values-override.yaml.gotmpl
     secrets:
       - ../environments/staging/secrets.yaml

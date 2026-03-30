@@ -20,8 +20,6 @@ app:
     refresh_token_expire_days: 7
     refresh_token_grace_period_sec: 2
 
-    # secret_key: "64d54ec76be75e906e03e3fba806e2c1ff5f8da12dfb9226e7eea2a72e477c96"
-
   domains:
     chat:
       max_users_per_operation: 10
@@ -63,8 +61,6 @@ infra:
     
   aws:
     region: "us-east-1"
-    # access_key_id: "test1234"
-    # secret_access_key: "test1234"
 
   postgres:
     sslmode: "disable"
@@ -72,7 +68,6 @@ infra:
     port: 5432
     dbname: "harmony"
     user: "harmony"
-    # password: "harmony" 
 
   redis:
     host: "redis-master"
@@ -85,7 +80,7 @@ infra:
     scheme: "http"
     host: "dynamodb"
     port: 8000
-    chat_history_table_name: "harmony_${environment}_chat_history"
+    chat_history_table_name: "local_harmony_chat_history"
 
   kafka:
     host: "automq-kafka"
@@ -94,30 +89,25 @@ infra:
     producer:
       retry_backoff_ms: 500
     consumer_groups:
-      cdc_worker: "${environment}_cdc_consumer"
-      dynamodb_sink: "${environment}_dynamodb_sink"
-      centrifugo_consumer: "${environment}_centrifugo_consumer"
+      cdc_worker: "local_cdc_consumer"
+      dynamodb_sink: "local_dynamodb_sink"
+      centrifugo_consumer: "local_centrifugo_consumer"
     topics:
-      chat_messages: "${environment}_chat_messages"
-      user_events: "${environment}_user_events"
-      chat_events: "${environment}_chat_events"
+      chat_messages: "local_chat_messages"
+      user_events: "local_user_events"
+      chat_events: "local_chat_events"
 
   s3:
     endpoint: "http://minio:9000"
     region: "us-east-1"
-    # access_key: "minioadmin"
-    # secret_key: "minioadmin"
     path_style: "true"
     buckets:
-      automq_data: "automq-data"
-      automq_ops: "automq-ops"
+      automq_data: "automq-data-${AWS_ACCOUNT_ID}"
+      automq_ops: "automq-ops-${AWS_ACCOUNT_ID}"
       
   centrifugo:
     host: "centrifugo"
     port: 8000
-    # api_key: "test-cent-api-key"
-    # admin_password: "admin"
-    # admin_secret: "admin"
     allowed_origins: ["*"]
     chat:
       presence_enabled: true

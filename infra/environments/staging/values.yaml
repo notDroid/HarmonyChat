@@ -88,8 +88,8 @@ infra:
     path_style: "false"
     region: "us-east-1"
     buckets:
-      automq_data: "harmony-chat-automq-data-staging-wm123" 
-      automq_ops: "harmony-chat-automq-ops-staging-wm123"
+      automq_data: "harmony-chat-automq-data-staging-${AWS_ACCOUNT_ID}" 
+      automq_ops: "harmony-chat-automq-ops-staging-${AWS_ACCOUNT_ID}"
   kafka:
     host: "automq-kafka"
     port: 9092
@@ -97,9 +97,9 @@ infra:
     producer:
       retry_backoff_ms: 500
     consumer_groups:
-      cdc_worker: "${environment}_cdc_consumer"
-      dynamodb_sink: "${environment}_dynamodb_sink"
-      centrifugo_consumer: "${environment}_centrifugo_consumer"
+      cdc_worker: "staging_cdc_consumer"
+      dynamodb_sink: "staging_dynamodb_sink"
+      centrifugo_consumer: "staging_centrifugo_consumer"
     topics:
       chat_messages: "staging_chat_messages"
       user_events: "staging_user_events"
