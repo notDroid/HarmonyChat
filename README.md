@@ -13,9 +13,9 @@ Harmony Chat is a fullstack chat application created for learning purposes as an
 We intentionally keep the application level simple to practice the more complex underlying architecture patterns necessary for high scalability, state consistency, and real-time data streaming.
 
 ## Tech Stack
-- **Backend:** Python, FastAPI, SQLAlchemy (Async), Pydantic, Structlog
-- **Frontend:** TypeScript, Next.js (App Router), React Query, Tailwind CSS, Orval
-- **Infrastructure:** Apache Kafka, PostgreSQL, DynamoDB, Redis, Centrifugo, Debezium, Docker, Kafka Connect
+- **Backend:** FastAPI, SQLAlchemy, Pytest
+- **Frontend:** TypeScript, Next.js, React Query, Tailwind CSS, Orval
+- **Infrastructure:** AutoMQ Kafka, PostgreSQL, DynamoDB, Redis, Centrifugo, Conduit, Redpanda Connect
 
 ## Frontend Screenshots
 <p align="center">
@@ -118,5 +118,9 @@ task
 - [x] Implement Kafka-based event sourcing for chat messages with Kafka Connect DynamoDB sink
 - [x] Implement CDC (Change Data Capture) with Postgres Outbox + Debezium + Kafka
 - [x] Build k8s set up with helm and deploy locally using kind.
-- [ ] Deploy application to AWS via Terraform 
-- [ ] Setup GitHub Actions CI/CD pipelines
+- [x] Switch from Apache Kafka to AutoMQ, from Debezium to Conduit, from Kafka Connect to Redpanda Connect
+- [x] Deploy simplified application to AWS via Terraform
+- [x] Setup GitHub Actions CI
+- [ ] Setup argoCD
+- [ ] Upgrade k8s setup with API Gateway and Autoscaling
+- [ ] Launch production deployment
