@@ -316,10 +316,17 @@ tasks:
     cmds:
       - terragrunt init
 
+  tf:init:upgrade:
+    desc: "🌍 TF: Upgrade Terragrunt for the target K8S_ENV"
+    dir: infra/terraform/environments/{{.K8S_ENV}}
+    cmds:
+      - terragrunt init -upgrade
+
   tf:plan:
     desc: "🌍 TF: Plan Terragrunt infrastructure for the target K8S_ENV"
     dir: infra/terraform/environments/{{.K8S_ENV}}
     cmds:
+      - pwd
       - terragrunt plan
 
   tf:apply:
