@@ -326,7 +326,6 @@ tasks:
     desc: "🌍 TF: Plan Terragrunt infrastructure for the target K8S_ENV"
     dir: infra/terraform/environments/{{.K8S_ENV}}
     cmds:
-      - pwd
       - terragrunt plan
 
   tf:apply:

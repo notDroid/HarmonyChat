@@ -1,6 +1,10 @@
 # Ignore docker generated files
 docker/config/
 
+# Ignore Terraform generated files
+.terragrunt-cache/
+
+
 # Ignore environment files
 .env.*
 !.env*j2

@@ -23,7 +23,7 @@ module "eks" {
       instance_types = var.instance_types
       capacity_type  = "ON_DEMAND"
 
-      ami_type       = "AL2023_ARM_64_STANDARD"
+      ami_type       = "AL2023_x86_64_STANDARD"
 
       tags = { ExtraTag = "HarmonyWorker" }
     }
@@ -43,6 +43,8 @@ module "eks" {
 resource "aws_eks_addon" "pod_identity_agent" {
   cluster_name = module.eks.cluster_name
   addon_name   = "eks-pod-identity-agent"
+
+  depends_on = [module.eks]
 }
 
 data "aws_iam_policy_document" "ebs_csi_assume" {
@@ -78,6 +80,7 @@ resource "aws_eks_addon" "ebs_csi" {
   addon_name   = "aws-ebs-csi-driver"
 
   depends_on = [
+    module.eks,
     aws_eks_addon.pod_identity_agent,
     aws_eks_pod_identity_association.ebs_csi
   ]
