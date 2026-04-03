@@ -23,6 +23,8 @@ module "eks" {
       instance_types = var.instance_types
       capacity_type  = "ON_DEMAND"
 
+      ami_type       = "AL2023_ARM_64_STANDARD"
+
       tags = { ExtraTag = "HarmonyWorker" }
     }
   }
@@ -46,7 +48,7 @@ resource "aws_eks_addon" "pod_identity_agent" {
 data "aws_iam_policy_document" "ebs_csi_assume" {
   statement {
     effect  = "Allow"
-    actions = ["sts:AssumeRole", "sts:SetContext"]
+    actions = ["sts:AssumeRole", "sts:TagSession"]
     principals {
       type        = "Service"
       identifiers = ["pods.eks.amazonaws.com"]

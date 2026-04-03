@@ -2,6 +2,12 @@ include "root" {
   path = find_in_parent_folders("root.hcl")
 }
 
+terraform {
+  # The double slash (//) is critical. It tells Terragrunt to copy the entire 
+  # 'infra/terraform' folder to the cache, then execute from 'environments/staging'
+  source = "../..//environments/staging"
+}
+
 locals {
   values = yamldecode(templatefile("${get_repo_root()}/infra/environments/staging/values.yaml", {
     AWS_ACCOUNT_ID = get_aws_account_id()

@@ -70,7 +70,7 @@ resource "aws_db_instance" "postgres" {
   # Backups & Maintenance (keep it simple for staging, maybe adjust for production)
   skip_final_snapshot     = true
   deletion_protection     = false
-  backup_retention_period = 7
+  backup_retention_period = 0
 
   tags = {
     Environment = var.environment
