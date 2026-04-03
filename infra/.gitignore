@@ -18,6 +18,12 @@ kubeconfig-harmony.yaml
 # Ignore temporary files
 environments/**/secrets.yaml
 !environments/local/secrets.yaml
+.infracost
+
+# Ignore terragrunt generated files
+terragrunt-cache/
+terraform/environments/**/backend.tf
+terraform/environments/**/provider.tf
 
 
 # ----------------------------- PYTHON GITIGNORE ----------------------------- #
