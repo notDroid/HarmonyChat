@@ -19,6 +19,9 @@ tf-outputs.json
 # kind kubeconfig
 kubeconfig-harmony.yaml
 
+#terragrunt generated files
+.terragrunt-cache/
+
 # Ignore temporary files
 environments/**/secrets.yaml
 !environments/local/secrets.yaml

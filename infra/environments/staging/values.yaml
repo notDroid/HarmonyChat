@@ -62,7 +62,7 @@ infra:
   compute:
     cluster_name: "harmony-staging-eks"
     cluster_version: "1.35"
-    instance_types: ["t4g.micro"]
+    instance_types: ["t3.micro"]
     min_size: 2
     max_size: 5
   postgres:
