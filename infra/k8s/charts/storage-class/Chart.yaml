@@ -1,0 +1,4 @@
+apiVersion: v2
+name: storage-class
+description: A Helm chart to deploy Kubernetes StorageClasses
+version: 0.1.0

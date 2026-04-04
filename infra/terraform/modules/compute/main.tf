@@ -13,6 +13,21 @@ module "eks" {
 
   enable_cluster_creator_admin_permissions = true
 
+  # Addons
+  addons = {
+    coredns                = { most_recent = true }
+    kube-proxy             = { most_recent = true }
+    vpc-cni                = { most_recent = true, before_compute = true }
+    eks-pod-identity-agent = { most_recent = true }
+    aws-ebs-csi-driver = {
+      most_recent = true
+      pod_identity_association = [{
+        role_arn        = aws_iam_role.ebs_csi.arn
+        service_account = "ebs-csi-controller-sa"
+      }]
+    }
+  }
+
   # Managed Node Groups
   eks_managed_node_groups = {
     main = {
@@ -22,8 +37,6 @@ module "eks" {
 
       instance_types = var.instance_types
       capacity_type  = "ON_DEMAND"
-
-      ami_type       = "AL2023_x86_64_STANDARD"
 
       tags = { ExtraTag = "HarmonyWorker" }
     }
@@ -37,15 +50,8 @@ module "eks" {
 }
 
 # ==============================================================================
-# EKS Pod Identity Setup for EBS CSI Driver
+# EKS Pod Identity IAM Role Setup for EBS CSI Driver
 # ==============================================================================
-
-resource "aws_eks_addon" "pod_identity_agent" {
-  cluster_name = module.eks.cluster_name
-  addon_name   = "eks-pod-identity-agent"
-
-  depends_on = [module.eks]
-}
 
 data "aws_iam_policy_document" "ebs_csi_assume" {
   statement {
@@ -66,22 +72,4 @@ resource "aws_iam_role" "ebs_csi" {
 resource "aws_iam_role_policy_attachment" "ebs_csi" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
   role       = aws_iam_role.ebs_csi.name
-}
-
-resource "aws_eks_pod_identity_association" "ebs_csi" {
-  cluster_name    = module.eks.cluster_name
-  namespace       = "kube-system"
-  service_account = "ebs-csi-controller-sa"
-  role_arn        = aws_iam_role.ebs_csi.arn
-}
-
-resource "aws_eks_addon" "ebs_csi" {
-  cluster_name = module.eks.cluster_name
-  addon_name   = "aws-ebs-csi-driver"
-
-  depends_on = [
-    module.eks,
-    aws_eks_addon.pod_identity_agent,
-    aws_eks_pod_identity_association.ebs_csi
-  ]
 }

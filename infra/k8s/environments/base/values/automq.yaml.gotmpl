@@ -49,7 +49,7 @@ controller:
     s3.stream.allocator.policy=POOLED_DIRECT
   persistence:
     storageClass: {{ .Values.infra.k8s.storage_class | default "standard" | quote }}
-    size: 10Gi
+    size: {{ .Values.infra.kafka.storage_size | default "5Gi" | quote }}
 
 broker:
   minId: 1000
@@ -72,4 +72,4 @@ broker:
     s3.stream.allocator.policy=POOLED_DIRECT
   persistence:
     storageClass: {{ .Values.infra.k8s.storage_class | default "standard" | quote }}
-    size: 10Gi
+    size: {{ .Values.infra.kafka.storage_size | default "5Gi" | quote }}

@@ -93,16 +93,16 @@ tasks:
   test:integration:
     desc: "🧪 Run integration tests"
     dir: backend/src/harmony/tests
-    env:
-      API_ENDPOINT: "http://localhost:8000"
+    # env:
+    #   API_ENDPOINT: "http://localhost:8000"
     cmds:
       - "{{.PYTEST_CMD}} -n auto -m integration"
 
   test:stress:
     desc: "🧪 Run stress tests"
     dir: backend/src/harmony/tests
-    env:
-      API_ENDPOINT: "http://localhost:8000"
+    # env:
+    #   API_ENDPOINT: "http://localhost:8000"
     cmds:
       - "{{.PYTEST_CMD}} -m stress -s -v"
 
@@ -182,6 +182,8 @@ tasks:
       - helm repo add redpanda https://charts.redpanda.com
       - helm repo add minio https://charts.min.io/
       - helm repo add kafbat https://kafbat.github.io/helm-charts
+      - helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+      - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
       - helm repo update
 
   k8s:apply:
@@ -355,7 +357,7 @@ tasks:
     vars:
       CLUSTER_NAME:
         sh: |
-          {{.PYTHON_CMD}} -c "
+          {{.PYTHON_CMD}} python -c"
           import yaml
           with open('infra/environments/{{.K8S_ENV}}/values.yaml') as f:
               data = yaml.safe_load(f)

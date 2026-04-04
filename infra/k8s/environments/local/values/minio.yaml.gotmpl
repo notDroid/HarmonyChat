@@ -12,13 +12,13 @@ resources:
 persistence:
   enabled: true
   storageClass: "standard"
-  size: "10Gi"
+  size: "2Gi"
 
 # Pre-create the required buckets for AutoMQ
 buckets:
-  - name: "automq-data"
+  - name: {{ .Values.infra.s3.buckets.automq_data }}
     policy: "none"
     purge: false
-  - name: "automq-ops"
+  - name: {{ .Values.infra.s3.buckets.automq_ops }}
     policy: "none"
     purge: false

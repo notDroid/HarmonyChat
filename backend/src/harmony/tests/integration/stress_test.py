@@ -27,7 +27,7 @@ from harmony.tests.utils import (
 # =============================================================================
 
 class StressConfig:
-    SIM_CONFIG = SimConfig(MAX_USERS=1)   # per worker — scale up for real runs
+    SIM_CONFIG = SimConfig(MAX_USERS=10)   # per worker — scale up for real runs
     DURATION_SECONDS: int = 30
     CONCURRENT_WORKERS: int = 1
     VERBOSE_ERRORS: bool = True
