@@ -51,7 +51,7 @@ workloads:
     autoscaling:
       enabled: true
       minReplicas: 1
-      maxReplicas: 5
+      maxReplicas: 20
       targetCPUUtilizationPercentage: 80
   cdc_consumer:
     name: "Harmony CDC Worker staging"
@@ -74,9 +74,6 @@ infra:
   compute:
     cluster_name: "harmony-staging-eks"
     cluster_version: "1.35"
-    instance_types: ["t3.medium"]
-    min_size: 2
-    max_size: 5
   postgres:
     sslmode: "require"
     dbname: "harmony"

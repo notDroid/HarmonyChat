@@ -24,6 +24,10 @@ module "vpc" {
   single_nat_gateway     = true
   one_nat_gateway_per_az = false
 
+  private_subnet_tags = {
+    "karpenter.sh/discovery" = var.cluster_name
+  }
+
   tags = {
     Environment = var.environment
     ManagedBy   = "Terraform"

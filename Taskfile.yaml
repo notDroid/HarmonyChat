@@ -17,6 +17,7 @@ vars:
   DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/env/.env -f infra/docker/docker-compose.yaml"
 
   KIND_CLUSTER: "harmony"
+  K8S_NAMESPACE: "harmony"
   K8S_ENV: '{{.K8S_ENV | default "local"}}'
   HELMFILE_CMD: "helmfile -e {{.K8S_ENV}} --skip-deps"
 
@@ -230,6 +231,7 @@ tasks:
           fi
     cmds:
       - "{{.HELMFILE_CMD}} destroy"
+      - "kubectl delete namespace {{.K8S_NAMESPACE}} --ignore-not-found" # cleans up persistent volumes in cluster
 
   kind:cluster:create:
     desc: "☸️  K8S: Create the local kind cluster"

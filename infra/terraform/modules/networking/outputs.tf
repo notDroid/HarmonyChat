@@ -15,7 +15,7 @@ output "private_subnet_ids" {
 
 output "private_subnets_cidr_blocks" {
   description = "List of cidr_blocks of private subnets"
-  value       = module.vpc.private_subnets_cidr_blocks 
+  value       = module.vpc.private_subnets_cidr_blocks
 }
 
 output "database_subnet_group_name" {

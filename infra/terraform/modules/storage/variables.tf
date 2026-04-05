@@ -1,11 +1,11 @@
 variable "environment" { type = string }
-variable "project_name" { 
-    type = string
-    default = "Harmony Chat" 
+variable "project_name" {
+  type    = string
+  default = "Harmony Chat"
 }
-variable "enable_s3_versioning" { 
-    type = bool
-    default = false 
+variable "enable_s3_versioning" {
+  type    = bool
+  default = false
 }
 
 variable "chat_history_table_name" {

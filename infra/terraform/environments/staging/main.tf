@@ -11,9 +11,6 @@ variable "azs_count" { type = number }
 
 variable "cluster_name" { type = string }
 variable "cluster_version" { type = string }
-variable "instance_types" { type = list(string) }
-variable "min_size" { type = number }
-variable "max_size" { type = number }
 
 variable "db_name" { type = string }
 variable "db_user" { type = string }
@@ -35,11 +32,12 @@ data "aws_availability_zones" "available" {
 }
 
 module "networking" {
-  source      = "../../modules/networking"
-  vpc_name    = "harmony-${var.environment}-vpc"
-  environment = var.environment
-  vpc_cidr    = var.vpc_cidr
-  azs         = slice(data.aws_availability_zones.available.names, 0, var.azs_count)
+  source       = "../../modules/networking"
+  vpc_name     = "harmony-${var.environment}-vpc"
+  environment  = var.environment
+  vpc_cidr     = var.vpc_cidr
+  azs          = slice(data.aws_availability_zones.available.names, 0, var.azs_count)
+  cluster_name = var.cluster_name
 }
 
 module "stateful" {
@@ -74,9 +72,6 @@ module "compute" {
   private_subnet_ids = module.networking.private_subnet_ids
   cluster_name       = var.cluster_name
   cluster_version    = var.cluster_version
-  instance_types     = var.instance_types
-  min_size           = var.min_size
-  max_size           = var.max_size
 }
 
 data "aws_ecr_repository" "backend" {

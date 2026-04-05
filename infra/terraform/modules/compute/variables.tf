@@ -24,12 +24,3 @@ variable "cluster_version" {
   type        = string
   default     = "1.29"
 }
-
-variable "instance_types" {
-  description = "List of EC2 instance types for the managed node group"
-  type        = list(string)
-  default     = ["t3.large"]
-}
-
-variable "min_size" { type = number }
-variable "max_size" { type = number }

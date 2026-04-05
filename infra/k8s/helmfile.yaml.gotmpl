@@ -32,6 +32,37 @@ releases:
   # ---------------------------------------------------------------------------
   # CLUSTER INFRASTRUCTURE
   # ---------------------------------------------------------------------------
+  - name: karpenter-crd
+    namespace: kube-system
+    chart: oci://public.ecr.aws/karpenter/karpenter-crd
+    version: "1.10.0"
+    installed: {{ ne .Environment.Name "local" }}
+    wait: true
+
+  - name: karpenter
+    namespace: kube-system
+    chart: oci://public.ecr.aws/karpenter/karpenter
+    version: "1.10.0"
+    installed: {{ ne .Environment.Name "local" }}
+    values:
+      - settings:
+          clusterName: "{{ .Values.infra.compute.cluster_name }}"
+          interruptionQueue: "Karpenter-{{ .Values.infra.compute.cluster_name }}"
+    needs:
+      - kube-system/karpenter-crd
+    wait: true
+
+  - name: karpenter-provisioner
+    namespace: kube-system
+    chart: charts/karpenter-provisioner
+    installed: {{ ne .Environment.Name "local" }}
+    disableValidation: true
+    values:
+      - clusterName: "{{ .Values.infra.compute.cluster_name }}"
+    needs:
+      - kube-system/karpenter
+    wait: true
+
   - name: metrics-server
     namespace: kube-system
     chart: metrics-server/metrics-server
@@ -45,6 +76,7 @@ releases:
   - name: kube-prometheus-stack
     namespace: monitoring
     chart: prometheus-community/kube-prometheus-stack
+    disableValidation: true
     missingFileHandler: Info
     values:
       - environments/base/values/kube-prometheus-stack.yaml.gotmpl

@@ -13,6 +13,18 @@ module "eks" {
 
   enable_cluster_creator_admin_permissions = true
 
+  # Metrics endpoint for Prometheus
+  node_security_group_additional_rules = {
+    ingress_cluster_prometheus = {
+      description                   = "Cluster API to Node Prometheus"
+      protocol                      = "tcp"
+      from_port                     = 9090
+      to_port                       = 9090
+      type                          = "ingress"
+      source_cluster_security_group = true 
+    }
+  }
+
   # Addons
   addons = {
     coredns                = { most_recent = true }
@@ -30,16 +42,38 @@ module "eks" {
 
   # Managed Node Groups
   eks_managed_node_groups = {
-    main = {
-      min_size     = var.min_size
-      max_size     = var.max_size
-      desired_size = var.min_size
+    karpenter = {
+      min_size     = 2
+      max_size     = 3
+      desired_size = 2
 
-      instance_types = var.instance_types
+      instance_types = ["t3.medium"]
       capacity_type  = "ON_DEMAND"
 
-      tags = { ExtraTag = "HarmonyWorker" }
+      tags = { ExtraTag = "KarpenterController" }
     }
+  }
+
+  tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = "Harmony Chat"
+  }
+}
+
+module "karpenter" {
+  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
+  version = "~> 21.0"
+
+  cluster_name = module.eks.cluster_name
+
+  create_pod_identity_association = true
+
+  node_iam_role_use_name_prefix = false
+  node_iam_role_name            = "KarpenterNodeRole-${var.cluster_name}"
+
+  node_iam_role_additional_policies = {
+    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
 
   tags = {

@@ -29,9 +29,6 @@ inputs = {
   # --- Compute (EKS) ---
   cluster_name    = local.values.infra.compute.cluster_name
   cluster_version = local.values.infra.compute.cluster_version
-  instance_types  = local.values.infra.compute.instance_types
-  min_size        = local.values.infra.compute.min_size
-  max_size        = local.values.infra.compute.max_size
 
   # --- Databases ---
   db_name           = local.values.infra.postgres.dbname
