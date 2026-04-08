@@ -44,4 +44,6 @@ inputs = {
   
   automq_data_bucket_name = local.values.infra.s3.buckets.automq_data
   automq_ops_bucket_name  = local.values.infra.s3.buckets.automq_ops
+
+  raw_secrets = jsonencode(local.secrets.secrets)
 }

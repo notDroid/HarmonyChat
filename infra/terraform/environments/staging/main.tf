@@ -27,6 +27,11 @@ variable "chat_history_table_name" { type = string }
 variable "automq_data_bucket_name" { type = string }
 variable "automq_ops_bucket_name" { type = string }
 
+variable "raw_secrets" {
+  type      = string
+  sensitive = true
+}
+
 data "aws_availability_zones" "available" {
   state = "available"
 }
@@ -38,6 +43,14 @@ module "networking" {
   vpc_cidr     = var.vpc_cidr
   azs          = slice(data.aws_availability_zones.available.names, 0, var.azs_count)
   cluster_name = var.cluster_name
+}
+
+module "secrets" {
+  source       = "../../modules/secrets"
+  environment  = var.environment
+  cluster_name = var.cluster_name
+  raw_secrets  = var.raw_secrets
+  project_name = var.project_name
 }
 
 module "stateful" {

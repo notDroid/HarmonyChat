@@ -25,6 +25,8 @@ repositories:
     url: https://kubernetes-sigs.github.io/metrics-server/
   - name: prometheus-community
     url: https://prometheus-community.github.io/helm-charts
+  - name: external-secrets
+    url: https://charts.external-secrets.io
 
 ---
 
@@ -32,6 +34,16 @@ releases:
   # ---------------------------------------------------------------------------
   # CLUSTER INFRASTRUCTURE
   # ---------------------------------------------------------------------------
+  {{ if ne .Environment.Name "local" }}
+  - name: external-secrets
+    namespace: external-secrets
+    chart: external-secrets/external-secrets
+    version: "2.2.0"
+    installed: {{ ne .Environment.Name "local" }}
+    values:
+      - installCRDs: true
+    wait: true
+
   - name: karpenter-crd
     namespace: kube-system
     chart: oci://public.ecr.aws/karpenter/karpenter-crd
@@ -62,6 +74,7 @@ releases:
     needs:
       - kube-system/karpenter
     wait: true
+  {{ end }}
 
   - name: metrics-server
     namespace: kube-system
