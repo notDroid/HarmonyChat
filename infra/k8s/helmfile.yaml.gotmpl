@@ -62,9 +62,9 @@ releases:
       - settings:
           clusterName: "{{ .Values.infra.compute.cluster_name }}"
           interruptionQueue: "Karpenter-{{ .Values.infra.compute.cluster_name }}"
-    {{- end }}
     needs:
       - kube-system/karpenter-crd
+    {{- end }}
     wait: true
 
   - name: karpenter-provisioner
@@ -75,9 +75,9 @@ releases:
     {{- if ne .Environment.Name "local" }}
     values:
       - clusterName: "{{ .Values.infra.compute.cluster_name }}"
-    {{- end }}
     needs:
       - kube-system/karpenter
+    {{- end }}
     wait: true
 
   - name: metrics-server

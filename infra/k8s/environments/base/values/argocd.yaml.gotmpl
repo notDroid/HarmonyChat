@@ -10,7 +10,7 @@ configs:
             - sh
             - "-c"
             - |
-              helmfile -e ${ARGOCD_ENV_ENV_NAME} template --include-crds -q
+              helmfile -e ${ARGOCD_ENV_ENV_NAME} template -q
               
 repoServer:
   extraContainers:
