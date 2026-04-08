@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: harmony-infra-${K8S_ENV}
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/notDroid/HarmonyChat' # TODO: Change to actual repository URL
+    path: infra/k8s
+    targetRevision: HEAD
+    plugin:
+      env:
+        - name: ARGOCD_ENV_ENV_NAME
+          value: ${K8S_ENV}
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -11,6 +11,8 @@ environments:
       - ../environments/staging/secrets.yaml
 
 repositories:
+  - name: argo-cd
+    url: https://argoproj.github.io/argo-helm
   - name: bitnami
     url: https://charts.bitnami.com/bitnami
   - name: minio
@@ -30,6 +32,17 @@ repositories:
 
 releases:
   # ---------------------------------------------------------------------------
+  # CONTINUOUS DEPLOYMENT
+  # ---------------------------------------------------------------------------
+  - name: argocd
+    namespace: argocd
+    chart: argo-cd/argo-cd
+    version: "7.7.5"
+    values:
+      - environments/base/values/argocd.yaml.gotmpl
+    wait: true
+
+  # ---------------------------------------------------------------------------
   # CLUSTER INFRASTRUCTURE
   # ---------------------------------------------------------------------------
   - name: karpenter-crd
@@ -44,10 +57,12 @@ releases:
     chart: oci://public.ecr.aws/karpenter/karpenter
     version: "1.10.0"
     installed: {{ ne .Environment.Name "local" }}
+    {{- if ne .Environment.Name "local" }}
     values:
       - settings:
           clusterName: "{{ .Values.infra.compute.cluster_name }}"
           interruptionQueue: "Karpenter-{{ .Values.infra.compute.cluster_name }}"
+    {{- end }}
     needs:
       - kube-system/karpenter-crd
     wait: true
@@ -57,8 +72,10 @@ releases:
     chart: charts/karpenter-provisioner
     installed: {{ ne .Environment.Name "local" }}
     disableValidation: true
+    {{- if ne .Environment.Name "local" }}
     values:
       - clusterName: "{{ .Values.infra.compute.cluster_name }}"
+    {{- end }}
     needs:
       - kube-system/karpenter
     wait: true

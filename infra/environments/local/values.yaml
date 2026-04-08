@@ -98,6 +98,7 @@ infra:
     host: "automq-kafka"
     port: 9092
     cluster_id: "NjM1ZjYxNjYtNjM1Zi00YmU"
+    storage_size: "5Gi"
     producer:
       retry_backoff_ms: 500
     consumer_groups:
