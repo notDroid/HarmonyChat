@@ -47,9 +47,9 @@ T = TypeVar("T")
 # Defaults — tweak here to tune for your infrastructure's replication lag
 # ---------------------------------------------------------------------------
 
-DEFAULT_TIMEOUT: float = 20.0       # seconds before giving up
-DEFAULT_MIN_WAIT: float = 0.15      # first back-off interval
-DEFAULT_MAX_WAIT: float = 2.0       # back-off ceiling
+DEFAULT_TIMEOUT: float = 5.0        # seconds before giving up
+DEFAULT_MIN_WAIT: float = 0.02      # first back-off interval
+DEFAULT_MAX_WAIT: float = 1.0       # back-off ceiling
 DEFAULT_MULTIPLIER: float = 1.6     # exponential growth factor
 
 

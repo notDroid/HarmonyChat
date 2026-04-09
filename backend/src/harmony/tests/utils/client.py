@@ -1,6 +1,7 @@
 import uuid
-from httpx import AsyncClient, Response
-from typing import List, Optional
+import time
+from httpx import AsyncClient, Response, HTTPStatusError
+from typing import List, Optional, Any, Callable, Coroutine
 from harmony.app.schemas import ChatMessage, ChatHistoryResponse
 from .data_gen import generate_user_data, generate_chat_metadata
 
@@ -8,10 +9,29 @@ class AppClient:
     """
     Wraps raw HTTP calls.
     Updated to support JWT auth and /me endpoints.
+    Now supports recording call latencies via an optional SafeMetrics instance.
     """
     def __init__(self, client: AsyncClient, api_prefix: str = "/api/v1"):
         self.client = client
         self.prefix = api_prefix
+        self.metrics: Optional[Any] = None  # SafeMetrics
+
+    async def _record_call(self, name: str, func: Callable[..., Coroutine[Any, Any, Response]], *args, **kwargs) -> Response:
+        """Helper to measure latency and record it in metrics if available."""
+        start = time.monotonic()
+        error = False
+        try:
+            res = await func(*args, **kwargs)
+            res.raise_for_status()
+            return res
+        except Exception:
+            error = True
+            raise
+        finally:
+            if self.metrics:
+                latency = time.monotonic() - start
+                # We use category="call" to distinguish from high-level actions
+                await self.metrics.record(name, latency, error=error, category="call")
 
     async def login(self, email: str, password: str) -> str:
         """
@@ -21,8 +41,7 @@ class AppClient:
             "username": email, 
             "password": password
         }
-        res = await self.client.post(f"{self.prefix}/auth/token", data=form_data)
-        res.raise_for_status()
+        res = await self._record_call("POST /auth/token", self.client.post, f"{self.prefix}/auth/token", data=form_data)
         return {token["token_type"]:token["token"] for token in res.json()}
 
     def _headers(self, token: Optional[str]) -> dict:
@@ -30,62 +49,67 @@ class AppClient:
 
     async def create_user(self, username: str, email: str, password: str) -> uuid.UUID:
         payload = {"username": username, "email": email, "password": password}
-        res = await self.client.post(f"{self.prefix}/users/", json=payload)
-        res.raise_for_status()
+        res = await self._record_call("POST /users", self.client.post, f"{self.prefix}/users/", json=payload)
         return uuid.UUID(res.json()["user_id"])
     
     async def delete_user_me(self, token: str):
-        res = await self.client.delete(
+        await self._record_call(
+            "DELETE /users/me",
+            self.client.delete,
             f"{self.prefix}/users/me",
             headers=self._headers(token)
         )
-        res.raise_for_status()
 
     async def create_chat(self, user_ids: List[uuid.UUID], token: str) -> uuid.UUID:
         payload = {
             "user_id_list": [str(uid) for uid in user_ids],
             **generate_chat_metadata()
         }
-        res = await self.client.post(
+        res = await self._record_call(
+            "POST /chats", 
+            self.client.post,
             f"{self.prefix}/chats/", 
             json=payload,
             headers=self._headers(token)
         )
-        res.raise_for_status()
         return uuid.UUID(res.json()["chat_id"])
 
     async def send_message(self, chat_id: uuid.UUID, content: str, token: str) -> ChatMessage:
         payload = {"content": content}
-        res = await self.client.post(
+        res = await self._record_call(
+            "POST /chats/{id}", 
+            self.client.post,
             f"{self.prefix}/chats/{chat_id}", 
             json=payload,
             headers=self._headers(token)
         )
-        res.raise_for_status()
         return ChatMessage.model_validate(res.json())
 
     async def get_chat_history(self, chat_id: uuid.UUID, token: str) -> ChatHistoryResponse:
-        res = await self.client.get(
+        res = await self._record_call(
+            "GET /chats/{id}", 
+            self.client.get,
             f"{self.prefix}/chats/{chat_id}", 
             headers=self._headers(token)
         )
-        res.raise_for_status()
         return ChatHistoryResponse(**res.json())
 
     async def get_my_chats(self, token: str) -> List[uuid.UUID]:
-        res = await self.client.get(
+        res = await self._record_call(
+            "GET /users/me/chats",
+            self.client.get,
             f"{self.prefix}/users/me/chats",
             headers=self._headers(token)
         )
-        res.raise_for_status()
         return [uuid.UUID(chat["chat_id"]) for chat in res.json()["chats"]]
     
     async def delete_chat(self, chat_id: uuid.UUID, token: str):
-        res = await self.client.delete(
+        await self._record_call(
+            "DELETE /chats/{id}", 
+            self.client.delete,
             f"{self.prefix}/chats/{chat_id}", 
             headers=self._headers(token)
         )
-        res.raise_for_status()
 
 class SimulationActor:
     """

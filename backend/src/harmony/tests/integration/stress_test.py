@@ -11,6 +11,8 @@ import time
 from typing import Optional
 
 import pytest
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from aiolimiter import AsyncLimiter
 
 from harmony.tests.utils import (
@@ -26,40 +28,53 @@ from harmony.tests.utils import (
 # CONFIGURATION
 # =============================================================================
 
-class StressConfig:
-    SIM_CONFIG = SimConfig(MAX_USERS=10)   # per worker — scale up for real runs
-    DURATION_SECONDS: int = 30
-    CONCURRENT_WORKERS: int = 1
-    VERBOSE_ERRORS: bool = True
-    MONITOR_INTERVAL: int = 2
+class StressSettings(BaseSettings):
+    """
+    Stress test configuration.
+    
+    Can be overridden via environment variables prefixed with STRESS_:
+    - STRESS_DURATION_SECONDS=60
+    - STRESS_CONCURRENT_WORKERS=10
+    - STRESS_RATE_LIMIT_PER_SECOND=200
+    """
+    model_config = SettingsConfigDict(
+        env_prefix="STRESS_",
+        case_sensitive=False,
+        env_file=".env",
+        extra="ignore"
+    )
 
-    ACTION_TIMEOUT_SECONDS: float = 10.0
-    MAX_ERROR_RATE: float = 0.05    # 5 % error rate fails the test
-    MAX_AVG_LATENCY: float = 2.0    # seconds
-    MAX_P95_LATENCY: float = 5.0    # seconds
+    # Simulation setup
+    duration_seconds: int = Field(default=30)
+    concurrent_workers: int = Field(default=5)
+    max_users_per_worker: int = Field(default=10)
+    monitor_interval: int = Field(default=2)
+    verbose_errors: bool = Field(default=True)
 
-    # ---------------------------------------------------------------------------
-    # Rate limiting (optional)
-    #
-    # Examples:
-    #   RATE_LIMIT_PER_SECOND = 50       → max 50 actions/s across all workers
+    # Thresholds
+    action_timeout_seconds: float = Field(default=5.0)
+    max_error_rate: float = Field(default=0.05)
+    max_avg_latency: float = Field(default=2.0)
+    max_p95_latency: float = Field(default=5.0)
 
-    #   RATE_LIMIT_PER_SECOND = 10,
-    #   RATE_LIMIT_BURST      = 25       → steady 10/s but bursts up to 25
+    # Rate limiting
+    rate_limit_per_second: Optional[float] = Field(default=100.0)
+    rate_limit_burst: Optional[float] = Field(default=None)
 
-    #   RATE_LIMIT_PER_SECOND = None     → unlimited (original behaviour)
-    # ---------------------------------------------------------------------------
-    RATE_LIMIT_PER_SECOND: Optional[float] = 100
-    RATE_LIMIT_BURST: Optional[float] = None
+    @property
+    def sim_config(self) -> SimConfig:
+        return SimConfig(MAX_USERS=self.max_users_per_worker)
+
+    def build_limiter(self) -> Optional[AsyncLimiter]:
+        """Return a shared AsyncLimiter if rate limiting is configured, else None."""
+        if self.rate_limit_per_second is None:
+            return None
+        burst = self.rate_limit_burst if self.rate_limit_burst is not None else self.rate_limit_per_second
+        return AsyncLimiter(max_rate=burst, time_period=burst / self.rate_limit_per_second)
 
 
-def _build_limiter() -> Optional[AsyncLimiter]:
-    """Return a shared AsyncLimiter if rate limiting is configured, else None."""
-    rate = StressConfig.RATE_LIMIT_PER_SECOND
-    if rate is None:
-        return None
-    burst = StressConfig.RATE_LIMIT_BURST if StressConfig.RATE_LIMIT_BURST is not None else rate
-    return AsyncLimiter(max_rate=burst, time_period=burst / rate)
+# Global settings instance
+settings = StressSettings()
 
 
 # =============================================================================
@@ -69,7 +84,7 @@ def _build_limiter() -> Optional[AsyncLimiter]:
 async def periodic_monitor(metrics: SafeMetrics, stop_event: asyncio.Event) -> None:
     start = time.monotonic()
     while not stop_event.is_set():
-        await asyncio.sleep(StressConfig.MONITOR_INTERVAL)
+        await asyncio.sleep(settings.monitor_interval)
         elapsed = time.monotonic() - start
         summary = await metrics.get_summary_str()
         print(f"[{elapsed:.1f}s] {summary}")
@@ -90,23 +105,15 @@ async def stress_worker(
     Single stress worker.  Each worker owns a StochasticContext (= its own
     SimState) so there is no cross-worker locking on state mutations.
     Only SafeMetrics (and the optional shared AsyncLimiter) is shared.
-
-    Bootstrap: run create_user + create_chat through the registry so the
-    worker always starts with at least one user and one chat.
-
-    Rate limiting:
-    If a shared AsyncLimiter is provided, each worker acquires one token
-    before dispatching an action.  Because all workers share the same limiter
-    instance the cap is enforced globally, not per-worker.
     """
-    ctx = StochasticContext(client, StressConfig.SIM_CONFIG)
+    ctx = StochasticContext(client, settings.sim_config)
 
     # --- Bootstrap via the registry (same code path as the action loop) ---
     for bootstrap_action in ("create_user", "create_chat"):
         try:
             await asyncio.wait_for(
                 ACTION_REGISTRY[bootstrap_action]["func"](ctx),
-                timeout=StressConfig.ACTION_TIMEOUT_SECONDS,
+                timeout=settings.action_timeout_seconds,
             )
         except Exception as exc:
             print(f"[Worker-{worker_id}] Bootstrap '{bootstrap_action}' failed: {exc}")
@@ -125,9 +132,6 @@ async def stress_worker(
         chosen_name = random.choices(action_names, weights=action_weights, k=1)[0]
         action_func = ACTION_REGISTRY[chosen_name]["func"]
 
-        # Throttle: acquire one token from the shared limiter before firing.
-        # This is the only place that changes when rate limiting is enabled;
-        # the rest of the dispatch / metrics / error-handling logic is unchanged.
         if limiter is not None:
             await limiter.acquire()
 
@@ -137,7 +141,7 @@ async def stress_worker(
         try:
             await asyncio.wait_for(
                 action_func(ctx),
-                timeout=StressConfig.ACTION_TIMEOUT_SECONDS,
+                timeout=settings.action_timeout_seconds,
             )
             latency = time.monotonic() - start
             await metrics.record(chosen_name, latency, error=False)
@@ -146,26 +150,24 @@ async def stress_worker(
             latency = time.monotonic() - start
             error_type = "timeout"
             await metrics.record(chosen_name, latency, error=True, error_type=error_type)
-            if StressConfig.VERBOSE_ERRORS:
+            if settings.verbose_errors:
                 print(
                     f"[Worker-{worker_id}] [{chosen_name}] TIMEOUT "
-                    f"after {StressConfig.ACTION_TIMEOUT_SECONDS}s"
+                    f"after {settings.action_timeout_seconds}s"
                 )
 
         except AssertionError as exc:
-            # AssertionErrors from inside actions signal correctness bugs —
-            # log them distinctly so they stand out in the output
             latency = time.monotonic() - start
             error_type = "assertion"
             await metrics.record(chosen_name, latency, error=True, error_type=error_type)
-            if StressConfig.VERBOSE_ERRORS:
+            if settings.verbose_errors:
                 print(f"[Worker-{worker_id}] [{chosen_name}] ASSERTION: {exc}")
 
         except Exception as exc:
             latency = time.monotonic() - start
             error_type = "http_or_other"
             await metrics.record(chosen_name, latency, error=True, error_type=error_type)
-            if StressConfig.VERBOSE_ERRORS:
+            if settings.verbose_errors:
                 print(f"[Worker-{worker_id}] [{chosen_name}] ERROR: {exc}")
 
         await asyncio.sleep(0)   # yield to event loop
@@ -183,31 +185,32 @@ async def test_stress_simulation(app_client: AppClient):
     assert that error rate and latency stay within configured limits.
     Threshold violations become hard pytest failures.
     """
-    limiter = _build_limiter()
+    limiter = settings.build_limiter()
     rate_desc = (
-        f"{StressConfig.RATE_LIMIT_PER_SECOND} actions/s"
+        f"{settings.rate_limit_per_second} actions/s"
         if limiter is not None
         else "unlimited"
     )
 
     print(
-        f"\n--- Stress test: {StressConfig.CONCURRENT_WORKERS} workers "
-        f"x {StressConfig.DURATION_SECONDS}s | rate limit: {rate_desc} ---"
+        f"\n--- Stress test: {settings.concurrent_workers} workers "
+        f"x {settings.duration_seconds}s | rate limit: {rate_desc} ---"
     )
 
     stop_event = asyncio.Event()
     metrics = SafeMetrics()
+    app_client.metrics = metrics
 
     workers = [
         asyncio.create_task(
             stress_worker(i, stop_event, app_client, metrics, limiter=limiter)
         )
-        for i in range(StressConfig.CONCURRENT_WORKERS)
+        for i in range(settings.concurrent_workers)
     ]
     monitor = asyncio.create_task(periodic_monitor(metrics, stop_event))
 
-    print(f"Running for {StressConfig.DURATION_SECONDS}s …")
-    await asyncio.sleep(StressConfig.DURATION_SECONDS)
+    print(f"Running for {settings.duration_seconds}s …")
+    await asyncio.sleep(settings.duration_seconds)
 
     print("Stopping …")
     stop_event.set()
@@ -223,7 +226,7 @@ async def test_stress_simulation(app_client: AppClient):
 
     # Hard assertions — this is what makes the test pass or fail
     await metrics.assert_thresholds(
-        max_error_rate=StressConfig.MAX_ERROR_RATE,
-        max_avg_latency=StressConfig.MAX_AVG_LATENCY,
-        max_p95_latency=StressConfig.MAX_P95_LATENCY,
+        max_error_rate=settings.max_error_rate,
+        max_avg_latency=settings.max_avg_latency,
+        max_p95_latency=settings.max_p95_latency,
     )

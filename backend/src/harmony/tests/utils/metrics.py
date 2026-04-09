@@ -3,6 +3,7 @@ Metrics collection for stress tests.
 """
 import asyncio
 import statistics
+import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -33,6 +34,18 @@ class ActionMetrics:
     def avg_latency(self) -> float:
         return statistics.mean(self.latencies) if self.latencies else 0.0
 
+    @property
+    def min_latency(self) -> float:
+        return min(self.latencies) if self.latencies else 0.0
+
+    @property
+    def max_latency(self) -> float:
+        return max(self.latencies) if self.latencies else 0.0
+
+    @property
+    def stddev_latency(self) -> float:
+        return statistics.stdev(self.latencies) if len(self.latencies) > 1 else 0.0
+
     def percentile(self, pct: float) -> float:
         if not self.latencies:
             return 0.0
@@ -50,25 +63,31 @@ class Metrics:
         self.requests: int = 0
         self.errors: int = 0
         self.latencies: List[float] = []
-        self._per_action: Dict[str, ActionMetrics] = {}
+        self._actions: Dict[str, ActionMetrics] = {}
+        self._calls: Dict[str, ActionMetrics] = {}
+        self.start_time: float = time.monotonic()
 
     # ---- Recording --------------------------------------------------------
 
     def record(
         self,
-        action: str,
+        name: str,
         latency: float,
         *,
         error: bool = False,
         error_type: Optional[str] = None,
+        category: str = "action",
     ) -> None:
-        self.requests += 1
-        if error:
-            self.errors += 1
+        if category == "action":
+            self.requests += 1
+            if error:
+                self.errors += 1
+            else:
+                self.latencies.append(latency)
+            bucket = self._actions.setdefault(name, ActionMetrics())
         else:
-            self.latencies.append(latency)
+            bucket = self._calls.setdefault(name, ActionMetrics())
 
-        bucket = self._per_action.setdefault(action, ActionMetrics())
         bucket.calls += 1
         if error:
             bucket.errors += 1
@@ -76,6 +95,14 @@ class Metrics:
             bucket.latencies.append(latency)
 
     # ---- Aggregates -------------------------------------------------------
+
+    @property
+    def elapsed(self) -> float:
+        return time.monotonic() - self.start_time
+
+    @property
+    def rps(self) -> float:
+        return self.requests / self.elapsed if self.elapsed > 0 else 0.0
 
     @property
     def error_rate(self) -> float:
@@ -93,12 +120,20 @@ class Metrics:
         return sorted_lats[idx]
 
     @property
+    def p50_latency(self) -> float:
+        return self._global_percentile(50)
+
+    @property
     def p95_latency(self) -> float:
         return self._global_percentile(95)
 
     @property
     def p99_latency(self) -> float:
         return self._global_percentile(99)
+
+    @property
+    def max_latency(self) -> float:
+        return max(self.latencies) if self.latencies else 0.0
 
     # ---- Validation -------------------------------------------------------
 
@@ -111,14 +146,6 @@ class Metrics:
     ) -> None:
         """
         Raise AssertionError if any threshold is breached.
-
-        Call this at the end of a stress test so metric violations become hard
-        pytest failures rather than silent log noise.
-
-        Args:
-            max_error_rate:   Fraction of requests that may fail  (default 5 %).
-            max_avg_latency:  Maximum acceptable mean latency in seconds.
-            max_p95_latency:  Maximum acceptable p95 latency in seconds.
         """
         violations: List[str] = []
 
@@ -145,39 +172,52 @@ class Metrics:
 
     def summary_str(self) -> str:
         return (
-            f"Requests: {self.requests} | "
+            f"Requests: {self.requests} ({self.rps:.1f} RPS) | "
             f"Errors: {self.errors} ({self.error_rate:.1%}) | "
-            f"Latency avg/p95/p99: "
-            f"{self.avg_latency * 1000:.2f}ms / "
+            f"Latency p50/p95/p99: "
+            f"{self.p50_latency * 1000:.2f}ms / "
             f"{self.p95_latency * 1000:.2f}ms / "
             f"{self.p99_latency * 1000:.2f}ms"
         )
 
-    def print_final_report(self) -> None:
-        console = Console()
-        console.print("\n[bold cyan]=== FINAL METRICS ===[/bold cyan]")
-        console.print(self.summary_str())
-
-        table = Table(box=box.ROUNDED, show_header=True, header_style="bold magenta")
-        table.add_column("Action", style="cyan", min_width=40)
+    def _render_table(self, title: str, data: Dict[str, ActionMetrics]) -> Table:
+        table = Table(box=box.ROUNDED, show_header=True, header_style="bold magenta", title=f"[bold]{title}[/bold]")
+        table.add_column("Name", style="cyan", min_width=30)
         table.add_column("Calls", justify="right")
         table.add_column("Errors", justify="right")
-        table.add_column("Error Rate", justify="right")
-        table.add_column("Avg Latency", justify="right")
-        table.add_column("p95 Latency", justify="right")
+        table.add_column("Rate", justify="right")
+        table.add_column("Avg", justify="right")
+        table.add_column("p50", justify="right")
+        table.add_column("p95", justify="right")
+        table.add_column("p99", justify="right")
+        table.add_column("Max", justify="right")
 
-        for name, am in sorted(self._per_action.items()):
+        for name, am in sorted(data.items()):
             error_style = "red" if am.error_rate > 0.05 else "green"
             table.add_row(
                 name,
                 str(am.calls),
                 f"[{error_style}]{am.errors}[/{error_style}]",
                 f"[{error_style}]{am.error_rate:.0%}[/{error_style}]",
-                f"{am.avg_latency * 1000:.2f}ms",
-                f"{am.percentile(95) * 1000:.2f}ms",
+                f"{am.avg_latency * 1000:.1f}ms",
+                f"{am.percentile(50) * 1000:.1f}ms",
+                f"{am.percentile(95) * 1000:.1f}ms",
+                f"{am.percentile(99) * 1000:.1f}ms",
+                f"{am.max_latency * 1000:.1f}ms",
             )
+        return table
 
-        console.print(table)
+    def print_final_report(self) -> None:
+        console = Console()
+        console.print("\n[bold cyan]=== FINAL STRESS TEST REPORT ===[/bold cyan]")
+        console.print(self.summary_str())
+        
+        if self._actions:
+            console.print(self._render_table("HIGH-LEVEL ACTIONS (Simulation Path)", self._actions))
+        
+        if self._calls:
+            console.print(self._render_table("RAW API CALLS (Network Latency)", self._calls))
+
 
 # ---------------------------------------------------------------------------
 # Thread-safe wrapper (used by concurrent stress-test workers)
@@ -192,14 +232,15 @@ class SafeMetrics:
 
     async def record(
         self,
-        action: str,
+        name: str,
         latency: float,
         *,
         error: bool = False,
         error_type: Optional[str] = None,
+        category: str = "action",
     ) -> None:
         async with self._lock:
-            self._metrics.record(action, latency, error=error, error_type=error_type)
+            self._metrics.record(name, latency, error=error, error_type=error_type, category=category)
 
     async def get_summary_str(self) -> str:
         async with self._lock:

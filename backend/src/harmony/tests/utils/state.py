@@ -1,13 +1,12 @@
 import uuid
 import random
 from collections import defaultdict
-from dataclasses import dataclass
+from pydantic import BaseModel, Field
 from typing import List, Set, Optional
 from .client import SimulationActor
 
-@dataclass
-class SimConfig:
-    MAX_USERS: int = 50
+class SimConfig(BaseModel):
+    MAX_USERS: int = Field(default=50)
 
 class SimState:
     def __init__(self, config: SimConfig):
@@ -15,6 +14,8 @@ class SimState:
         self._actors: List[SimulationActor] = []
         # Maps user_id -> list of chat_ids they are in
         self._user_memberships = defaultdict(list) 
+        # Set of chat_ids that have had at least one message sent to them
+        self._active_chats: Set[uuid.UUID] = set()
 
     @property
     def current_user_count(self) -> int:
@@ -34,10 +35,16 @@ class SimState:
         for uid in participant_ids:
             self._user_memberships[uid].append(chat_id)
 
+    def mark_chat_active(self, chat_id: uuid.UUID):
+        """Mark a chat as having messages (ready for history verification)."""
+        self._active_chats.add(chat_id)
+
     def deregister_chat(self, chat_id: uuid.UUID):
         for uid, chats in self._user_memberships.items():
             if chat_id in chats:
                 chats.remove(chat_id)
+        if chat_id in self._active_chats:
+            self._active_chats.remove(chat_id)
     
     def remove_chat_from_user(self, user_id: uuid.UUID, chat_id: uuid.UUID):
         """Specific cleanup if a user leaves a chat or it becomes invalid for them."""
@@ -63,6 +70,12 @@ class SimState:
     def get_chat_for_user(self, user_id: uuid.UUID) -> Optional[uuid.UUID]:
         chats = self._user_memberships.get(user_id, [])
         return random.choice(chats) if chats else None
+
+    def get_active_chat_for_user(self, user_id: uuid.UUID) -> Optional[uuid.UUID]:
+        """Return a random chat for user_id that is known to have messages."""
+        my_chats = set(self._user_memberships.get(user_id, []))
+        candidates = list(my_chats & self._active_chats)
+        return random.choice(candidates) if candidates else None
 
     def get_known_chats_for_user(self, user_id: uuid.UUID) -> Set[uuid.UUID]:
         """Return the set of chat IDs the simulation thinks this user has."""

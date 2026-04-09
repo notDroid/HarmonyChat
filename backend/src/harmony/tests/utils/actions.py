@@ -92,7 +92,9 @@ async def action_send_message(ctx: SimulationContext):
     if not chat_id:
         return None
     content = generate_chat_message()
-    return await actor.send_message(chat_id, content)
+    res = await actor.send_message(chat_id, content)
+    ctx.state.mark_chat_active(chat_id)
+    return res
 
 
 @simulation_action("read_history", weight=40)
@@ -172,6 +174,7 @@ async def action_send_and_verify_message(ctx: SimulationContext) -> Optional[str
 
     content = generate_chat_message()
     await actor.send_message(chat_id, content)
+    ctx.state.mark_chat_active(chat_id)
 
     async def _check_history():
         history = await actor.get_history(chat_id)
@@ -229,11 +232,14 @@ async def action_verify_history_not_empty(ctx: SimulationContext) -> None:
 
     Polled because the history endpoint may return an empty list briefly
     after the first message is written to a distributed store.
+
+    Now uses pick_active_chat_for to ensure we only target chats that
+    SHOULD have messages according to our sim state.
     """
     actor = ctx.pick_actor()
     if not actor:
         return None
-    chat_id = ctx.pick_chat_for(actor)
+    chat_id = ctx.pick_active_chat_for(actor)
     if not chat_id:
         return None
 
@@ -335,6 +341,8 @@ async def action_verify_chat_gone(ctx: SimulationContext) -> None:
 
     The delete itself is a single call (idempotent).  The read-back checks are
     polled because delete propagation across replicas may not be instantaneous.
+
+    Combined poll to reduce sequential latency overhead.
     """
     actor = ctx.pick_actor()
     if not actor:
@@ -354,29 +362,19 @@ async def action_verify_chat_gone(ctx: SimulationContext) -> None:
             ) from exc
         return  # already gone — that's acceptable
 
-    # --- Poll until the deletion is visible on the read path ----------------
+    # --- Poll until the deletion is visible on both read paths --------------
 
-    async def _check_history_gone():
+    async def _check_gone():
+        # Check history gone
         try:
             await actor.get_history(chat_id)
-            raise AssertionError(
-                f"[verify_chat_gone] Chat {chat_id} is still readable by "
-                f"'{actor.username}' after deletion"
-            )
+            raise AssertionError(f"Chat {chat_id} still readable via history")
         except HTTPStatusError as exc:
             if exc.response.status_code not in (403, 404):
-                raise AssertionError(
-                    f"[verify_chat_gone] Expected 403/404 after delete of "
-                    f"chat {chat_id}, got {exc.response.status_code}"
-                ) from exc
-            # 403 or 404 → deletion visible ✓
-
-    async def _check_list_gone():
+                raise AssertionError(f"Unexpected status for deleted chat: {exc.response.status_code}")
+        
+        # Check list gone
         chats = await actor.get_my_chats()
-        assert chat_id not in chats, (
-            f"[verify_chat_gone] Chat {chat_id} still appears in "
-            f"'{actor.username}''s chat list after deletion"
-        )
+        assert chat_id not in chats, f"Chat {chat_id} still in chat list"
 
-    await poll_until(_check_history_gone, label="verify_chat_gone/history")
-    await poll_until(_check_list_gone, label="verify_chat_gone/list")
+    await poll_until(_check_gone, label="verify_chat_gone (history+list)")

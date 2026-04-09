@@ -33,6 +33,10 @@ class SimulationContext:
         """Return a chat that *actor* belongs to, or None."""
         raise NotImplementedError
 
+    def pick_active_chat_for(self, actor: SimulationActor) -> Optional[uuid.UUID]:
+        """Return a chat that *actor* is in AND has messages, or None."""
+        raise NotImplementedError
+
     def pick_chat_excluding(self, actor: SimulationActor) -> Optional[uuid.UUID]:
         """Return a chat that *actor* is NOT in, or None."""
         raise NotImplementedError
@@ -60,6 +64,9 @@ class StochasticContext(SimulationContext):
 
     def pick_chat_for(self, actor: SimulationActor) -> Optional[uuid.UUID]:
         return self.state.get_chat_for_user(actor.user_id)
+
+    def pick_active_chat_for(self, actor: SimulationActor) -> Optional[uuid.UUID]:
+        return self.state.get_active_chat_for_user(actor.user_id)
 
     def pick_chat_excluding(self, actor: SimulationActor) -> Optional[uuid.UUID]:
         return self.state.get_chat_user_is_NOT_in(actor.user_id)
@@ -147,6 +154,12 @@ class DeterministicContext(SimulationContext):
         """Return the FIRST known chat for *actor* (stable, not random)."""
         chats = self.state._user_memberships.get(actor.user_id, [])
         return chats[0] if chats else None
+
+    def pick_active_chat_for(self, actor: SimulationActor) -> Optional[uuid.UUID]:
+        """Return the FIRST active chat for *actor*."""
+        my_chats = set(self.state._user_memberships.get(actor.user_id, []))
+        candidates = sorted(list(my_chats & self.state._active_chats), key=str)
+        return candidates[0] if candidates else None
 
     def pick_chat_excluding(self, actor: SimulationActor) -> Optional[uuid.UUID]:
         """Return the FIRST chat in the system that *actor* is NOT in."""
