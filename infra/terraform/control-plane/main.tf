@@ -8,7 +8,7 @@ locals {
 # ECR Repository for Backend Image
 # ------------------------------------------------------------------------------
 resource "aws_ecr_repository" "backend" {
-  name                 = "harmony-backend"
+  name                 = var.ecr_backend_name
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -20,7 +20,7 @@ resource "aws_ecr_repository" "backend" {
 # GitOps State Repository
 # ------------------------------------------------------------------------------
 resource "github_repository" "state_repo" {
-  name        = "harmony-chat-state-${local.account_id}"
+  name        = "${var.state_repo_prefix}-${local.account_id}"
   description = "GitOps state repository for ArgoCD (Managed by Terraform)"
   visibility  = "private"
   auto_init   = true
@@ -71,10 +71,37 @@ resource "aws_iam_role_policy_attachment" "spacelift_admin" {
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
+resource "aws_iam_role" "github_actions_deploy" {
+  name = "GitHubActionsDeployRole-${local.account_id}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.github.arn
+        },
+        Action = "sts:AssumeRoleWithWebIdentity",
+        Condition = {
+          "StringLike" = {
+            "token.actions.githubusercontent.com:sub" = "repo:*/${var.github_repository_name}:*"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "github_actions_ecr" {
+  role       = aws_iam_role.github_actions_deploy.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+}
+
 # ------------------------------------------------------------------------------
 # Spacelift Baseline
 # ------------------------------------------------------------------------------
 resource "spacelift_space" "harmony_ephemeral" {
-  name        = "Harmony Ephemeral PRs"
+  name        = var.spacelift_space_name
   description = "Space containing all ephemeral PR environments"
 }

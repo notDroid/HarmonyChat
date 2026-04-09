@@ -8,3 +8,9 @@ log_level: "INFO"
 infra:
   aws:
     region: "us-east-1"
+  github:
+    repository_name: "HarmonyChat"
+  naming:
+    ecr_backend_name: "harmony-backend"
+    state_repo_prefix: "harmony-chat-state"
+    spacelift_space_name: "Harmony Ephemeral PRs"

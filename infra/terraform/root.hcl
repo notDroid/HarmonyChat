@@ -11,6 +11,7 @@ locals {
   }))
 
   project_name = local.values.project_name
+  project_slug = lower(replace(local.project_name, " ", "-"))
   region       = local.values.infra.aws.region
   account_id   = get_aws_account_id()
 }
@@ -39,10 +40,10 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    bucket         = "harmony-chat-tf-state-${local.account_id}"
+    bucket         = "${local.project_slug}-tf-state-${local.account_id}"
     key            = "${path_relative_to_include()}/terraform.tfstate"
     region         = "${local.region}"
     encrypt        = true
-    dynamodb_table = "harmony-chat-tf-locks-${local.account_id}"
+    dynamodb_table = "${local.project_slug}-tf-locks-${local.account_id}"
   }
 }

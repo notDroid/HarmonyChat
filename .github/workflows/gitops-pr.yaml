@@ -1,0 +1,68 @@
+name: GitOps PR Environments
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'infra/k8s/**'
+
+env:
+  DEFAULT_AWS_REGION: us-east-1
+
+jobs:
+  manage-ephemeral-environment:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for AWS OIDC assumption
+      contents: read  # Required to checkout the code
+      
+    env:
+      # Modernized: Use GitHub Actions native fromJson to parse the mapping directly
+      TARGET_ACCOUNT_ID: ${{ fromJson(vars.ACCOUNT_MAPPING)[github.actor] }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Validate Account Mapping
+        run: |
+          if [ -z "${{ env.TARGET_ACCOUNT_ID }}" ]; then
+            echo "Error: No AWS Account mapping found for user ${{ github.actor }}."
+            echo "Please ensure vars.ACCOUNT_MAPPING is configured correctly."
+            exit 1
+          fi
+          echo "Mapped user ${{ github.actor }} to AWS Account ID ${{ env.TARGET_ACCOUNT_ID }}"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::${{ env.TARGET_ACCOUNT_ID }}:role/GitHubActionsDeployRole-${{ env.TARGET_ACCOUNT_ID }}
+          aws-region: ${{ env.DEFAULT_AWS_REGION }}
+
+      - name: Log AWS Identity
+        run: aws sts get-caller-identity
+
+      # ---------------------------------------------------------
+      # On PR Open / Synchronize
+      # ---------------------------------------------------------
+      - name: GitOps - Template & Push State (Phase 4 Placeholder)
+        if: github.event.action != 'closed'
+        run: |
+          echo "PR is opened/synchronized. Placeholder for:"
+          echo "1. Building & Pushing ECR Image"
+          echo "2. Running helmfile template for PR-${{ github.event.pull_request.number }}"
+          echo "3. Committing manifests to GitOps State Repo"
+          # TODO: Implement in Phase 4
+
+      # ---------------------------------------------------------
+      # On PR Close
+      # ---------------------------------------------------------
+      - name: GitOps - Teardown (Phase 5 Placeholder)
+        if: github.event.action == 'closed'
+        run: |
+          echo "PR is closed. Placeholder for:"
+          echo "1. Deleting state directory envs/pr-${{ github.event.pull_request.number }}"
+          echo "2. Triggering Spacelift to destroy ephemeral AWS resources"
+          # TODO: Implement in Phase 5

@@ -5,7 +5,7 @@ include "root" {
 terraform {
   # The double slash (//) is critical. It tells Terragrunt to copy the entire 
   # 'infra/terraform' folder to the cache, then execute from 'control-plane'
-  source = "../..//control-plane"
+  source = "..//control-plane"
 }
 
 locals {
@@ -20,4 +20,10 @@ inputs = {
   # --- Global ---
   project_name = local.values.project_name
   environment  = local.env
+
+  # --- Naming ---
+  github_repository_name = local.values.infra.github.repository_name
+  ecr_backend_name       = local.values.infra.naming.ecr_backend_name
+  state_repo_prefix      = local.values.infra.naming.state_repo_prefix
+  spacelift_space_name   = local.values.infra.naming.spacelift_space_name
 }

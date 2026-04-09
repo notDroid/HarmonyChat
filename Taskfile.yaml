@@ -39,6 +39,18 @@ tasks:
     cmds:
       - task: setup:backend
       - task: setup:frontend
+
+  setup:github-mapping:
+    desc: "Configure the multi-account OIDC mapping as a GitHub Repository Variable"
+    vars:
+      AWS_ACCOUNT_ID:
+        sh: aws sts get-caller-identity --query Account --output text
+      GITHUB_USER:
+        sh: gh api user -q .login
+    cmds:
+      - |
+        gh variable set ACCOUNT_MAPPING --body "{\"{{.GITHUB_USER}}\": \"{{.AWS_ACCOUNT_ID}}\"}"
+        echo "✅ Successfully mapped GitHub user {{.GITHUB_USER}} to AWS Account {{.AWS_ACCOUNT_ID}} in repository variables."
   
   setup:backend:
     desc: "🚀 SETUP BACKEND: Sync environment with uv"

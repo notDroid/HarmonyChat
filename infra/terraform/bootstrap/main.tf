@@ -14,7 +14,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "Harmony Chat"
+      Project     = var.project_name
       Environment = "Bootstrap"
       ManagedBy   = "Terraform"
     }
@@ -25,9 +25,10 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  account_id  = data.aws_caller_identity.current.account_id
-  bucket_name = "harmony-chat-tf-state-${local.account_id}"
-  table_name  = "harmony-chat-tf-locks-${local.account_id}"
+  account_id   = data.aws_caller_identity.current.account_id
+  project_slug = lower(replace(var.project_name, " ", "-"))
+  bucket_name  = "${local.project_slug}-tf-state-${local.account_id}"
+  table_name   = "${local.project_slug}-tf-locks-${local.account_id}"
 }
 
 # ------------------------------------------------------------------------------
