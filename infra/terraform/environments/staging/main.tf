@@ -27,6 +27,8 @@ variable "chat_history_table_name" { type = string }
 variable "automq_data_bucket_name" { type = string }
 variable "automq_ops_bucket_name" { type = string }
 
+variable "secret_manager_name" { type = string }
+
 variable "raw_secrets" {
   type      = string
   sensitive = true
@@ -40,22 +42,25 @@ module "networking" {
   source       = "../../modules/networking"
   vpc_name     = "harmony-${var.environment}-vpc"
   environment  = var.environment
+  project_name = var.project_name
   vpc_cidr     = var.vpc_cidr
   azs          = slice(data.aws_availability_zones.available.names, 0, var.azs_count)
   cluster_name = var.cluster_name
 }
 
 module "secrets" {
-  source       = "../../modules/secrets"
-  environment  = var.environment
-  cluster_name = var.cluster_name
-  raw_secrets  = var.raw_secrets
-  project_name = var.project_name
+  source              = "../../modules/secrets"
+  environment         = var.environment
+  cluster_name        = var.cluster_name
+  secret_manager_name = var.secret_manager_name
+  raw_secrets         = var.raw_secrets
+  project_name        = var.project_name
 }
 
 module "stateful" {
   source                     = "../../modules/stateful"
   environment                = var.environment
+  project_name               = var.project_name
   vpc_id                     = module.networking.vpc_id
   database_subnet_group_name = module.networking.database_subnet_group_name
   database_subnet_ids        = module.networking.database_subnet_ids
@@ -81,6 +86,7 @@ module "storage" {
 module "compute" {
   source             = "../../modules/compute"
   environment        = var.environment
+  project_name       = var.project_name
   vpc_id             = module.networking.vpc_id
   private_subnet_ids = module.networking.private_subnet_ids
   cluster_name       = var.cluster_name

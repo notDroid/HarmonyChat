@@ -1,14 +1,16 @@
 environments:
   local:
     values:
+      - ../environments/base/values.yaml
       - ../environments/local/values.yaml
       - ../environments/local/secrets.yaml
   staging:
     values:
+      - ../environments/base/values.yaml
       - ../environments/staging/expanded-values.yaml.gotmpl
       - environments/staging/values-override.yaml.gotmpl
-    secrets:
-      - ../environments/staging/secrets.yaml
+    # secrets:
+    #   - ../environments/staging/secrets.yaml
 
 repositories:
   - name: bitnami
@@ -71,8 +73,15 @@ releases:
     disableValidation: true
     values:
       - clusterName: "{{ .Values.infra.compute.cluster_name }}"
+      - limits: {{ toYaml .Values.infra.karpenter.limits | nindent 10 }}
     needs:
       - kube-system/karpenter
+    wait: true
+
+  - name: gp3-storage-class
+    namespace: kube-system
+    chart: charts/storage-class
+    installed: {{ ne .Environment.Name "local" }}
     wait: true
   {{ end }}
 
@@ -96,12 +105,6 @@ releases:
       - environments/{{ .Environment.Name }}/values/kube-prometheus-stack-override.yaml.gotmpl
     wait: true
 
-  - name: gp3-storage-class
-    namespace: kube-system
-    chart: charts/storage-class
-    installed: {{ ne .Environment.Name "local" }}
-    wait: true
-
   # ---------------------------------------------------------------------------
   # SECRETS
   # ---------------------------------------------------------------------------
@@ -109,7 +112,11 @@ releases:
     namespace: harmony
     chart: charts/secrets
     values:
+      {{- if eq .Environment.Name "local" }}
       - secrets: {{ toYaml .Values.secrets | nindent 10 }}
+      {{- end }}
+      - infra: {{ toYaml .Values.infra | nindent 10 }}
+      - environment: {{ .Environment.Name }}
     wait: true
 
   # ---------------------------------------------------------------------------

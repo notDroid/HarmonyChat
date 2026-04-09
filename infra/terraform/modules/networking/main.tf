@@ -2,6 +2,12 @@ locals {
   public_subnets   = [for k, v in var.azs : cidrsubnet(var.vpc_cidr, 8, k + 1)]
   private_subnets  = [for k, v in var.azs : cidrsubnet(var.vpc_cidr, 8, k + 11)]
   database_subnets = [for k, v in var.azs : cidrsubnet(var.vpc_cidr, 8, k + 21)]
+
+  common_tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = var.project_name
+  }
 }
 
 module "vpc" {
@@ -28,9 +34,5 @@ module "vpc" {
     "karpenter.sh/discovery" = var.cluster_name
   }
 
-  tags = {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Project     = "Harmony Chat"
-  }
+  tags = local.common_tags
 }

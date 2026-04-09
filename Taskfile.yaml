@@ -202,6 +202,21 @@ tasks:
     cmds:
       - "{{.HELMFILE_CMD}} apply"
 
+  k8s:template:
+    desc: "📄 K8S: Template Helm releases (helmfile template)"
+    dir: infra/k8s
+    env:
+      AWS_ACCOUNT_ID:
+        # Get AWS account if in remote env, else return 'local-dev' for local kind cluster
+        sh: >
+          if [ "{{.K8S_ENV}}" = "local" ]; then
+            echo "local-dev";
+          else
+            aws sts get-caller-identity --query Account --output text;
+          fi
+    cmds:
+      - "{{.HELMFILE_CMD}} template"
+
   k8s:diff:
     desc: "🔍 K8S: Diff pending Helm changes"
     dir: infra/k8s

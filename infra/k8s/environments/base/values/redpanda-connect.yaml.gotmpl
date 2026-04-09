@@ -1,3 +1,5 @@
+replicaCount: {{ .Values.infra.redpanda_connect.replicaCount | default 1 }}
+
 config:
   input:
     label: "kafka_consumer"
@@ -38,9 +40,11 @@ env:
         key: secret_access_key
         
 resources:
-  requests:
-    cpu: 100m
-    memory: 128Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
+  {{- toYaml .Values.infra.redpanda_connect.resources | nindent 2 }}
+
+hpa:
+  enabled: {{ .Values.infra.redpanda_connect.autoscaling.enabled }}
+  minReplicas: {{ .Values.infra.redpanda_connect.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.infra.redpanda_connect.autoscaling.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.infra.redpanda_connect.autoscaling.targetCPUUtilizationPercentage }}
+  targetMemoryUtilizationPercentage: {{ .Values.infra.redpanda_connect.autoscaling.targetMemoryUtilizationPercentage }}

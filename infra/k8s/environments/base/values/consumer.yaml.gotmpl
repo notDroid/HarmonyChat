@@ -1,3 +1,5 @@
+replicaCount: {{ .Values.workloads.cdc_consumer.replicaCount | default 1 }}
+
 image:
   repository: {{ .Values.workloads.image.repository | quote }}
   tag: {{ .Values.workloads.image.tag | quote }}
@@ -11,7 +13,7 @@ service:
 
 env:
   CONSUMER_NAME: {{ .Values.workloads.cdc_consumer.name | quote }}
-  APP_ENV: {{ .Values.environment | quote }}
+  APP_ENV: {{ .Values.app.mode | quote }}
 
   FEATURES__CACHE_REDIS: {{ .Values.app.feature_toggles.use_redis_cache | quote }}
 
@@ -28,10 +30,10 @@ env:
 
   KAFKA_CONSUMER__BOOTSTRAP_SERVERS: "{{ .Values.infra.kafka.host }}:{{ .Values.infra.kafka.port }}"
   KAFKA_CONSUMER__GROUP_ID: {{ .Values.infra.kafka.consumer_groups.cdc_worker | quote }}
-  KAFKA_CONSUMER__MAX_POLL_RECORDS: {{ .Values.workloads.cdc_consumer.max_poll_records | quote }}
-  KAFKA_CONSUMER__FETCH_MAX_BYTES: {{ .Values.workloads.cdc_consumer.fetch_max_bytes | quote }}
-  KAFKA_CONSUMER__SESSION_TIMEOUT_MS: {{ .Values.workloads.cdc_consumer.session_timeout_ms | quote }}
-  KAFKA_CONSUMER__POLL_TIMEOUT_MS: {{ .Values.workloads.cdc_consumer.poll_timeout_ms | quote }}
+  KAFKA_CONSUMER__MAX_POLL_RECORDS: {{ .Values.app.cdc_consumer.max_poll_records | quote }}
+  KAFKA_CONSUMER__FETCH_MAX_BYTES: {{ .Values.app.cdc_consumer.fetch_max_bytes | quote }}
+  KAFKA_CONSUMER__SESSION_TIMEOUT_MS: {{ .Values.app.cdc_consumer.session_timeout_ms | quote }}
+  KAFKA_CONSUMER__POLL_TIMEOUT_MS: {{ .Values.app.cdc_consumer.poll_timeout_ms | quote }}
 
   TOPICS__USER: {{ .Values.infra.kafka.topics.user_events | quote }}
   TOPICS__CHAT: {{ .Values.infra.kafka.topics.chat_events | quote }}
@@ -48,3 +50,9 @@ secretEnv:
   - name: POSTGRES_PASSWORD
     secretName: postgres-auth-secret
     secretKey: postgres_password
+
+resources:
+  {{- toYaml .Values.workloads.cdc_consumer.resources | nindent 2 }}
+
+autoscaling:
+  {{- toYaml .Values.workloads.cdc_consumer.autoscaling | nindent 2 }}

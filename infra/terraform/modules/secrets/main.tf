@@ -1,11 +1,16 @@
-resource "aws_secretsmanager_secret" "harmony_secrets" {
-  name        = "harmony/${var.environment}/secrets"
-  description = "Application secrets for ${var.environment} environment"
-  
-  tags = {
+locals {
+  common_tags = {
     Environment = var.environment
+    ManagedBy   = "Terraform"
     Project     = var.project_name
   }
+}
+
+resource "aws_secretsmanager_secret" "harmony_secrets" {
+  name        = var.secret_manager_name
+  description = "Application secrets for ${var.environment} environment"
+  
+  tags = local.common_tags
 }
 
 resource "aws_secretsmanager_secret_version" "harmony_secrets" {
@@ -30,6 +35,8 @@ resource "aws_iam_policy" "eso_policy" {
   name        = "harmony-${var.environment}-eso-policy"
   description = "Policy for External Secrets Operator to access Harmony secrets"
   policy      = data.aws_iam_policy_document.eso_access.json
+
+  tags = local.common_tags
 }
 
 data "aws_iam_policy_document" "eso_assume_role" {
@@ -50,10 +57,7 @@ resource "aws_iam_role" "eso_role" {
   name               = "harmony-${var.environment}-eso-role"
   assume_role_policy = data.aws_iam_policy_document.eso_assume_role.json
   
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
-  }
+  tags = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "eso_attach" {

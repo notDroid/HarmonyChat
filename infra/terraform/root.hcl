@@ -1,5 +1,18 @@
 locals {
-  account_id = get_aws_account_id()
+  # Get the environment name from the child directory (e.g. "staging")
+  # path_relative_to_include() returns "environments/staging"
+  env = basename(path_relative_to_include())
+
+  # Load environment-specific values from the shared config directory
+  values_path = "${get_repo_root()}/infra/environments/${local.env}/values.yaml"
+
+  values = yamldecode(templatefile(local.values_path, {
+    AWS_ACCOUNT_ID = get_aws_account_id()
+  }))
+
+  project_name = local.values.project_name
+  region       = local.values.infra.aws.region
+  account_id   = get_aws_account_id()
 }
 
 generate "provider" {
@@ -7,11 +20,12 @@ generate "provider" {
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
 provider "aws" {
-  region = "us-east-1"
+  region = "${local.region}"
   default_tags {
     tags = {
-      Project   = "Harmony Chat"
-      ManagedBy = "Terragrunt"
+      Project     = "${local.project_name}"
+      Environment = "${local.env}"
+      ManagedBy   = "Terragrunt"
     }
   }
 }
@@ -27,7 +41,7 @@ remote_state {
   config = {
     bucket         = "harmony-chat-tf-state-${local.account_id}"
     key            = "${path_relative_to_include()}/terraform.tfstate"
-    region         = "us-east-1"
+    region         = "${local.region}"
     encrypt        = true
     dynamodb_table = "harmony-chat-tf-locks-${local.account_id}"
   }

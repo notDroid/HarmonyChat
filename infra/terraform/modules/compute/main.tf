@@ -1,3 +1,11 @@
+locals {
+  common_tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = var.project_name
+  }
+}
+
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 21.0"
@@ -50,15 +58,11 @@ module "eks" {
       instance_types = ["t3.medium"]
       capacity_type  = "ON_DEMAND"
 
-      tags = { ExtraTag = "KarpenterController" }
+      tags = merge(local.common_tags, { ExtraTag = "KarpenterController" })
     }
   }
 
-  tags = {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Project     = "Harmony Chat"
-  }
+  tags = local.common_tags
 }
 
 module "karpenter" {
@@ -76,11 +80,7 @@ module "karpenter" {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
 
-  tags = {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Project     = "Harmony Chat"
-  }
+  tags = local.common_tags
 }
 
 # ==============================================================================
@@ -101,6 +101,10 @@ data "aws_iam_policy_document" "ebs_csi_assume" {
 resource "aws_iam_role" "ebs_csi" {
   name               = "harmony-${var.environment}-ebs-csi-role"
   assume_role_policy = data.aws_iam_policy_document.ebs_csi_assume.json
+
+  tags = merge(local.common_tags, {
+    Name = "harmony-${var.environment}-ebs-csi-role"
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "ebs_csi" {

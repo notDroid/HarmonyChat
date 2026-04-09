@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: {{ .Values.infra.conduit.replicaCount | default 1 }}
 
 image:
   repository: conduit.docker.scarf.sh/conduitio/conduit
@@ -14,12 +14,10 @@ pipeline:
   mountDir: /app/pipelines
 
 resources:
-  requests:
-    cpu: 100m
-    memory: 128Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
+  {{- toYaml .Values.infra.conduit.resources | nindent 2 }}
+
+autoscaling:
+  {{- toYaml .Values.infra.conduit.autoscaling | nindent 2 }}
 
 pipelineConfig:
   version: 2.2

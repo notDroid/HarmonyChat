@@ -1,3 +1,16 @@
+locals {
+  automq_buckets = {
+    data = var.automq_data_bucket_name
+    ops  = var.automq_ops_bucket_name
+  }
+
+  common_tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = var.project_name
+  }
+}
+
 # ------------------------------------------------------------------------------
 # DynamoDB Table
 # ------------------------------------------------------------------------------
@@ -21,34 +34,19 @@ resource "aws_dynamodb_table" "chat_history" {
     enabled = true
   }
 
-  tags = {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Project     = var.project_name
-  }
+  tags = local.common_tags
 }
 
 # ------------------------------------------------------------------------------
 # S3 Buckets
 # ------------------------------------------------------------------------------
-locals {
-  automq_buckets = {
-    data = var.automq_data_bucket_name
-    ops  = var.automq_ops_bucket_name
-  }
-}
-
 resource "aws_s3_bucket" "automq" {
   for_each = local.automq_buckets
   bucket   = each.value
 
   force_destroy = true
 
-  tags = {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Project     = var.project_name
-  }
+  tags = local.common_tags
 }
 
 # Block all public access for both buckets

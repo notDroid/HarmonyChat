@@ -30,46 +30,44 @@ listeners:
     protocol: PLAINTEXT
 
 controller:
-  replicaCount: 1
+  replicaCount: {{ .Values.infra.kafka.controller_replica_count | default 1 }}
   resources:
-    requests:
-      cpu: "500m"
-      memory: "2Gi"
-    limits:
-      cpu: "1"
-      memory: "4Gi"
-  heapOpts: "-Xmx1g -Xms1g -XX:MaxDirectMemorySize=1g -XX:MetaspaceSize=96m"
+    {{- toYaml .Values.infra.kafka.controller_resources | nindent 4 }}
+  heapOpts: {{ .Values.infra.kafka.controller_memory.heap_opts | quote }}
   extraConfig: |
     elasticstream.enable=true
     s3.ops.buckets=1@s3://{{ .Values.infra.s3.buckets.automq_ops }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
     s3.data.buckets=0@s3://{{ .Values.infra.s3.buckets.automq_data }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
     s3.wal.path=0@s3://{{ .Values.infra.s3.buckets.automq_data }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
-    s3.wal.cache.size=536870912
-    s3.block.cache.size=268435456
+    s3.wal.cache.size={{ .Values.infra.kafka.controller_memory.s3_wal_cache_size }}
+    s3.block.cache.size={{ .Values.infra.kafka.controller_memory.s3_block_cache_size }}
     s3.stream.allocator.policy=POOLED_DIRECT
   persistence:
     storageClass: {{ .Values.infra.k8s.storage_class | default "standard" | quote }}
-    size: {{ .Values.infra.kafka.storage_size | default "5Gi" | quote }}
+    size: {{ .Values.infra.kafka.storage_size | quote }}
 
 broker:
   minId: 1000
-  replicaCount: 1
+  replicaCount: {{ .Values.infra.kafka.broker_replica_count | default 1 }}
+  {{- if hasKey .Values.infra.kafka "autoscaling" }}
+  hpa:
+    enabled: {{ .Values.infra.kafka.autoscaling.enabled | default false }}
+    minReplicas: {{ .Values.infra.kafka.autoscaling.minReplicas | default 1 }}
+    maxReplicas: {{ .Values.infra.kafka.autoscaling.maxReplicas | default 3 }}
+    targetCPU: {{ .Values.infra.kafka.autoscaling.targetCPUUtilizationPercentage | default 80 }}
+    targetMemory: {{ .Values.infra.kafka.autoscaling.targetMemoryUtilizationPercentage | default 80 }}
+  {{- end }}
   resources:
-    requests:
-      cpu: "500m"
-      memory: "2Gi"
-    limits:
-      cpu: "1"
-      memory: "4Gi"
-  heapOpts: "-Xmx1g -Xms1g -XX:MaxDirectMemorySize=1g -XX:MetaspaceSize=96m"
+    {{- toYaml .Values.infra.kafka.broker_resources | nindent 4 }}
+  heapOpts: {{ .Values.infra.kafka.broker_memory.heap_opts | quote }}
   extraConfig: |
     elasticstream.enable=true
     s3.ops.buckets=1@s3://{{ .Values.infra.s3.buckets.automq_ops }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
     s3.data.buckets=0@s3://{{ .Values.infra.s3.buckets.automq_data }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
     s3.wal.path=0@s3://{{ .Values.infra.s3.buckets.automq_data }}?region={{ .Values.infra.s3.region }}&pathStyle={{ .Values.infra.s3.path_style }}&endpoint={{ .Values.infra.s3.endpoint }}
-    s3.wal.cache.size=536870912
-    s3.block.cache.size=268435456
+    s3.wal.cache.size={{ .Values.infra.kafka.broker_memory.s3_wal_cache_size }}
+    s3.block.cache.size={{ .Values.infra.kafka.broker_memory.s3_block_cache_size }}
     s3.stream.allocator.policy=POOLED_DIRECT
   persistence:
     storageClass: {{ .Values.infra.k8s.storage_class | default "standard" | quote }}
-    size: {{ .Values.infra.kafka.storage_size | default "5Gi" | quote }}
+    size: {{ .Values.infra.kafka.storage_size | quote }}

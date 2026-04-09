@@ -1,3 +1,11 @@
+locals {
+  common_tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = var.project_name
+  }
+}
+
 # ==============================================================================
 # Security Groups
 # ==============================================================================
@@ -16,11 +24,9 @@ resource "aws_security_group" "rds" {
     cidr_blocks = var.private_subnet_cidrs
   }
 
-  tags = {
-    Name        = "harmony-${var.environment}-rds-sg"
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-  }
+  tags = merge(local.common_tags, {
+    Name = "harmony-${var.environment}-rds-sg"
+  })
 }
 
 # Redis Security Group
@@ -37,11 +43,9 @@ resource "aws_security_group" "redis" {
     cidr_blocks = var.private_subnet_cidrs
   }
 
-  tags = {
-    Name        = "harmony-${var.environment}-redis-sg"
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-  }
+  tags = merge(local.common_tags, {
+    Name = "harmony-${var.environment}-redis-sg"
+  })
 }
 
 # ==============================================================================
@@ -72,10 +76,7 @@ resource "aws_db_instance" "postgres" {
   deletion_protection     = false
   backup_retention_period = 0
 
-  tags = {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-  }
+  tags = local.common_tags
 }
 
 # ==============================================================================
@@ -87,6 +88,8 @@ resource "aws_elasticache_subnet_group" "redis" {
   subnet_ids = var.database_subnet_ids
 
   description = "Subnet group for Harmony Redis cache"
+
+  tags = local.common_tags
 }
 
 resource "aws_elasticache_cluster" "redis" {
@@ -102,8 +105,5 @@ resource "aws_elasticache_cluster" "redis" {
   subnet_group_name  = aws_elasticache_subnet_group.redis.name
   security_group_ids = [aws_security_group.redis.id]
 
-  tags = {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-  }
+  tags = local.common_tags
 }

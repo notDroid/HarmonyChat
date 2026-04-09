@@ -1,0 +1,132 @@
+# Global Defaults for Workload Resources and Autoscaling
+
+workloads:
+  api:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+  
+  cdc_consumer:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+
+infra:
+  conduit:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+
+  redpanda_connect:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+
+  centrifugo:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+  
+  kafka:
+    # AutoMQ primarily uses EBS storage for a fast Write-Ahead Log (WAL)
+    # before continuously offloading data to S3. Since cold data lives in S3, local
+    # storage doesn't need to be huge, but needs enough buffer for burst writes.
+    # 2Gi is a safe base default for development and moderate loads.
+    storage_size: "2Gi"
+
+    controller_replica_count: 1
+    broker_replica_count: 1
+
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+
+    controller_resources:
+      requests:
+        cpu: 500m
+        memory: 3Gi
+      limits:
+        cpu: "1"
+        memory: 4Gi
+    controller_memory:
+      # heap_opts defines JVM memory. 
+      # MaxDirectMemorySize must accommodate both S3 WAL and Block caches below.
+      heap_opts: "-Xmx1g -Xms1g -XX:MaxDirectMemorySize=1536m -XX:MetaspaceSize=96m"
+      # s3_wal_cache_size: Direct memory (in bytes) to buffer writes before S3 upload (512MB)
+      s3_wal_cache_size: "536870912"
+      # s3_block_cache_size: Direct memory (in bytes) to cache reads from S3 (512MB)
+      s3_block_cache_size: "536870912"
+      
+    broker_resources:
+      requests:
+        cpu: 500m
+        memory: 3Gi
+      limits:
+        cpu: "1"
+        memory: 4Gi
+    broker_memory:
+      # heap_opts defines JVM memory. 
+      # MaxDirectMemorySize must accommodate both S3 WAL and Block caches below.
+      heap_opts: "-Xmx1g -Xms1g -XX:MaxDirectMemorySize=1536m -XX:MetaspaceSize=96m"
+      # s3_wal_cache_size: Direct memory (in bytes) to buffer writes before S3 upload (512MB)
+      s3_wal_cache_size: "536870912"
+      # s3_block_cache_size: Direct memory (in bytes) to cache reads from S3 (512MB)
+      s3_block_cache_size: "536870912"

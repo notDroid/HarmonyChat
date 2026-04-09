@@ -1,5 +1,7 @@
 fullnameOverride: {{ .Values.infra.centrifugo.host }}
 
+replicaCount: {{ .Values.infra.centrifugo.replicaCount | default 1 }}
+
 config:
   consumers:
     - name: "chat_kafka_consumer"
@@ -57,3 +59,13 @@ service:
   type: NodePort
   port: {{ .Values.infra.centrifugo.port }}
   nodePort: 30810
+
+resources:
+  {{- toYaml .Values.infra.centrifugo.resources | nindent 2 }}
+
+hpa:
+  enabled: {{ .Values.infra.centrifugo.autoscaling.enabled }}
+  minReplicas: {{ .Values.infra.centrifugo.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.infra.centrifugo.autoscaling.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.infra.centrifugo.autoscaling.targetCPUUtilizationPercentage }}
+  targetMemoryUtilizationPercentage: {{ .Values.infra.centrifugo.autoscaling.targetMemoryUtilizationPercentage }}

@@ -41,9 +41,10 @@ inputs = {
 
   # --- Storage ---
   chat_history_table_name = local.values.infra.dynamodb.chat_history_table_name
-  
+
   automq_data_bucket_name = local.values.infra.s3.buckets.automq_data
   automq_ops_bucket_name  = local.values.infra.s3.buckets.automq_ops
 
-  raw_secrets = jsonencode(local.secrets.secrets)
-}
+  secret_manager_name = local.values.infra.secrets.manager_name
+  raw_secrets         = jsonencode(local.secrets.secrets)
+  }

@@ -1,5 +1,7 @@
 fullnameOverride: {{ .Values.workloads.api.host }}
 
+replicaCount: {{ .Values.workloads.api.replicaCount | default 1 }}
+
 image:
   repository: {{ .Values.workloads.image.repository | quote }}
   tag: {{ .Values.workloads.image.tag | quote }}
@@ -16,7 +18,7 @@ service:
 
 env:
   PROJECT_NAME: {{ .Values.project_name | quote }}
-  APP_ENV: {{ .Values.environment | quote }}
+  APP_ENV: {{ .Values.app.mode | quote }}
   DEBUG: {{ .Values.workloads.api.debug | quote }}
 
   FEATURES__CACHE_REDIS: {{ .Values.app.feature_toggles.use_redis_cache | quote }}
@@ -73,13 +75,7 @@ secretEnv:
     secretKey: postgres_password
 
 resources:
-{{ toYaml .Values.workloads.api.resources | indent 2 }}
+  {{- toYaml .Values.workloads.api.resources | nindent 2 }}
 
 autoscaling:
-  enabled: {{ .Values.workloads.api.autoscaling.enabled | default false }}
-  minReplicas: {{ .Values.workloads.api.autoscaling.minReplicas | default 1 }}
-  maxReplicas: {{ .Values.workloads.api.autoscaling.maxReplicas | default 10 }}
-  targetCPUUtilizationPercentage: {{ .Values.workloads.api.autoscaling.targetCPUUtilizationPercentage | default 80 }}
-  {{- if hasKey .Values.workloads.api.autoscaling "targetMemoryUtilizationPercentage" }}
-  targetMemoryUtilizationPercentage: {{ .Values.workloads.api.autoscaling.targetMemoryUtilizationPercentage }}
-  {{- end }}
+  {{- toYaml .Values.workloads.api.autoscaling | nindent 2 }}

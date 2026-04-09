@@ -11,6 +11,11 @@ task k8s:apply K8S_ENV=<env>   # Deploy releases
 task k8s:destroy K8S_ENV=<env> # Teardown releases
 ```
 
+```bash
+task k8s:template K8S_ENV=<env> # Output rendered manifests to stdout (Always run this after making changes to values files or templates to verify your changes before applying)
+```
+
+
 ## Hard Limits
 - **NEVER** hardcode credentials in values files. You must use the `charts/secrets` deployment pattern for injecting SOPS data as Kubernetes Secrets.
 
