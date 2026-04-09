@@ -30,6 +30,7 @@ task deploy K8S_ENV=staging
 ## Hard Limits
 - **NEVER** commit unencrypted secrets. Always encrypt with SOPS (`task secrets:encrypt K8S_ENV=<env>`).
 - **NEVER** run `terraform` directly in `infra/terraform/environments/*`. Always use `terragrunt` or the `task tf:*` wrappers.
+- **PLANNING RULE:** All infrastructure changes must include corresponding Taskfile updates, Markdown documentation updates, and local testing before committing.
 
 ## Conventions
 - **Config Rendering:** Docker-compose relies on `infra/scripts/render_config.py` to generate `.env` and JSON configs from `docker/config.yaml` using Jinja2 (`.j2`) templates. Do not edit generated configs directly.

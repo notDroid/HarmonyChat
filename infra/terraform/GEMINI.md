@@ -34,4 +34,5 @@ task tf:output K8S_ENV=<env>
 
 ## Structure Pointers
 - `root.hcl`: The parent Terragrunt configuration. Generates `provider.tf` and `backend.tf` automatically.
-- `bootstrap/`: Standalone Terraform root module that provisions the S3 state bucket, DynamoDB lock table, and base ECR repository. Run this before anything else.
+- `bootstrap/`: Standalone Terraform root module that strictly provisions the S3 state bucket and DynamoDB lock table to solve the state chicken-and-egg problem. Run this manually once per account.
+- `control-plane/`: Terragrunt module that provisions long-lived, shared resources (ECR, GitOps state repository, Spacelift configurations, and IAM roles). Relies on remote state created by bootstrap. Run this once per account.

@@ -84,18 +84,6 @@ resource "aws_dynamodb_table" "terraform_state_locks" {
 }
 
 # ------------------------------------------------------------------------------
-# ECR Repository for Backend Image
-# ------------------------------------------------------------------------------
-resource "aws_ecr_repository" "backend" {
-  name                 = "harmony-backend"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-}
-
-# ------------------------------------------------------------------------------
 # Outputs
 # ------------------------------------------------------------------------------
 output "state_bucket_name" {
@@ -106,9 +94,4 @@ output "state_bucket_name" {
 output "dynamodb_table_name" {
   value       = aws_dynamodb_table.terraform_state_locks.name
   description = "The name of the DynamoDB table managing state locks"
-}
-
-output "ecr_repository_url" {
-  value       = aws_ecr_repository.backend.repository_url
-  description = "The URL of the ECR repository"
 }

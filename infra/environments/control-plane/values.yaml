@@ -1,0 +1,10 @@
+# ==========================================
+# Global Metadata
+# ==========================================
+project_name: "Harmony Chat"
+environment: "control-plane"
+log_level: "INFO"
+
+infra:
+  aws:
+    region: "us-east-1"

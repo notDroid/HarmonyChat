@@ -329,6 +329,18 @@ tasks:
       - terraform init
       - terraform apply -auto-approve
 
+  tf:control-plane:plan:
+    desc: "🌍 TF: Plan Control Plane infrastructure (ECR, State Repo, IAM)"
+    dir: infra/terraform/control-plane
+    cmds:
+      - terragrunt plan
+
+  tf:control-plane:apply:
+    desc: "🌍 TF: Apply Control Plane infrastructure (ECR, State Repo, IAM)"
+    dir: infra/terraform/control-plane
+    cmds:
+      - terragrunt apply -auto-approve
+
   tf:init:
     desc: "🌍 TF: Initialize Terragrunt for the target K8S_ENV"
     dir: infra/terraform/environments/{{.K8S_ENV}}
