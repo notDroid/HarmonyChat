@@ -44,26 +44,26 @@ resource "aws_iam_openid_connect_provider" "spacelift" {
   thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da2b0ab7280"]
 }
 
-resource "aws_iam_role" "spacelift_provisioner" {
-  name = "SpaceliftProvisionerRole-${local.account_id}"
+data "aws_iam_policy_document" "spacelift_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Principal = {
-          Federated = aws_iam_openid_connect_provider.spacelift.arn
-        },
-        Action = "sts:AssumeRoleWithWebIdentity",
-        Condition = {
-          "StringLike" = {
-            "spacelift.io:sub" = "space:*"
-          }
-        }
-      }
-    ]
-  })
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.spacelift.arn]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "spacelift.io:sub"
+      values   = ["space:*"]
+    }
+  }
+}
+
+resource "aws_iam_role" "spacelift_provisioner" {
+  name               = "SpaceliftProvisionerRole-${local.account_id}"
+  assume_role_policy = data.aws_iam_policy_document.spacelift_assume_role.json
 }
 
 resource "aws_iam_role_policy_attachment" "spacelift_admin" {
@@ -71,26 +71,26 @@ resource "aws_iam_role_policy_attachment" "spacelift_admin" {
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
-resource "aws_iam_role" "github_actions_deploy" {
-  name = "GitHubActionsDeployRole-${local.account_id}"
+data "aws_iam_policy_document" "github_actions_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Principal = {
-          Federated = aws_iam_openid_connect_provider.github.arn
-        },
-        Action = "sts:AssumeRoleWithWebIdentity",
-        Condition = {
-          "StringLike" = {
-            "token.actions.githubusercontent.com:sub" = "repo:*/${var.github_repository_name}:*"
-          }
-        }
-      }
-    ]
-  })
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.github.arn]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:*/${var.github_repository_name}:*"]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_actions_deploy" {
+  name               = "GitHubActionsDeployRole-${local.account_id}"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
 }
 
 resource "aws_iam_role_policy_attachment" "github_actions_ecr" {

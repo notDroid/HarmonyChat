@@ -19,7 +19,6 @@ jobs:
       contents: read  # Required to checkout the code
       
     env:
-      # Modernized: Use GitHub Actions native fromJson to parse the mapping directly
       TARGET_ACCOUNT_ID: ${{ fromJson(vars.ACCOUNT_MAPPING)[github.actor] }}
 
     steps:
@@ -44,25 +43,38 @@ jobs:
       - name: Log AWS Identity
         run: aws sts get-caller-identity
 
+      - name: Install task
+        uses: arduino/setup-task@v2
+
+      - name: Install spacectl
+        uses: spacelift-io/setup-spacectl@main
+        with:
+          version: '1.8.0'
+
+      - name: Install SOPS
+        uses: mdgreenwald/mozilla-sops-action@v1.6.0
+
+      - name: Set Safe Actor Name
+        run: |
+          SAFE_USER=$(echo "${{ github.actor }}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+          echo "SAFE_ACTOR=$SAFE_USER" >> $GITHUB_ENV
+
       # ---------------------------------------------------------
       # On PR Open / Synchronize
       # ---------------------------------------------------------
-      - name: GitOps - Template & Push State (Phase 4 Placeholder)
+      - name: GitOps - Provision Ephemeral PR Environment
         if: github.event.action != 'closed'
+        env:
+          SOPS_AGE_KEY: ${{ secrets[format('SOPS_AGE_KEY_{0}', env.SAFE_ACTOR)] }}
         run: |
-          echo "PR is opened/synchronized. Placeholder for:"
-          echo "1. Building & Pushing ECR Image"
-          echo "2. Running helmfile template for PR-${{ github.event.pull_request.number }}"
-          echo "3. Committing manifests to GitOps State Repo"
-          # TODO: Implement in Phase 4
+          task spacelift:pr:provision PR_ID=${{ github.event.pull_request.number }} GITHUB_REPOSITORY=${{ github.repository }} GITHUB_HEAD_REF=${{ github.head_ref }}
 
       # ---------------------------------------------------------
       # On PR Close
       # ---------------------------------------------------------
-      - name: GitOps - Teardown (Phase 5 Placeholder)
+      - name: GitOps - Teardown Ephemeral PR Environment
         if: github.event.action == 'closed'
+        env:
+          SOPS_AGE_KEY: ${{ secrets[format('SOPS_AGE_KEY_{0}', env.SAFE_ACTOR)] }}
         run: |
-          echo "PR is closed. Placeholder for:"
-          echo "1. Deleting state directory envs/pr-${{ github.event.pull_request.number }}"
-          echo "2. Triggering Spacelift to destroy ephemeral AWS resources"
-          # TODO: Implement in Phase 5
+          task spacelift:pr:teardown PR_ID=${{ github.event.pull_request.number }}

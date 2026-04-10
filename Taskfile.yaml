@@ -21,7 +21,8 @@ vars:
   K8S_ENV: '{{.K8S_ENV | default "local"}}'
   HELMFILE_CMD: "helmfile -e {{.K8S_ENV}} --skip-deps"
 
-  SECRETS_USER: '{{.SECRETS_USER | default "wali"}}'
+  SECRETS_USER:
+    sh: echo "${SECRETS_USER:-${GITHUB_ACTOR:-$(gh api user -q .login 2>/dev/null)}}"
   SECRETS_NAME: "{{.SECRETS_USER}}-secrets-{{.K8S_ENV}}"
 
 tasks:
@@ -51,6 +52,17 @@ tasks:
       - |
         gh variable set ACCOUNT_MAPPING --body "{\"{{.GITHUB_USER}}\": \"{{.AWS_ACCOUNT_ID}}\"}"
         echo "✅ Successfully mapped GitHub user {{.GITHUB_USER}} to AWS Account {{.AWS_ACCOUNT_ID}} in repository variables."
+
+  setup:github-sops:
+    desc: "Configure the SOPS Age key for the current user as a GitHub Secret"
+    vars:
+      GITHUB_USER:
+        sh: gh api user -q .login
+    cmds:
+      - |
+        SAFE_USER=$(echo "{{.GITHUB_USER}}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+        gh secret set "SOPS_AGE_KEY_${SAFE_USER}" < "{{.SOPS_AGE_KEY_FILE}}"
+        echo "✅ Successfully uploaded SOPS_AGE_KEY_${SAFE_USER} to GitHub secrets."
   
   setup:backend:
     desc: "🚀 SETUP BACKEND: Sync environment with uv"
@@ -341,6 +353,12 @@ tasks:
       - terraform init
       - terraform apply -auto-approve
 
+  tf:control-plane:init:
+    desc: "🌍 TF: Initialize Terragrunt for the control-plane environment"
+    dir: infra/terraform/control-plane
+    cmds:
+      - terragrunt init
+
   tf:control-plane:plan:
     desc: "🌍 TF: Plan Control Plane infrastructure (ECR, State Repo, IAM)"
     dir: infra/terraform/control-plane
@@ -414,3 +432,63 @@ tasks:
       - task: k8s:eks:login
       - task: image:push:ecr
       - task: k8s:apply
+
+  # --------------------------------------------------------------------------
+  # 10. SPACELIFT EPHEMERAL ENVIRONMENTS
+  # --------------------------------------------------------------------------
+
+  spacelift:pr:provision:
+    desc: "🚀 Spacelift: Provision ephemeral PR environment"
+    vars:
+      PR_STACK_ID: "pr-{{.PR_ID}}-stack"
+    cmds:
+      - |
+        echo "Provisioning Ephemeral PR Infrastructure via Spacelift..."
+        
+        # 1. Use the correct user secrets (automatically inferred from GITHUB_ACTOR or local gh cli)
+        task secrets:use K8S_ENV=ephemeral
+        
+        export SPACELIFT_API_KEY_ENDPOINT=${SPACELIFT_API_KEY_ENDPOINT:-$(sops -d --extract '["secrets"]["spacelift"]["api_key_endpoint"]' infra/environments/ephemeral/secrets.yaml)}
+        export SPACELIFT_API_KEY_ID=${SPACELIFT_API_KEY_ID:-$(sops -d --extract '["secrets"]["spacelift"]["api_key_id"]' infra/environments/ephemeral/secrets.yaml)}
+        export SPACELIFT_API_KEY_SECRET=${SPACELIFT_API_KEY_SECRET:-$(sops -d --extract '["secrets"]["spacelift"]["api_key_secret"]' infra/environments/ephemeral/secrets.yaml)}
+        
+        # 2. Create the Spacelift stack
+        spacectl stack create \
+          --id "{{.PR_STACK_ID}}" \
+          --name "PR-{{.PR_ID}} Environment" \
+          --space "harmony_ephemeral" \
+          --repository "{{.GITHUB_REPOSITORY}}" \
+          --branch "{{.GITHUB_HEAD_REF}}" \
+          --project-root "infra/terraform/environments/ephemeral" \
+          --runner-image "public.ecr.aws/spacelift/runner-terraform:latest" \
+          --autodeploy || echo "Stack may already exist."
+        
+        # 3. Inject variables
+        spacectl stack set-env \
+          --id "{{.PR_STACK_ID}}" \
+          --name "TF_VAR_pr_id" \
+          --value "{{.PR_ID}}"
+
+        # 4. Trigger Run
+        echo "Triggering Spacelift Run..."
+        spacectl run trigger --stack "{{.PR_STACK_ID}}" --tail
+
+  spacelift:pr:teardown:
+    desc: "🛑 Spacelift: Teardown ephemeral PR environment"
+    vars:
+      PR_STACK_ID: "pr-{{.PR_ID}}-stack"
+    cmds:
+      - |
+        echo "Tearing down Ephemeral PR Infrastructure via Spacelift..."
+        
+        # 1. Use the correct user secrets (automatically inferred from GITHUB_ACTOR or local gh cli)
+        task secrets:use K8S_ENV=ephemeral
+        
+        export SPACELIFT_API_KEY_ENDPOINT=${SPACELIFT_API_KEY_ENDPOINT:-$(sops -d --extract '["secrets"]["spacelift"]["api_key_endpoint"]' infra/environments/ephemeral/secrets.yaml)}
+        export SPACELIFT_API_KEY_ID=${SPACELIFT_API_KEY_ID:-$(sops -d --extract '["secrets"]["spacelift"]["api_key_id"]' infra/environments/ephemeral/secrets.yaml)}
+        export SPACELIFT_API_KEY_SECRET=${SPACELIFT_API_KEY_SECRET:-$(sops -d --extract '["secrets"]["spacelift"]["api_key_secret"]' infra/environments/ephemeral/secrets.yaml)}
+
+        spacectl run trigger --stack "{{.PR_STACK_ID}}" --destroy --tail
+        
+        echo "Deleting Spacelift Stack..."
+        spacectl stack delete --id "{{.PR_STACK_ID}}"

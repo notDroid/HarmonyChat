@@ -12,8 +12,21 @@ locals {
   values = yamldecode(templatefile("${get_repo_root()}/infra/environments/control-plane/values.yaml", {
     AWS_ACCOUNT_ID = get_aws_account_id()
   }))
+  ephemeral_secrets = yamldecode(sops_decrypt_file("${get_repo_root()}/infra/environments/ephemeral/secrets.yaml"))
   
   env = local.values.environment
+}
+
+generate "spacelift_provider" {
+  path      = "provider_spacelift.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
+provider "spacelift" {
+  api_key_endpoint = "${local.ephemeral_secrets.secrets.spacelift.api_key_endpoint}"
+  api_key_id       = "${local.ephemeral_secrets.secrets.spacelift.api_key_id}"
+  api_key_secret   = "${local.ephemeral_secrets.secrets.spacelift.api_key_secret}"
+}
+EOF
 }
 
 inputs = {
