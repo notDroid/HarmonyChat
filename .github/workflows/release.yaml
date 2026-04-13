@@ -32,6 +32,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
       - name: Build and push Backend
         uses: docker/build-push-action@v7
         with:
@@ -40,6 +43,8 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.ORG }}/harmony/backend:${{ github.ref_name }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
 
       - name: Build and push Frontend
         uses: docker/build-push-action@v7
@@ -49,6 +54,8 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.ORG }}/harmony/frontend:${{ github.ref_name }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
           
   create-github-release:
     needs: build-and-publish-images
