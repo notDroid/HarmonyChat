@@ -19,7 +19,9 @@ vars:
   KIND_CLUSTER: "harmony"
   K8S_NAMESPACE: "harmony"
   K8S_ENV: '{{.K8S_ENV | default "local"}}'
-  HELMFILE_CMD: "helmfile -e {{.K8S_ENV}} --skip-deps"
+  HELMFILE_ENV: '{{if eq .K8S_ENV "local"}}local{{else}}remote{{end}}'
+  HELMFILE_VALUES: '{{if eq .K8S_ENV "local"}}--state-values-file ../environments/local/values.yaml --state-values-file ../environments/local/secrets.yaml{{else}}--state-values-file ../environments/{{.K8S_ENV}}/expanded-values.yaml.gotmpl --state-values-file environments/{{.HELMFILE_ENV}}/values-override.yaml.gotmpl{{end}}'
+  HELMFILE_CMD: "helmfile -e {{.HELMFILE_ENV}} {{.HELMFILE_VALUES}} --skip-deps"
 
   SECRETS_USER: '{{.SECRETS_USER | default "wali"}}'
   SECRETS_NAME: "{{.SECRETS_USER}}-secrets-{{.K8S_ENV}}"

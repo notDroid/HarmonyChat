@@ -1,4 +1,5 @@
-{{- $tf := (readFile "../../../terraform/environments/staging/tf-outputs.json" | mustFromJson) -}}
+{{- $env := env "K8S_ENV" | default "staging" -}}
+{{- $tf := (readFile (printf "../../../terraform/environments/%s/tf-outputs.json" $env) | mustFromJson) -}}
 {{- $rdsEndpoint := $tf.rds_endpoint.value -}}
 {{- $rdsHost := regexReplaceAll ":\\d+$" $rdsEndpoint "" -}}
 

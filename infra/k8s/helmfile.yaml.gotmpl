@@ -1,16 +1,10 @@
 environments:
   local:
     values:
-      - ../environments/base/values.yaml
-      - ../environments/local/values.yaml
-      - ../environments/local/secrets.yaml
-  staging:
+      - environments/base/values.yaml
+  remote:
     values:
-      - ../environments/base/values.yaml
-      - ../environments/staging/expanded-values.yaml.gotmpl
-      - environments/staging/values-override.yaml.gotmpl
-    # secrets:
-    #   - ../environments/staging/secrets.yaml
+      - environments/base/values.yaml
 
 repositories:
   - name: bitnami
