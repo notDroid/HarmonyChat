@@ -1,3 +1,12 @@
+{{- $pgHost := "" }}
+{{- $redisHost := "" }}
+{{- if eq .Environment.Name "local" }}
+  {{- $pgHost = .Values.infra.postgres.host }}
+  {{- $redisHost = .Values.infra.redis.host }}
+{{- else }}
+  {{- $pgHost = "$(POSTGRES_HOST)" }}
+  {{- $redisHost = "$(REDIS_HOST)" }}
+{{- end }}
 replicaCount: {{ .Values.workloads.cdc_consumer.replicaCount | default 1 }}
 
 image:
@@ -17,11 +26,11 @@ env:
 
   FEATURES__CACHE_REDIS: {{ .Values.app.feature_toggles.use_redis_cache | quote }}
 
-  REDIS__URL: "redis://{{ .Values.infra.redis.host }}:{{ .Values.infra.redis.port }}/{{ .Values.infra.redis.db_index }}"
+  REDIS__URL: "redis://{{ $redisHost }}:{{ .Values.infra.redis.port }}/{{ .Values.infra.redis.db_index }}"
   REDIS__HEALTH_CHECK_INTERVAL: {{ .Values.infra.redis.health_check_interval | quote }}
   REDIS__REQUEST_TIMEOUT_MS: {{ .Values.infra.redis.request_timeout_ms | quote }}
 
-  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:$(POSTGRES_PASSWORD)@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}"
+  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:$(POSTGRES_PASSWORD)@{{ $pgHost }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}"
 
   AWS__REGION: {{ .Values.infra.aws.region | quote }}
 
@@ -39,6 +48,14 @@ env:
   TOPICS__CHAT: {{ .Values.infra.kafka.topics.chat_events | quote }}
 
 secretEnv:
+  {{- if ne .Environment.Name "local" }}
+  - name: POSTGRES_HOST
+    secretName: tf-outputs-secret
+    secretKey: rds_endpoint
+  - name: REDIS_HOST
+    secretName: tf-outputs-secret
+    secretKey: redis_endpoint
+  {{- end }}
   - name: AWS__ACCESS_KEY_ID
     secretName: aws-auth-secret
     secretKey: access_key_id
@@ -56,3 +73,6 @@ resources:
 
 autoscaling:
   {{- toYaml .Values.workloads.cdc_consumer.autoscaling | nindent 2 }}
+
+podAnnotations:
+  "secret.reloader.stakater.com/reload": "tf-outputs-secret"

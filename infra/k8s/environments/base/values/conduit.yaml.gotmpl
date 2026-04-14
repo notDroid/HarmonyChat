@@ -1,3 +1,9 @@
+{{- $pgHost := "" }}
+{{- if eq .Environment.Name "local" }}
+  {{- $pgHost = .Values.infra.postgres.host }}
+{{- else }}
+  {{- $pgHost = "${POSTGRES_HOST}" }}
+{{- end }}
 replicaCount: {{ .Values.infra.conduit.replicaCount | default 1 }}
 
 image:
@@ -31,7 +37,7 @@ pipelineConfig:
           type: source
           plugin: builtin:postgres
           settings:
-            url: "postgres://{{ .Values.infra.postgres.user }}:${POSTGRES_PASSWORD}@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}?sslmode={{ .Values.infra.postgres.sslmode }}&search_path=public"
+            url: "postgres://{{ .Values.infra.postgres.user }}:${POSTGRES_PASSWORD}@{{ $pgHost }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}?sslmode={{ .Values.infra.postgres.sslmode }}&search_path=public"
             tables: "outbox_events"
             snapshotMode: "never"
             logrepl.publicationName: "harmony_pub"
@@ -68,3 +74,10 @@ pipelineConfig:
           plugin: "json.decode"
           settings:
             field: ".Payload.After.payload"
+
+secretEnv:
+  {{- if ne .Environment.Name "local" }}
+  - name: POSTGRES_HOST
+    secretName: tf-outputs-secret
+    secretKey: rds_endpoint
+  {{- end }}

@@ -93,6 +93,14 @@ module "compute" {
   cluster_version    = var.cluster_version
 }
 
-data "aws_ecr_repository" "backend" {
-  name = "harmony-backend"
+resource "aws_ssm_parameter" "rds_endpoint" {
+  name  = "/harmony/${var.environment}/rds_endpoint"
+  type  = "String"
+  value = module.stateful.rds_endpoint
+}
+
+resource "aws_ssm_parameter" "redis_endpoint" {
+  name  = "/harmony/${var.environment}/redis_endpoint"
+  type  = "String"
+  value = module.stateful.redis_endpoint
 }

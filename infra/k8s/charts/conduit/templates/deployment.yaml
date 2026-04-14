@@ -34,6 +34,15 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.postgresSecret.name }}
                   key: {{ .Values.postgresSecret.key }}
+            {{- if .Values.secretEnv }}
+            {{- range .Values.secretEnv }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .secretKey }}
+            {{- end }}
+            {{- end }}
           volumeMounts:
             - name: pipeline-config
               mountPath: {{ .Values.pipeline.mountDir }}/{{ .Values.pipeline.filename }}

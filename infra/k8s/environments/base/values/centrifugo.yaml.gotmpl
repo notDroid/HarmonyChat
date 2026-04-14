@@ -1,3 +1,9 @@
+{{- $redisHost := "" }}
+{{- if eq .Environment.Name "local" }}
+  {{- $redisHost = .Values.infra.redis.host }}
+{{- else }}
+  {{- $redisHost = "${REDIS_HOST}" }}
+{{- end }}
 fullnameOverride: {{ .Values.infra.centrifugo.host }}
 
 replicaCount: {{ .Values.infra.centrifugo.replicaCount | default 1 }}
@@ -19,7 +25,7 @@ config:
   engine:
     type: "redis"
     redis:
-      address: "redis://{{ .Values.infra.redis.host }}:{{ .Values.infra.redis.port }}"
+      address: "redis://{{ $redisHost }}:{{ .Values.infra.redis.port }}"
       prefix: "centrifugo"
   client:
     allowed_origins: {{ .Values.infra.centrifugo.allowed_origins | toJson }}
@@ -42,6 +48,12 @@ config:
         timeout: "1s"
 
 envSecret:
+  {{- if ne .Environment.Name "local" }}
+  - name: REDIS_HOST
+    secretKeyRef:
+      name: tf-outputs-secret
+      key: redis_endpoint
+  {{- end }}
   - name: CENTRIFUGO_API_KEY
     secretKeyRef:
       name: centrifugo-auth-secret

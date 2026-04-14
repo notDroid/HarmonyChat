@@ -1,3 +1,12 @@
+{{- $pgHost := "" }}
+{{- $redisHost := "" }}
+{{- if eq .Environment.Name "local" }}
+  {{- $pgHost = .Values.infra.postgres.host }}
+  {{- $redisHost = .Values.infra.redis.host }}
+{{- else }}
+  {{- $pgHost = "$(POSTGRES_HOST)" }}
+  {{- $redisHost = "$(REDIS_HOST)" }}
+{{- end }}
 fullnameOverride: {{ .Values.workloads.api.host }}
 
 replicaCount: {{ .Values.workloads.api.replicaCount | default 1 }}
@@ -43,11 +52,11 @@ env:
   CACHE__CHAT_METADATA_TTL_SECONDS: {{ .Values.app.cache_ttls_seconds.chat_metadata | quote }}
   CACHE__USER_TTL_SECONDS: {{ .Values.app.cache_ttls_seconds.user | quote }}
 
-  REDIS__URL: "redis://{{ .Values.infra.redis.host }}:{{ .Values.infra.redis.port }}/{{ .Values.infra.redis.db_index }}"
+  REDIS__URL: "redis://{{ $redisHost }}:{{ .Values.infra.redis.port }}/{{ .Values.infra.redis.db_index }}"
   REDIS__HEALTH_CHECK_INTERVAL: {{ .Values.infra.redis.health_check_interval | quote }}
   REDIS__REQUEST_TIMEOUT_MS: {{ .Values.infra.redis.request_timeout_ms | quote }}
 
-  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:$(POSTGRES_PASSWORD)@{{ .Values.infra.postgres.host }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}?ssl={{ .Values.infra.postgres.sslmode }}"
+  POSTGRES__URL: "postgresql+asyncpg://{{ .Values.infra.postgres.user }}:$(POSTGRES_PASSWORD)@{{ $pgHost }}:{{ .Values.infra.postgres.port }}/{{ .Values.infra.postgres.dbname }}?ssl={{ .Values.infra.postgres.sslmode }}"
 
   AWS__REGION: {{ .Values.infra.aws.region | quote }}
   
@@ -58,6 +67,14 @@ env:
   KAFKA_PRODUCER__RETRY_BACKOFF_MS: {{ .Values.infra.kafka.producer.retry_backoff_ms | quote }}
 
 secretEnv:
+  {{- if ne .Environment.Name "local" }}
+  - name: POSTGRES_HOST
+    secretName: tf-outputs-secret
+    secretKey: rds_endpoint
+  - name: REDIS_HOST
+    secretName: tf-outputs-secret
+    secretKey: redis_endpoint
+  {{- end }}
   - name: AUTH__SECRET_KEY
     secretName: app-auth-secret
     secretKey: secret_key
@@ -79,3 +96,6 @@ resources:
 
 autoscaling:
   {{- toYaml .Values.workloads.api.autoscaling | nindent 2 }}
+
+podAnnotations:
+  "secret.reloader.stakater.com/reload": "tf-outputs-secret"
