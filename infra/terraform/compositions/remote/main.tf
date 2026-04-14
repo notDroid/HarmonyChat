@@ -55,6 +55,7 @@ module "secrets" {
   secret_manager_name = var.secret_manager_name
   raw_secrets         = var.raw_secrets
   project_name        = var.project_name
+  depends_on          = [module.compute]
 }
 
 module "stateful" {
