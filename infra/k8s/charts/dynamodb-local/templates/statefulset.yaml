@@ -47,8 +47,7 @@ spec:
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
-  namespace: {{ .Release.Namespace }}
-  name: data
+        name: data
       spec:
         accessModes: ["ReadWriteOnce"]
         {{- if .Values.persistence.storageClass }}
