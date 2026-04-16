@@ -1,6 +1,7 @@
 apiVersion: karpenter.sh/v1
 kind: NodePool
 metadata:
+  namespace: {{ .Release.Namespace }}
   name: default
 spec:
   template:

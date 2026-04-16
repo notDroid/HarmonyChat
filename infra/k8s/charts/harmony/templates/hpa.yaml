@@ -2,6 +2,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
+  namespace: {{ .Release.Namespace }}
   name: {{ include "harmony-app.fullname" . }}
   labels:
     {{- include "harmony-app.labels" . | nindent 4 }}

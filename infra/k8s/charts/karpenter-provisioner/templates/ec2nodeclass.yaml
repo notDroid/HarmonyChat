@@ -1,6 +1,7 @@
 apiVersion: karpenter.k8s.aws/v1
 kind: EC2NodeClass
 metadata:
+  namespace: {{ .Release.Namespace }}
   name: default
 spec:
   amiFamily: AL2023

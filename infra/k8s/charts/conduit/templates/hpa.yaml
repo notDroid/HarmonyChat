@@ -2,6 +2,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
+  namespace: {{ .Release.Namespace }}
   name: {{ include "conduit.fullname" . }}
   labels:
     app.kubernetes.io/name: {{ include "conduit.name" . }}

@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "init-job.fullname" . }}-config
   namespace: {{ .Release.Namespace }}
+  name: {{ include "init-job.fullname" . }}-config
   labels:
     {{- include "init-job.labels" . | nindent 4 }}
 data:

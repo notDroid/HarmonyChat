@@ -1,394 +1,47 @@
-version: '3'  
-
-dotenv:
-  - .env
-
-env:
-  SOPS_AGE_KEY_FILE: "{{.ROOT_DIR}}/keys.txt"
+version: '3'
 
 vars:
-  IMAGE_TAG:
-    sh: git rev-parse --short HEAD 2>/dev/null || echo "latest"
-  AWS_REGION: "us-east-1"
-
+  PROJECT_NAME: '{{.PROJECT_NAME | default "harmony"}}'
+  IMAGE_TAG: { sh: git rev-parse --short HEAD 2>/dev/null || echo "local" }
   PYTHON_CMD: "uv run"
   PYTEST_CMD: "uv run pytest"
-
   DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/env/.env -f infra/docker/docker-compose.yaml"
 
-  KIND_CLUSTER: "harmony"
-  K8S_NAMESPACE: "harmony"
-  K8S_ENV: '{{.K8S_ENV | default "local"}}'
-  HELMFILE_ENV: '{{if eq .K8S_ENV "local"}}local{{else}}remote{{end}}'
-  HELMFILE_VALUES: '{{if eq .K8S_ENV "local"}}--state-values-file ../environments/local/values.yaml --state-values-file ../environments/local/secrets.yaml{{else}}--state-values-file ../environments/{{.K8S_ENV}}/expanded-values.yaml.gotmpl --state-values-file environments/{{.HELMFILE_ENV}}/values-override.yaml.gotmpl{{end}}'
-  HELMFILE_CMD: "helmfile -e {{.HELMFILE_ENV}} {{.HELMFILE_VALUES}} --skip-deps"
-
-  SECRETS_USER: '{{.SECRETS_USER | default "wali"}}'
-  SECRETS_NAME: "{{.SECRETS_USER}}-secrets-{{.K8S_ENV}}"
-
 tasks:
-  default:
-    silent: true
-    cmds:
-      - task --list-all
-
-  # --------------------------------------------------------------------------
-  # 1. SETUP & CONFIGURATION
-  # --------------------------------------------------------------------------
+  default: [task --list-all]
 
   setup:
-    desc: "🚀 SETUP: the development environment"
-    cmds:
-      - task: setup:backend
-      - task: setup:frontend
-  
-  setup:backend:
-    desc: "🚀 SETUP BACKEND: Sync environment with uv"
-    dir: backend
-    cmds:
-      - uv sync
+    desc: "🚀 SETUP: dev env"
+    cmds: [uv sync, cd frontend && npm install]
 
-  setup:frontend:
-    internal: true
-    desc: "Install Frontend Dependencies"
-    dir: frontend
-    cmds:
-      - npm install
+  run:
+    desc: "▶️  START: local docker-compose"
+    cmds: [task: docker:render, "{{.DOCKER_CMD}} up --build"]
 
-  # --------------------------------------------------------------------------
-  # 2. DOCKER & LOCAL DEVELOPMENT
-  # --------------------------------------------------------------------------
+  clean:
+    desc: "🛑 STOP: local docker-compose"
+    cmds: ["{{.DOCKER_CMD}} down --volumes --remove-orphans"]
 
   docker:render:
-    desc: "⚙️  RENDER: Generate all config files from infra/docker/config.yaml"
     dir: infra/
     cmds:
       - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml docker/templates/config docker/config"
       - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml docker/secrets.yaml docker/templates/envt docker/env"
 
-  run:
-    desc: "▶️  START DEV: Runs the local dev environment"
-    cmds:
-      - task: docker:render
-      - "{{.DOCKER_CMD}} up --build"
-      
-  clean:
-    desc: "🛑 STOP: Stops all containers and removes volumes"
-    cmds:
-      - "{{.DOCKER_CMD}} down --volumes --remove-orphans"
-
-  restart:
-    desc: "🔄 RESTART: Restart all containers"
-    cmds:
-      - task: clean
-      - task: run
-        
   build:
-    desc: "🚀 BUILD: the docker compose environment"
+    desc: "🐳 BUILD: backend image"
     cmds:
-      - task: docker:render
-      - "{{.DOCKER_CMD}} build"
+      - docker build -t {{.PROJECT_NAME}}-backend:local backend/
+      - docker build -t init-dynamodb:local -f infra/docker/images/init-dynamodb/Dockerfile infra/
 
-  # --------------------------------------------------------------------------
-  # 3. TESTING
-  # --------------------------------------------------------------------------
+  kind:load:
+    desc: "🐳 LOAD: images into kind"
+    deps: [build]
+    cmds:
+      - kind load docker-image {{.PROJECT_NAME}}-backend:local --name {{.PROJECT_NAME}}
+      - kind load docker-image init-dynamodb:local --name {{.PROJECT_NAME}}
 
   test:integration:
     desc: "🧪 Run integration tests"
     dir: backend/src/harmony/tests
-    # env:
-    #   API_ENDPOINT: "http://localhost:8000"
-    cmds:
-      - "{{.PYTEST_CMD}} -n auto -m integration"
-
-  test:stress:
-    desc: "🧪 Run stress tests"
-    dir: backend/src/harmony/tests
-    # env:
-    #   API_ENDPOINT: "http://localhost:8000"
-    cmds:
-      - "{{.PYTEST_CMD}} -m stress -s -v"
-
-  data:generate:
-    desc: "🎲 GENERATE: dummy data for the DB"
-    dir: backend/src/harmony/tests/tools
-    env:
-      API_ENDPOINT: "http://localhost:8000"
-    cmds:
-      - "{{.PYTEST_CMD}} generate.py -s"
-
-  data:clean:
-    desc: "🎲 CLEAN: up generated test data from the database"
-    dir: backend/src/harmony/tests/tools
-    cmds:
-      - rm -f generated_data.json
-
-  # --------------------------------------------------------------------------
-  # 4. CODE GENERATION & SYNC
-  # --------------------------------------------------------------------------
-
-  schema:sync:
-    desc: "🔄 SYNC: Updates Frontend SDK based on Backend Code"
-    summary: |
-      Use this when you change the FastAPI Pydantic models.
-      1. Extracts OpenAPI JSON from Backend.
-      2. Generates TypeScript clients using Orval.
-    cmds:
-      - "{{.PYTHON_CMD}} backend/specs/extract_openapi.py > frontend/openapi.json"
-      - cd frontend && npx orval
-
-  # --------------------------------------------------------------------------
-  # 5. IMAGES
-  # --------------------------------------------------------------------------
-  image:build:backend:
-    desc: "🐳 IMAGE: Build the backend image"
-    cmds:
-      - docker build --platform linux/amd64,linux/arm64 -t harmony-backend:{{.IMAGE_TAG}} backend/
-      - docker tag harmony-backend:{{.IMAGE_TAG}} harmony-backend:local
-
-  image:build:init-dynamodb:
-    desc: "🐳 IMAGE: Build the dynamodb-local image (Local Only)"
-    cmds:
-      - docker build --platform linux/amd64,linux/arm64 -t init-dynamodb:latest -f infra/docker/images/init-dynamodb/Dockerfile infra/
-
-  image:load:kind:
-    desc: "🐳 KIND: Load backend and init images into local kind cluster"
-    deps: [image:build:backend, image:build:init-dynamodb]
-    cmds:
-      - kind load docker-image harmony-backend:local --name {{.KIND_CLUSTER}}
-      - kind load docker-image init-dynamodb:latest --name {{.KIND_CLUSTER}}
-
-  image:push:ecr:
-    desc: "🚀 ECR: Tag and push backend image to remote ECR registry"
-    deps: [image:build:backend]
-    vars:
-      AWS_ACCOUNT_ID:
-        sh: aws sts get-caller-identity --query Account --output text
-      AWS_REGION: "us-east-1"
-      ECR_URL: "{{.AWS_ACCOUNT_ID}}.dkr.ecr.{{.AWS_REGION}}.amazonaws.com/harmony-backend"
-    cmds:
-      - aws ecr get-login-password --region {{.AWS_REGION}} | docker login --username AWS --password-stdin {{.AWS_ACCOUNT_ID}}.dkr.ecr.{{.AWS_REGION}}.amazonaws.com
-      - docker tag harmony-backend:{{.IMAGE_TAG}} {{.ECR_URL}}:{{.IMAGE_TAG}}
-      - docker tag harmony-backend:{{.IMAGE_TAG}} {{.ECR_URL}}:latest
-      - docker push {{.ECR_URL}}:{{.IMAGE_TAG}}
-      - docker push {{.ECR_URL}}:latest
-
-  # --------------------------------------------------------------------------
-  # 6. HELM & KUBERNETES
-  # --------------------------------------------------------------------------
-
-  k8s:helm:repos:
-    desc: "📦 K8S: Add and update all Helm chart repositories"
-    cmds:
-      - helm repo add bitnami https://charts.bitnami.com/bitnami
-      - helm repo add centrifugal https://centrifugal.github.io/helm-charts
-      - helm repo add redpanda https://charts.redpanda.com
-      - helm repo add minio https://charts.min.io/
-      - helm repo add kafbat https://kafbat.github.io/helm-charts
-      - helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
-      - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-      - helm repo update
-
-  k8s:apply:
-    desc: "🚀 K8S: Apply Helm releases (helmfile sync)"
-    dir: infra/k8s
-    env:
-      AWS_ACCOUNT_ID:
-        # Get AWS account if in remote env, else return 'local-dev' for local kind cluster
-        sh: >
-          if [ "{{.K8S_ENV}}" = "local" ]; then
-            echo "local-dev";
-          else
-            aws sts get-caller-identity --query Account --output text;
-          fi
-    cmds:
-      - "{{.HELMFILE_CMD}} apply"
-
-  k8s:template:
-    desc: "📄 K8S: Template Helm releases (helmfile template)"
-    dir: infra/k8s
-    env:
-      AWS_ACCOUNT_ID:
-        # Get AWS account if in remote env, else return 'local-dev' for local kind cluster
-        sh: >
-          if [ "{{.K8S_ENV}}" = "local" ]; then
-            echo "local-dev";
-          else
-            aws sts get-caller-identity --query Account --output text;
-          fi
-    cmds:
-      - "{{.HELMFILE_CMD}} template"
-
-  k8s:diff:
-    desc: "🔍 K8S: Diff pending Helm changes"
-    dir: infra/k8s
-    env:
-      AWS_ACCOUNT_ID:
-        # Get AWS account if in remote env, else return 'local-dev' for local kind cluster
-        sh: >
-          if [ "{{.K8S_ENV}}" = "local" ]; then
-            echo "local-dev";
-          else
-            aws sts get-caller-identity --query Account --output text;
-          fi
-    cmds:
-      - "{{.HELMFILE_CMD}} diff"
-
-  k8s:destroy:
-    desc: "🛑 K8S: Tear down all Helm releases (keeps cluster)"
-    dir: infra/k8s
-    env:
-      AWS_ACCOUNT_ID:
-        # Get AWS account if in remote env, else return 'local-dev' for local kind cluster
-        sh: >
-          if [ "{{.K8S_ENV}}" = "local" ]; then
-            echo "local-dev";
-          else
-            aws sts get-caller-identity --query Account --output text;
-          fi
-    cmds:
-      - "{{.HELMFILE_CMD}} destroy"
-      - "kubectl delete namespace {{.K8S_NAMESPACE}} --ignore-not-found" # cleans up persistent volumes in cluster
-
-  kind:cluster:create:
-    desc: "☸️  K8S: Create the local kind cluster"
-    cmds:
-      - kind create cluster --config infra/environments/local/kind-config.yaml --name {{.KIND_CLUSTER}}
-    status:
-      - kind get clusters | grep {{.KIND_CLUSTER}}
-
-  kind:deploy:
-    desc: "🚀 K8S: Full deploy — build images + apply all Helm releases"
-    cmds:
-      - task: image:load:kind
-      - task: k8s:apply
-
-  kind:cluster:delete:
-    desc: "☸️  K8S: Delete the local kind cluster"
-    cmds:
-      - kind delete cluster --name {{.KIND_CLUSTER}}
-
-  kind:setup:
-    desc: "🚀 K8S: setup cluster + repos + build + deploy"
-    summary: |
-      Runs the full local Kubernetes bootstrap:
-        1. Creates the kind cluster
-        2. Adds Helm repos
-        3. Builds and loads all custom Docker images
-        4. Deploys all releases via helmfile
-    cmds:
-      - task: kind:cluster:create
-      - task: k8s:helm:repos
-      - task: image:load:kind
-      - task: k8s:apply
-
-  kind:teardown:
-    desc: "🛑 K8S: Full teardown — destroy releases then delete cluster"
-    cmds:
-      - task: k8s:destroy
-      - task: kind:cluster:delete
-  
-  # --------------------------------------------------------------------------
-  # 7. SECRETS & ENCRYPTION
-  # --------------------------------------------------------------------------
-
-  secrets:setup:
-    desc: "🔑 SECRETS: Generate an age keypair and configure .sops.yaml"
-    cmds:
-      - "{{.PYTHON_CMD}} infra/scripts/setup_sops.py {{.SECRETS_NAME}}"
-
-  secrets:generate:
-    desc: "🔐 SECRETS: Generate a new secrets.yaml file for the target K8S_ENV"
-    cmds:
-      - "{{.PYTHON_CMD}} infra/scripts/generate_secrets.py infra/secrets/{{.SECRETS_NAME}}.yaml --env {{.K8S_ENV}}"
-
-  secrets:encrypt:
-    desc: "🔒 SOPS: Encrypt secrets.yaml in place"
-    cmds:
-      - sops -e -i infra/secrets/{{.SECRETS_NAME}}.yaml
-
-  secrets:decrypt:
-    desc: "🔓 SOPS: Decrypt secrets.yaml in place"
-    cmds:
-      - echo ${SOPS_AGE_KEY_FILE}
-      - sops -d -i infra/secrets/{{.SECRETS_NAME}}.yaml
-
-  secrets:use:
-    desc: "🔑 SECRETS: Move secrets to environment folder"
-    cmds:
-      - cp infra/secrets/{{.SECRETS_NAME}}.yaml infra/environments/{{.K8S_ENV}}/secrets.yaml
-
-  # --------------------------------------------------------------------------
-  # 8. TERRAFORM
-  # --------------------------------------------------------------------------
-  tf:bootstrap:
-    desc: "🚀 TF: Bootstrap Terraform state infrastructure (S3 bucket + DynamoDB table)"
-    dir: infra/terraform/bootstrap
-    vars:
-      AWS_ACCOUNT_ID:
-        sh: aws sts get-caller-identity --query Account --output text
-    cmds:
-      - terraform init
-      - terraform apply -auto-approve
-
-  tf:init:
-    desc: "🌍 TF: Initialize Terragrunt for the target K8S_ENV"
-    dir: infra/terraform/environments/{{.K8S_ENV}}
-    cmds:
-      - terragrunt init
-
-  tf:init:upgrade:
-    desc: "🌍 TF: Upgrade Terragrunt for the target K8S_ENV"
-    dir: infra/terraform/environments/{{.K8S_ENV}}
-    cmds:
-      - terragrunt init -upgrade
-
-  tf:plan:
-    desc: "🌍 TF: Plan Terragrunt infrastructure for the target K8S_ENV"
-    dir: infra/terraform/environments/{{.K8S_ENV}}
-    cmds:
-      - terragrunt plan
-
-  tf:apply:
-    desc: "🌍 TF: Apply Terragrunt infrastructure for the target K8S_ENV"
-    dir: infra/terraform/environments/{{.K8S_ENV}}
-    cmds:
-      - terragrunt apply
-
-  tf:output:
-    desc: "🌍 TF: Extract Terraform outputs to JSON for the config renderer"
-    dir: infra/terraform/environments/{{.K8S_ENV}}
-    cmds:
-      - terragrunt output -json > tf-outputs.json
-
-  tf:destroy:
-    desc: "🛑 TF: Destroy Terragrunt infrastructure for the target K8S_ENV"
-    dir: infra/terraform/environments/{{.K8S_ENV}}
-    cmds:
-      - terragrunt destroy
-
-  # --------------------------------------------------------------------------
-  # 9. PIPELINES
-  # --------------------------------------------------------------------------
-
-  k8s:eks:login:
-    desc: "🔐 K8S: Update kubeconfig to point to the remote EKS cluster"
-    vars:
-      CLUSTER_NAME:
-        sh: |
-          {{.PYTHON_CMD}} python -c"
-          import yaml
-          with open('infra/environments/{{.K8S_ENV}}/values.yaml') as f:
-              data = yaml.safe_load(f)
-              print(data['infra']['compute']['cluster_name'])
-          "
-    cmds:
-      - aws eks update-kubeconfig --region us-east-1 --name {{.CLUSTER_NAME}}
-
-  deploy:
-    desc: "🚀 AWS Pipeline: Extract TF, build/push images, and deploy to EKS"
-    cmds:
-      - task: tf:output
-      - task: k8s:eks:login
-      - task: image:push:ecr
-      - task: k8s:apply
+    cmds: ["{{.PYTEST_CMD}} -n auto -m integration"]

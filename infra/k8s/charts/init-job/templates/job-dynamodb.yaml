@@ -1,8 +1,8 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "init-job.fullname" . }}-dynamodb
   namespace: {{ .Release.Namespace }}
+  name: {{ include "init-job.fullname" . }}-dynamodb
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation

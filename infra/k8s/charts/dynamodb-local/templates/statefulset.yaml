@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "dynamodb-local.fullname" . }}
   namespace: {{ .Release.Namespace }}
+  name: {{ include "dynamodb-local.fullname" . }}
   labels:
     {{- include "dynamodb-local.labels" . | nindent 4 }}
 spec:
@@ -47,7 +47,8 @@ spec:
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
-        name: data
+  namespace: {{ .Release.Namespace }}
+  name: data
       spec:
         accessModes: ["ReadWriteOnce"]
         {{- if .Values.persistence.storageClass }}
