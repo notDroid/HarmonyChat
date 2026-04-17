@@ -1,20 +1,14 @@
-include "root" {
-  path = find_in_parent_folders("root.hcl")
+locals {
+  values = yamldecode(templatefile("${get_repo_root()}/infra/environments/remote/values.yaml", {
+    AWS_ACCOUNT_ID = get_aws_account_id()
+  }))
+  secrets = yamldecode(sops_decrypt_file("${get_repo_root()}/infra/environments/remote/secrets.yaml"))
+  
+  env = local.values.environment
 }
 
 terraform {
-  # The double slash (//) is critical. It tells Terragrunt to copy the entire 
-  # 'infra/terraform' folder to the cache, then execute from 'environments/staging'
-  source = "../..//environments/staging"
-}
-
-locals {
-  values = yamldecode(templatefile("${get_repo_root()}/infra/environments/staging/values.yaml", {
-    AWS_ACCOUNT_ID = get_aws_account_id()
-  }))
-  secrets = yamldecode(sops_decrypt_file("${get_repo_root()}/infra/environments/staging/secrets.yaml"))
-  
-  env = local.values.environment
+  source = "${get_repo_root()}/infra/terraform//environments/remote"
 }
 
 inputs = {
@@ -47,4 +41,4 @@ inputs = {
 
   secret_manager_name = local.values.infra.secrets.manager_name
   raw_secrets         = jsonencode(local.secrets.secrets)
-  }
+}
