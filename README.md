@@ -68,6 +68,29 @@ Authentication utilizes rotating JWT access and refresh tokens.
 * The backend uses a opaque string refresh tokens stored in postgres and rotates them on refresh with a very short grace period before invalidation to handle multiple refresh requests in close proximity.
 * The frontend heavily utilizes React Query for optimistic UI updates, complete with automatic rollback capabilities upon network failure.
 
+## Infrastructure Implementation
+
+### 1. GitOps & Environment Decoupling
+Our infrastructure deployment strictly adheres to GitOps principles, decoupling the application logic from environment-specific configurations:
+* **App Repository (Environment-Agnostic):** Houses the application code and publishes template logic via Git tags and GitHub Releases (container images, Terraform templates, Helmfile templates). It maintains zero awareness of downstream configurations.
+* **Config Repository (Environment-Specific):** Contains environment variables, SOPS-encrypted secrets, and references to specific App Repo Git tags to trigger deployments.
+
+**The CI/CD Pipeline:**
+We utilize a high-level `values.yaml` and `secrets.yaml` to control the entire deployment. Rendered manifests are published as an OCI Artifact using a Helmfile template, carefully decoupling secrets and dynamic Terraform outputs via AWS Secrets Manager and Parameter Store. ArgoCD then continuously syncs this artifact to the Kubernetes cluster. 
+
+### 2. Kubernetes Provisioning & Templating
+* **Infrastructure as Code (IaC):** We currently use Terragrunt to parse, decrypt, and bootstrap the underlying AWS infrastructure, including the EKS cluster. *(Note: We are planning a migration to Spacelift to fully automate infrastructure creation).*
+* **Helmfile & Chart Management:** We use Helmfile to facilitate multi-layer templating. We maintain custom Helm charts for our core application, Conduit, and utility specifications (like Karpenter and external secrets).
+* **Autoscaling:** We utilize Karpenter for dynamic, node-level cluster autoscaling. At the pod level, Horizontal Pod Autoscaling (HPA) is built into all stateless components.
+
+### 3. Event Streaming Infrastructure (AutoMQ)
+Instead of deploying a traditional shared-nothing Kafka architecture (like Apache or Redpanda) or relying on costly AWS MSK clusters, we utilize **AutoMQ** for our Kafka workloads. 
+
+**The Architectural Advantage:**
+AutoMQ utilizes a compute-storage decoupled model backed by AWS S3, providing several critical benefits for a Kubernetes environment:
+* **Painless Scaling:** Because it uses a shared storage backend (S3), we can scale brokers vertically or horizontally without suffering the massive network overhead of partition reassignment. Data never needs to be copied over the network after it is committed.
+* **Optimized Durability vs. Latency:** AutoMQ maintains low broker commit latency by writing to a persistent WAL buffer (an EBS volume) to achieve immediate single-AZ durability. It then batches these writes to S3 for long-term, high durability guarantees. While this trades off immediate multi-AZ consistency on commit, it completely bypasses multi-AZ network latency while maintaining excellent data safety.
+
 ---
 
 ## Local Development & Setup
