@@ -1,10 +1,6 @@
 version: '3'  
 
 vars:
-  IMAGE_TAG:
-    sh: git rev-parse --short HEAD 2>/dev/null || echo "latest"
-  AWS_REGION: "us-east-1"
-
   PYTHON_CMD: "uv run"
   PYTEST_CMD: "uv run pytest"
 
@@ -13,9 +9,20 @@ vars:
   KIND_CLUSTER: "harmony"
   K8S_NAMESPACE: "harmony"
   K8S_ENV: '{{.K8S_ENV | default "local"}}'
-  HELMFILE_ENV: '{{if eq .K8S_ENV "local"}}local{{else}}remote{{end}}'
-  HELMFILE_VALUES: '{{if eq .K8S_ENV "local"}}--state-values-file ../environments/local/values.yaml --state-values-file ../environments/local/secrets.yaml{{else}}--state-values-file ../environments/{{.K8S_ENV}}/expanded-values.yaml.gotmpl --state-values-file environments/{{.HELMFILE_ENV}}/values-override.yaml.gotmpl{{end}}'
+
+  HELMFILE_ENV: '{{.K8S_ENV}}'
+  HELMFILE_LOCAL_VALUES:  '--state-values-file ../environments/local/values.yaml                  --state-values-file ../environments/local/secrets.yaml'
+  HELMFILE_REMOTE_VALUES: '--state-values-file ../environments/remote/expanded-values.yaml.gotmpl --state-values-file ../environments/remote/secrets.yaml'
+  HELMFILE_VALUES: '{{if eq .K8S_ENV "local"}}{{.HELMFILE_LOCAL_VALUES}}{{else}}{{.HELMFILE_REMOTE_VALUES}}{{end}}'
   HELMFILE_CMD: "helmfile -e {{.HELMFILE_ENV}} {{.HELMFILE_VALUES}} --skip-deps"
+
+  AWS_ACCOUNT_ID:
+    sh: >
+      if [ "{{.K8S_ENV}}" = "local" ]; then
+        echo "local-dev";
+      else
+        aws sts get-caller-identity --query Account --output text;
+      fi
 
 tasks:
   default:
@@ -87,16 +94,12 @@ tasks:
   test:integration:
     desc: "🧪 Run integration tests"
     dir: backend/src/harmony/tests
-    # env:
-    #   API_ENDPOINT: "http://localhost:8000"
     cmds:
       - "{{.PYTEST_CMD}} -n auto -m integration"
 
   test:stress:
     desc: "🧪 Run stress tests"
     dir: backend/src/harmony/tests
-    # env:
-    #   API_ENDPOINT: "http://localhost:8000"
     cmds:
       - "{{.PYTEST_CMD}} -m stress -s -v"
 
@@ -134,8 +137,7 @@ tasks:
   image:build:backend:
     desc: "🐳 IMAGE: Build the backend image"
     cmds:
-      - docker build --platform linux/amd64,linux/arm64 -t harmony-backend:{{.IMAGE_TAG}} backend/
-      - docker tag harmony-backend:{{.IMAGE_TAG}} harmony-backend:local
+      - docker build --platform linux/amd64,linux/arm64 -t harmony-backend:local backend/
 
   image:build:init-dynamodb:
     desc: "🐳 IMAGE: Build the dynamodb-local image (Local Only)"
@@ -163,35 +165,22 @@ tasks:
       - helm repo add kafbat https://kafbat.github.io/helm-charts
       - helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
       - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+      - helm repo add external-secrets https://charts.external-secrets.io
       - helm repo update
 
   k8s:apply:
     desc: "🚀 K8S: Apply Helm releases (helmfile sync)"
     dir: infra/k8s
     env:
-      AWS_ACCOUNT_ID:
-        # Get AWS account if in remote env, else return 'local-dev' for local kind cluster
-        sh: >
-          if [ "{{.K8S_ENV}}" = "local" ]; then
-            echo "local-dev";
-          else
-            aws sts get-caller-identity --query Account --output text;
-          fi
+      AWS_ACCOUNT_ID: '{{.AWS_ACCOUNT_ID}}'
     cmds:
-      - "{{.HELMFILE_CMD}} apply"
+      - "{{.HELMFILE_CMD}} sync"
 
   k8s:template:
     desc: "📄 K8S: Template Helm releases (helmfile template)"
     dir: infra/k8s
     env:
-      AWS_ACCOUNT_ID:
-        # Get AWS account if in remote env, else return 'local-dev' for local kind cluster
-        sh: >
-          if [ "{{.K8S_ENV}}" = "local" ]; then
-            echo "local-dev";
-          else
-            aws sts get-caller-identity --query Account --output text;
-          fi
+      AWS_ACCOUNT_ID: '{{.AWS_ACCOUNT_ID}}'
     cmds:
       - "{{.HELMFILE_CMD}} template"
 
@@ -199,14 +188,7 @@ tasks:
     desc: "🔍 K8S: Diff pending Helm changes"
     dir: infra/k8s
     env:
-      AWS_ACCOUNT_ID:
-        # Get AWS account if in remote env, else return 'local-dev' for local kind cluster
-        sh: >
-          if [ "{{.K8S_ENV}}" = "local" ]; then
-            echo "local-dev";
-          else
-            aws sts get-caller-identity --query Account --output text;
-          fi
+      AWS_ACCOUNT_ID: '{{.AWS_ACCOUNT_ID}}'
     cmds:
       - "{{.HELMFILE_CMD}} diff"
 
@@ -214,17 +196,10 @@ tasks:
     desc: "🛑 K8S: Tear down all Helm releases (keeps cluster)"
     dir: infra/k8s
     env:
-      AWS_ACCOUNT_ID:
-        # Get AWS account if in remote env, else return 'local-dev' for local kind cluster
-        sh: >
-          if [ "{{.K8S_ENV}}" = "local" ]; then
-            echo "local-dev";
-          else
-            aws sts get-caller-identity --query Account --output text;
-          fi
+      AWS_ACCOUNT_ID: '{{.AWS_ACCOUNT_ID}}'
     cmds:
       - "{{.HELMFILE_CMD}} destroy"
-      - "kubectl delete namespace {{.K8S_NAMESPACE}} --ignore-not-found" # cleans up persistent volumes in cluster
+      - "kubectl delete namespace {{.K8S_NAMESPACE}} --ignore-not-found"
 
   kind:cluster:create:
     desc: "☸️  K8S: Create the local kind cluster"
@@ -263,6 +238,22 @@ tasks:
     cmds:
       - task: k8s:destroy
       - task: kind:cluster:delete
+
+  # Required when using launching the remote k8s cluster locally on kind.
+  kind:iam:admin:
+    desc: "🔑 K8S: Assume an admin IAM role and inject credentials into the kind cluster"
+    vars:
+      ROLE_ARN: '{{.ROLE_ARN | default (printf "arn:aws:iam::%s:role/AdministratorAccess" .AWS_ACCOUNT_ID)}}'
+    cmds:
+      - |
+        echo "Assuming role {{.ROLE_ARN}}..."
+        CREDS=$$(aws sts assume-role --role-arn "{{.ROLE_ARN}}" --role-session-name kind-admin-session --query 'Credentials' --output json)
+        kubectl create secret generic aws-auth-secret \
+          --namespace {{.K8S_NAMESPACE}} \
+          --from-literal=access_key_id=$$(echo $$CREDS | jq -r .AccessKeyId) \
+          --from-literal=secret_access_key=$$(echo $$CREDS | jq -r .SecretAccessKey) \
+          --from-literal=session_token=$$(echo $$CREDS | jq -r .SessionToken) \
+          --dry-run=client -o yaml | kubectl apply -f -
   
   # --------------------------------------------------------------------------
   # 7. TERRAFORM
@@ -284,21 +275,3 @@ tasks:
     dir: infra/terraform/environments/{{.K8S_ENV}}
     cmds:
       - terragrunt plan
-
-  tf:apply:
-    desc: "🌍 TF: Apply Terragrunt infrastructure for the target K8S_ENV"
-    dir: infra/terraform/environments/{{.K8S_ENV}}
-    cmds:
-      - terragrunt apply
-
-  tf:output:
-    desc: "🌍 TF: Extract Terraform outputs to JSON for the config renderer"
-    dir: infra/terraform/environments/{{.K8S_ENV}}
-    cmds:
-      - terragrunt output -json > tf-outputs.json
-
-  tf:destroy:
-    desc: "🛑 TF: Destroy Terragrunt infrastructure for the target K8S_ENV"
-    dir: infra/terraform/environments/{{.K8S_ENV}}
-    cmds:
-      - terragrunt destroy

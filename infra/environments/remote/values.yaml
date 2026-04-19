@@ -2,7 +2,7 @@
 # Global Metadata
 # ==========================================
 project_name: "Harmony Chat"
-environment: "staging"
+environment: "remote"
 log_level: "INFO"
 
 # ==========================================
@@ -43,8 +43,9 @@ app:
 # ==========================================
 workloads:  
   image:
-    tag: "latest"
-    pullPolicy: "Always"
+    repository: "harmony-backend"
+    tag: "local"
+    pullPolicy: "Never"
 
   api:
     host: "api"
@@ -87,7 +88,7 @@ infra:
     user: "harmony"
     port: 5432
     instance_class: "db.t4g.micro"
-    allocated_storage_gb: 20
+    allocated_storage_gb: 5
   redis:
     port: 6379
     db_index: 1

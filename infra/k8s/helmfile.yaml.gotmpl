@@ -5,6 +5,9 @@ environments:
   remote:
     values:
       - environments/base/values.yaml
+  remote-local:
+    values:
+      - environments/base/values.yaml
 
 repositories:
   - name: bitnami
@@ -46,14 +49,14 @@ releases:
     namespace: kube-system
     chart: oci://public.ecr.aws/karpenter/karpenter-crd
     version: "1.10.0"
-    installed: {{ ne .Environment.Name "local" }}
+    installed: {{ and (ne .Environment.Name "local") (ne .Environment.Name "remote-local") }}
     wait: true
 
   - name: karpenter
     namespace: kube-system
     chart: oci://public.ecr.aws/karpenter/karpenter
     version: "1.10.0"
-    installed: {{ ne .Environment.Name "local" }}
+    installed: {{ and (ne .Environment.Name "local") (ne .Environment.Name "remote-local") }}
     values:
       - settings:
           clusterName: "{{ .Values.infra.compute.cluster_name }}"
@@ -65,7 +68,7 @@ releases:
   - name: karpenter-provisioner
     namespace: kube-system
     chart: charts/karpenter-provisioner
-    installed: {{ ne .Environment.Name "local" }}
+    installed: {{ and (ne .Environment.Name "local") (ne .Environment.Name "remote-local") }}
     disableValidation: true
     values:
       - clusterName: "{{ .Values.infra.compute.cluster_name }}"
@@ -77,7 +80,7 @@ releases:
   - name: gp3-storage-class
     namespace: kube-system
     chart: charts/storage-class
-    installed: {{ ne .Environment.Name "local" }}
+    installed: {{ and (ne .Environment.Name "local") (ne .Environment.Name "remote-local") }}
     wait: true
 
   - name: reloader
@@ -91,7 +94,7 @@ releases:
     namespace: kube-system
     chart: metrics-server/metrics-server
     values:
-      {{- if eq .Environment.Name "local" }}
+      {{- if or (eq .Environment.Name "local") (eq .Environment.Name "remote-local") }}
       - args:
           - --kubelet-insecure-tls
       {{- end }}
@@ -114,11 +117,13 @@ releases:
     namespace: harmony
     chart: charts/secrets
     values:
-      {{- if eq .Environment.Name "local" }}
+      {{- if or (eq .Environment.Name "local") (eq .Environment.Name "remote-local") }}
       - secrets: {{ toYaml .Values.secrets | nindent 10 }}
+      - environment: "local"
+      {{- else }}
+      - environment: {{ .Environment.Name }}
       {{- end }}
       - infra: {{ toYaml .Values.infra | nindent 10 }}
-      - environment: {{ .Environment.Name }}
     wait: true
 
   # ---------------------------------------------------------------------------
