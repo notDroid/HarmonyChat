@@ -1,11 +1,5 @@
 version: '3'  
 
-dotenv:
-  - .env
-
-env:
-  SOPS_AGE_KEY_FILE: "{{.ROOT_DIR}}/keys.txt"
-
 vars:
   IMAGE_TAG:
     sh: git rev-parse --short HEAD 2>/dev/null || echo "latest"
@@ -22,9 +16,6 @@ vars:
   HELMFILE_ENV: '{{if eq .K8S_ENV "local"}}local{{else}}remote{{end}}'
   HELMFILE_VALUES: '{{if eq .K8S_ENV "local"}}--state-values-file ../environments/local/values.yaml --state-values-file ../environments/local/secrets.yaml{{else}}--state-values-file ../environments/{{.K8S_ENV}}/expanded-values.yaml.gotmpl --state-values-file environments/{{.HELMFILE_ENV}}/values-override.yaml.gotmpl{{end}}'
   HELMFILE_CMD: "helmfile -e {{.HELMFILE_ENV}} {{.HELMFILE_VALUES}} --skip-deps"
-
-  SECRETS_USER: '{{.SECRETS_USER}}'
-  SECRETS_NAME: "{{.SECRETS_USER}}-secrets-{{.K8S_ENV}}"
 
 tasks:
   default:
@@ -274,37 +265,7 @@ tasks:
       - task: kind:cluster:delete
   
   # --------------------------------------------------------------------------
-  # 7. SECRETS & ENCRYPTION
-  # --------------------------------------------------------------------------
-
-  secrets:setup:
-    desc: "🔑 SECRETS: Generate an age keypair and configure .sops.yaml"
-    cmds:
-      - "{{.PYTHON_CMD}} infra/scripts/setup_sops.py {{.SECRETS_NAME}}"
-
-  secrets:generate:
-    desc: "🔐 SECRETS: Generate a new secrets.yaml file for the target K8S_ENV"
-    cmds:
-      - "{{.PYTHON_CMD}} infra/scripts/generate_secrets.py infra/secrets/{{.SECRETS_NAME}}.yaml --env {{.K8S_ENV}}"
-
-  secrets:encrypt:
-    desc: "🔒 SOPS: Encrypt secrets.yaml in place"
-    cmds:
-      - sops -e -i infra/secrets/{{.SECRETS_NAME}}.yaml
-
-  secrets:decrypt:
-    desc: "🔓 SOPS: Decrypt secrets.yaml in place"
-    cmds:
-      - echo ${SOPS_AGE_KEY_FILE}
-      - sops -d -i infra/secrets/{{.SECRETS_NAME}}.yaml
-
-  secrets:use:
-    desc: "🔑 SECRETS: Move secrets to environment folder"
-    cmds:
-      - cp infra/secrets/{{.SECRETS_NAME}}.yaml infra/environments/{{.K8S_ENV}}/secrets.yaml
-
-  # --------------------------------------------------------------------------
-  # 8. TERRAFORM
+  # 7. TERRAFORM
   # --------------------------------------------------------------------------
   tf:init:
     desc: "🌍 TF: Initialize Terragrunt for the target K8S_ENV"
