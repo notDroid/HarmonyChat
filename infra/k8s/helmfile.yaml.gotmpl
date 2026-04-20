@@ -38,6 +38,8 @@ releases:
   {{ if ne .Environment.Name "local" }}
   - name: external-secrets
     namespace: external-secrets
+    labels:
+      wave: "-5"
     chart: external-secrets/external-secrets
     version: "2.2.0"
     installed: {{ ne .Environment.Name "local" }}
@@ -47,6 +49,8 @@ releases:
 
   - name: karpenter-crd
     namespace: kube-system
+    labels:
+      wave: "-5"
     chart: oci://public.ecr.aws/karpenter/karpenter-crd
     version: "1.10.0"
     installed: {{ and (ne .Environment.Name "local") (ne .Environment.Name "remote-local") }}
@@ -54,6 +58,8 @@ releases:
 
   - name: karpenter
     namespace: kube-system
+    labels:
+      wave: "-4"
     chart: oci://public.ecr.aws/karpenter/karpenter
     version: "1.10.0"
     installed: {{ and (ne .Environment.Name "local") (ne .Environment.Name "remote-local") }}
@@ -67,6 +73,8 @@ releases:
 
   - name: karpenter-provisioner
     namespace: kube-system
+    labels:
+      wave: "-4"
     chart: charts/karpenter-provisioner
     installed: {{ and (ne .Environment.Name "local") (ne .Environment.Name "remote-local") }}
     disableValidation: true
@@ -79,12 +87,16 @@ releases:
 
   - name: gp3-storage-class
     namespace: kube-system
+    labels:
+      wave: "-4"
     chart: charts/storage-class
     installed: {{ and (ne .Environment.Name "local") (ne .Environment.Name "remote-local") }}
     wait: true
 
   - name: reloader
     namespace: kube-system
+    labels:
+      wave: "-4"
     chart: stakater/reloader
     installed: {{ ne .Environment.Name "local" }}
     wait: true
@@ -92,6 +104,8 @@ releases:
 
   - name: metrics-server
     namespace: kube-system
+    labels:
+      wave: "-4"
     chart: metrics-server/metrics-server
     values:
       {{- if or (eq .Environment.Name "local") (eq .Environment.Name "remote-local") }}
@@ -102,6 +116,8 @@ releases:
 
   - name: kube-prometheus-stack
     namespace: monitoring
+    labels:
+      wave: "-4"
     chart: prometheus-community/kube-prometheus-stack
     disableValidation: true
     missingFileHandler: Info
@@ -115,6 +131,8 @@ releases:
   # ---------------------------------------------------------------------------
   - name: secrets
     namespace: harmony
+    labels:
+      wave: "-3"
     chart: charts/secrets
     values:
       {{- if or (eq .Environment.Name "local") (eq .Environment.Name "remote-local") }}
@@ -131,6 +149,8 @@ releases:
   # ---------------------------------------------------------------------------
   - name: minio
     namespace: harmony
+    labels:
+      wave: "-2"
     chart: minio/minio
     installed: {{ eq .Environment.Name "local" }}
     values:
@@ -141,6 +161,8 @@ releases:
 
   - name: postgresql
     namespace: harmony
+    labels:
+      wave: "-2"
     chart: bitnami/postgresql
     installed: {{ eq .Environment.Name "local" }}
     values:
@@ -151,6 +173,8 @@ releases:
 
   - name: redis
     namespace: harmony
+    labels:
+      wave: "-2"
     chart: bitnami/redis
     installed: {{ eq .Environment.Name "local" }}
     values:
@@ -159,6 +183,8 @@ releases:
 
   - name: dynamodb-local
     namespace: harmony
+    labels:
+      wave: "-2"
     chart: charts/dynamodb-local
     installed: {{ eq .Environment.Name "local" }}
     values:
@@ -170,6 +196,8 @@ releases:
   # ---------------------------------------------------------------------------
   - name: automq
     namespace: harmony
+    labels:
+      wave: "-1"
     chart: oci://registry-1.docker.io/bitnamicharts/kafka
     version: 31.5.0
     missingFileHandler: Info
@@ -188,6 +216,8 @@ releases:
   # ---------------------------------------------------------------------------
   - name: backend
     namespace: harmony
+    labels:
+      wave: "0"
     chart: charts/harmony
     missingFileHandler: Info
     values:
@@ -205,6 +235,8 @@ releases:
 
   - name: consumer
     namespace: harmony
+    labels:
+      wave: "0"
     chart: charts/harmony
     missingFileHandler: Info
     values:
@@ -220,6 +252,8 @@ releases:
 
   - name: centrifugo
     namespace: harmony
+    labels:
+      wave: "0"
     chart: centrifugal/centrifugo
     missingFileHandler: Info
     values:
@@ -234,6 +268,8 @@ releases:
   # ---------------------------------------------------------------------------
   - name: conduit-cdc
     namespace: harmony
+    labels:
+      wave: "0"
     chart: charts/conduit 
     missingFileHandler: Info
     values:
@@ -248,6 +284,8 @@ releases:
 
   - name: redpanda-connect
     namespace: harmony
+    labels:
+      wave: "0"
     chart: redpanda/connect 
     version: "3.1.0"
     missingFileHandler: Info
@@ -266,6 +304,8 @@ releases:
   # ---------------------------------------------------------------------------
   - name: init-job
     namespace: harmony
+    labels:
+      wave: "0"
     chart: charts/init-job
     installed: {{ eq .Environment.Name "local" }}
     values:
@@ -276,6 +316,8 @@ releases:
 
   - name: kafbat-ui
     namespace: harmony
+    labels:
+      wave: "0"
     chart: kafbat/kafka-ui
     missingFileHandler: Info
     values:
