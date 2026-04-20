@@ -1,5 +1,5 @@
 image:
-  dynamodbInit: init-dynamodb:local
+  dynamodbInit: init-dynamodb:latest
   curl: curlimages/curl:latest
   pullPolicy: Never
 
