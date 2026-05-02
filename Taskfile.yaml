@@ -1,20 +1,13 @@
 version: '3'  
 
 vars:
-  PYTHON_CMD: "uv run"
-  PYTEST_CMD: "uv run pytest"
-
   DOCKER_CMD: "docker compose --project-directory . --env-file infra/docker/env/.env -f infra/docker/docker-compose.yaml"
 
-  KIND_CLUSTER: "harmony"
-  K8S_NAMESPACE: "harmony"
-  K8S_ENV: '{{.K8S_ENV | default "local"}}'
-
-  HELMFILE_ENV: '{{.K8S_ENV}}'
-  HELMFILE_LOCAL_VALUES:  '--state-values-file ../environments/local/values.yaml                  --state-values-file ../environments/local/secrets.yaml'
-  HELMFILE_REMOTE_VALUES: '--state-values-file ../environments/remote/expanded-values.yaml.gotmpl --state-values-file ../environments/remote/secrets.yaml'
-  HELMFILE_VALUES: '{{if eq .K8S_ENV "local"}}{{.HELMFILE_LOCAL_VALUES}}{{else}}{{.HELMFILE_REMOTE_VALUES}}{{end}}'
-  HELMFILE_CMD: "helmfile -e {{.HELMFILE_ENV}} {{.HELMFILE_VALUES}} --skip-deps"
+  K8S_ENV: '{{.K8S_ENV | default "local"}}' # IMPORTANT: set through .env or CLI flag
+  CONFIG_HELMFILE_VALUES: >-
+    --state-values-file ../../environments/{{.K8S_ENV}}/values.yaml
+    --state-values-file ../../environments/{{.K8S_ENV}}/secrets.yaml
+  HELMFILE_CMD: "helmfile -e {{.K8S_ENV}} {{.CONFIG_HELMFILE_VALUES}} --skip-deps"
 
   AWS_ACCOUNT_ID:
     sh: >
@@ -61,8 +54,8 @@ tasks:
     desc: "⚙️  RENDER: Generate all config files from infra/docker/config.yaml"
     dir: infra/
     cmds:
-      - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml docker/templates/config docker/config"
-      - "{{.PYTHON_CMD}} scripts/render_config.py docker/config.yaml docker/secrets.yaml docker/templates/envt docker/env"
+      - "uv run scripts/render_config.py docker/config.yaml docker/templates/config docker/config"
+      - "uv run scripts/render_config.py docker/config.yaml docker/secrets.yaml docker/templates/envt docker/env"
 
   run:
     desc: "▶️  START DEV: Runs the local dev environment"
@@ -95,13 +88,13 @@ tasks:
     desc: "🧪 Run integration tests"
     dir: backend/src/harmony/tests
     cmds:
-      - "{{.PYTEST_CMD}} -n auto -m integration"
+      - "uv run pytest -n auto -m integration"
 
   test:stress:
     desc: "🧪 Run stress tests"
     dir: backend/src/harmony/tests
     cmds:
-      - "{{.PYTEST_CMD}} -m stress -s -v"
+      - "uv run pytest -m stress -s -v"
 
   data:generate:
     desc: "🎲 GENERATE: dummy data for the DB"
@@ -109,7 +102,7 @@ tasks:
     env:
       API_ENDPOINT: "http://localhost:8000"
     cmds:
-      - "{{.PYTEST_CMD}} generate.py -s"
+      - "uv run pytest generate.py -s"
 
   data:clean:
     desc: "🎲 CLEAN: up generated test data from the database"
@@ -128,7 +121,7 @@ tasks:
       1. Extracts OpenAPI JSON from Backend.
       2. Generates TypeScript clients using Orval.
     cmds:
-      - "{{.PYTHON_CMD}} backend/specs/extract_openapi.py > frontend/openapi.json"
+      - "uv run backend/specs/extract_openapi.py > frontend/openapi.json"
       - cd frontend && npx orval
 
   # --------------------------------------------------------------------------
@@ -152,17 +145,8 @@ tasks:
       - kind load docker-image init-dynamodb:latest --name {{.KIND_CLUSTER}}
 
   # --------------------------------------------------------------------------
-  # 6. HELM & KUBERNETES
+  # 6. HELMFILE
   # --------------------------------------------------------------------------
-
-  k8s:render-templates:
-    desc: "📄 K8S: Render environment .gotmpl files to rendered-values/"
-    dir: infra/k8s
-    env:
-      AWS_ACCOUNT_ID: '{{.AWS_ACCOUNT_ID}}'
-    cmds:
-      - mkdir -p ../environments/{{.K8S_ENV}}/rendered-values
-      - "{{.HELMFILE_CMD}} write-values --output-file-template='../environments/{{.K8S_ENV}}/rendered-values/{{`{{.Release.Name}}`}}.yaml'"
 
   k8s:helm:repos:
     desc: "📦 K8S: Add and update all Helm chart repositories"
@@ -206,25 +190,25 @@ tasks:
     dir: infra/k8s
     env:
       AWS_ACCOUNT_ID: '{{.AWS_ACCOUNT_ID}}'
+    vars:
+      APP_NAMESPACE: "harmony"
     cmds:
       - "{{.HELMFILE_CMD}} destroy"
-      - "kubectl delete namespace {{.K8S_NAMESPACE}} --ignore-not-found"
+      - "kubectl delete namespace {{.APP_NAMESPACE}} --ignore-not-found"
 
   kind:cluster:create:
     desc: "☸️  K8S: Create the local kind cluster"
+    vars:
+      KIND_CLUSTER: "harmony-local"
     cmds:
       - kind create cluster --config infra/environments/local/kind-config.yaml --name {{.KIND_CLUSTER}}
     status:
       - kind get clusters | grep {{.KIND_CLUSTER}}
 
-  kind:deploy:
-    desc: "🚀 K8S: Full deploy — build images + apply all Helm releases"
-    cmds:
-      - task: image:load:kind
-      - task: k8s:apply
-
   kind:cluster:delete:
     desc: "☸️  K8S: Delete the local kind cluster"
+    vars:
+      KIND_CLUSTER: "harmony-local"
     cmds:
       - kind delete cluster --name {{.KIND_CLUSTER}}
 
@@ -247,36 +231,6 @@ tasks:
     cmds:
       - task: k8s:destroy
       - task: kind:cluster:delete
-
-  # --------------------------------------------------------------------------
-  # 7. ARGOCD
-  # --------------------------------------------------------------------------
-
-  argocd:install:
-    desc: "🐙 ARGOCD: Install ArgoCD"
-    cmds:
-      - kubectl create namespace argocd || true
-      - kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-      - kubectl wait --for=condition=available --timeout=600s deployment/argocd-server -n argocd
-
-  argocd:bootstrap:
-    desc: "🐙 ARGOCD: Apply local bootstrap Application"
-    cmds:
-      - kubectl apply -f infra/k8s/appsets/bootstrap.yaml
-
-  kind:argocd:setup:
-    desc: "🚀 K8S: setup cluster + build + argocd install + bootstrap"
-    cmds:
-      - task: kind:cluster:create
-      - task: image:load:kind
-      - task: argocd:install
-      - task: argocd:bootstrap
-
-  argocd:ui:
-    desc: Port-forward ArgoCD UI to localhost:8080
-    cmds:
-      - kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
-      - kubectl port-forward svc/argocd-server -n argocd 8080:443
 
   # Required when using launching the remote k8s cluster locally on kind.
   kind:iam:admin:
@@ -302,12 +256,6 @@ tasks:
     dir: infra/terraform/environments/{{.K8S_ENV}}
     cmds:
       - terragrunt init
-
-  tf:init:upgrade:
-    desc: "🌍 TF: Upgrade Terragrunt for the target K8S_ENV"
-    dir: infra/terraform/environments/{{.K8S_ENV}}
-    cmds:
-      - terragrunt init -upgrade
 
   tf:plan:
     desc: "🌍 TF: Plan Terragrunt infrastructure for the target K8S_ENV"

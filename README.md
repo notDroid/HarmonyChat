@@ -76,7 +76,7 @@ Our infrastructure deployment strictly adheres to GitOps principles, decoupling 
 * **Config Repository (Environment-Specific):** Contains environment variables, SOPS-encrypted secrets, and references to specific App Repo Git tags to trigger deployments.
 
 **The CI/CD Pipeline:**
-We utilize a high-level `values.yaml` and `secrets.yaml` to control the entire deployment. Rendered manifests are published as an OCI Artifact using a Helmfile template, carefully decoupling secrets and dynamic Terraform outputs via AWS Secrets Manager and Parameter Store. ArgoCD then continuously syncs this artifact to the Kubernetes cluster. 
+We utilize a high-level `values.yaml` and `secrets.yaml` to control the entire deployment. Rendered manifests are published using a Helmfile template while carefully decoupling secrets and dynamic Terraform outputs via AWS Secrets Manager and Parameter Store. ArgoCD then continuously syncs this artifact to the Kubernetes cluster. 
 
 ### 2. Kubernetes Provisioning & Templating
 * **Infrastructure as Code (IaC):** We currently use Terragrunt to parse, decrypt, and bootstrap the underlying AWS infrastructure, including the EKS cluster. *(Note: We are planning a migration to Spacelift to fully automate infrastructure creation).*
