@@ -60,7 +60,10 @@ workloads:
 # ==========================================
 infra:
   local:
-     dynamodbInitImage: "init-dynamodb:local"
+    dynamodbInit:
+      repository: "init-dynamodb"
+      tag: "local"
+      pullPolicy: "Never"
   
   k8s:
     storage_class: "standard"

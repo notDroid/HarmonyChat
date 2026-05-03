@@ -16,8 +16,8 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: init-dynamodb
-          image: {{ .Values.image.dynamodbInit }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.image.dynamodbInit.repository }}:{{ .Values.image.dynamodbInit.tag }}"
+          imagePullPolicy: {{ .Values.image.dynamodbInit.pullPolicy }}
           env:
             - name: DYNAMODB_ENDPOINT
               value: {{ .Values.dynamodb.endpoint | quote }}

@@ -1,5 +1,10 @@
+image:
+  dynamodbInit:
+    repository: {{ .Values.infra.local.dynamodbInit.repository | quote }}
+    tag: {{ .Values.infra.local.dynamodbInit.tag | quote }}
+    pullPolicy: {{ .Values.infra.local.dynamodbInit.pullPolicy | quote }}
+
 dynamodb:
-  dynamodbInit: {{ .Values.infra.local.dynamodbInitImage | quote }}
   endpoint: "http://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
   region: {{ .Values.infra.aws.region | quote }}
 
