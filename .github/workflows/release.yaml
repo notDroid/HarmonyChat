@@ -43,10 +43,8 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.ORG }}/harmony/backend:${{ github.ref_name }}
             ${{ env.REGISTRY }}/${{ env.ORG }}/harmony/backend:latest
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/harmony/backend:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/harmony/backend:buildcache,mode=max
 
       - name: Build and push Frontend
         uses: docker/build-push-action@v7
@@ -56,10 +54,8 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.ORG }}/harmony/frontend:${{ github.ref_name }}
             ${{ env.REGISTRY }}/${{ env.ORG }}/harmony/frontend:latest
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/harmony/frontend:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/harmony/frontend:buildcache,mode=max
 
       - name: Build and push init-dynamodb image
         uses: docker/build-push-action@v7
@@ -70,10 +66,8 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.ORG }}/harmony/init-dynamodb:${{ github.ref_name }}
             ${{ env.REGISTRY }}/${{ env.ORG }}/harmony/init-dynamodb:latest
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha,scope=init-dynamodb
-          cache-to: type=gha,mode=max,scope=init-dynamodb
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/harmony/init-dynamodb:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/harmony/init-dynamodb:buildcache,mode=max
           
   create-github-release:
     needs: build-and-publish-images
