@@ -5,8 +5,8 @@ vars:
 
   K8S_ENV: '{{.K8S_ENV | default "local"}}' # IMPORTANT: set through .env or CLI flag
   CONFIG_HELMFILE_VALUES: >-
-    --state-values-file ../../environments/{{.K8S_ENV}}/values.yaml
-    --state-values-file ../../environments/{{.K8S_ENV}}/secrets.yaml
+    --state-values-file ../environments/{{.K8S_ENV}}/values.yaml
+    --state-values-file ../environments/{{.K8S_ENV}}/secrets.yaml
   HELMFILE_CMD: "helmfile -e {{.K8S_ENV}} {{.CONFIG_HELMFILE_VALUES}} --skip-deps"
 
   AWS_ACCOUNT_ID:
