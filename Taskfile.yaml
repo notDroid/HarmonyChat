@@ -135,7 +135,7 @@ tasks:
   image:build:init-dynamodb:
     desc: "🐳 IMAGE: Build the dynamodb-local image (Local Only)"
     cmds:
-      - docker build --platform linux/amd64,linux/arm64 -t init-dynamodb:latest -f infra/docker/images/init-dynamodb/Dockerfile infra/
+      - docker build --platform linux/amd64,linux/arm64 -t init-dynamodb:local -f infra/docker/images/init-dynamodb/Dockerfile infra/
 
   image:load:kind:
     desc: "🐳 KIND: Load backend and init images into local kind cluster"
@@ -144,7 +144,7 @@ tasks:
       KIND_CLUSTER: "harmony-local"
     cmds:
       - kind load docker-image harmony-backend:local --name {{.KIND_CLUSTER}}
-      - kind load docker-image init-dynamodb:latest --name {{.KIND_CLUSTER}}
+      - kind load docker-image init-dynamodb:local --name {{.KIND_CLUSTER}}
 
   # --------------------------------------------------------------------------
   # 6. HELMFILE

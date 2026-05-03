@@ -59,6 +59,9 @@ workloads:
 # 3. INFRASTRUCTURE & TOPOLOGY
 # ==========================================
 infra:
+  local:
+     dynamodbInitImage: "init-dynamodb:local"
+  
   k8s:
     storage_class: "standard"
     

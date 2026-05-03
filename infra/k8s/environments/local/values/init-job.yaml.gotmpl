@@ -1,4 +1,5 @@
 dynamodb:
+  dynamodbInit: {{ .Values.infra.local.dynamodbInitImage | quote }}
   endpoint: "http://{{ .Values.infra.dynamodb.host }}:{{ .Values.infra.dynamodb.port }}"
   region: {{ .Values.infra.aws.region | quote }}
 
