@@ -1,7 +1,5 @@
 locals {
-  values = yamldecode(templatefile("${get_repo_root()}/infra/environments/remote/values.yaml", {
-    AWS_ACCOUNT_ID = get_aws_account_id()
-  }))
+  values = yamldecode(file("${get_repo_root()}/infra/environments/remote/values.yaml"))
   secrets = yamldecode(file("${get_repo_root()}/infra/environments/remote/secrets.yaml"))
   
   env = local.values.environment

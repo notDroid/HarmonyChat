@@ -9,14 +9,6 @@ vars:
     --state-values-file ../environments/{{.K8S_ENV}}/secrets.yaml
   HELMFILE_CMD: "helmfile -e {{.K8S_ENV}} {{.CONFIG_HELMFILE_VALUES}} --skip-deps"
 
-  AWS_ACCOUNT_ID:
-    sh: >
-      if [ "{{.K8S_ENV}}" = "local" ]; then
-        echo "local-dev";
-      else
-        aws sts get-caller-identity --query Account --output text;
-      fi
-
 tasks:
   default:
     silent: true
@@ -166,32 +158,24 @@ tasks:
   k8s:apply:
     desc: "🚀 K8S: Apply Helm releases (helmfile sync)"
     dir: infra/k8s
-    env:
-      AWS_ACCOUNT_ID: '{{.AWS_ACCOUNT_ID}}'
     cmds:
       - "{{.HELMFILE_CMD}} sync"
 
   k8s:template:
     desc: "📄 K8S: Template Helm releases (helmfile template)"
     dir: infra/k8s
-    env:
-      AWS_ACCOUNT_ID: '{{.AWS_ACCOUNT_ID}}'
     cmds:
       - "{{.HELMFILE_CMD}} template"
 
   k8s:diff:
     desc: "🔍 K8S: Diff pending Helm changes"
     dir: infra/k8s
-    env:
-      AWS_ACCOUNT_ID: '{{.AWS_ACCOUNT_ID}}'
     cmds:
       - "{{.HELMFILE_CMD}} diff"
 
   k8s:destroy:
     desc: "🛑 K8S: Tear down all Helm releases (keeps cluster)"
     dir: infra/k8s
-    env:
-      AWS_ACCOUNT_ID: '{{.AWS_ACCOUNT_ID}}'
     vars:
       APP_NAMESPACE: "harmony"
     cmds:
