@@ -36,8 +36,6 @@ templates:
   shared:
     inherit:
       - template: default
-    labels:
-      wave: "0"
     missingFileHandler: Info
     valuesTemplate:
       - environments/base/values/{{`{{ .Release.Name }}`}}.yaml.gotmpl
@@ -51,8 +49,6 @@ templates:
   local-only:
     inherit:
       - template: default
-    labels:
-      wave: "-2"
     installed: {{ eq .Environment.Name "local" }}
     missingFileHandler: Info
     valuesTemplate:
@@ -65,8 +61,6 @@ releases:
   {{ if ne .Environment.Name "local" }}
   - name: external-secrets
     namespace: external-secrets
-    labels:
-      wave: "-5"
     chart: external-secrets/external-secrets
     version: "2.2.0"
     installed: {{ ne .Environment.Name "local" }}
@@ -77,16 +71,12 @@ releases:
   - name: karpenter-crd
     chart: oci://public.ecr.aws/karpenter/karpenter-crd
     version: "1.10.0"
-    labels:
-      wave: "-5"
     inherit:
       - template: remote-only
 
   - name: karpenter
     chart: oci://public.ecr.aws/karpenter/karpenter
     version: "1.10.0"
-    labels:
-      wave: "-4"
     inherit:
       - template: remote-only
     values:
@@ -98,8 +88,6 @@ releases:
 
   - name: karpenter-provisioner
     chart: charts/karpenter-provisioner
-    labels:
-      wave: "-4"
     inherit:
       - template: remote-only
     disableValidation: true
@@ -111,15 +99,11 @@ releases:
 
   - name: gp3-storage-class
     chart: charts/storage-class
-    labels:
-      wave: "-4"
     inherit:
       - template: remote-only
 
   - name: reloader
     namespace: kube-system
-    labels:
-      wave: "-4"
     chart: stakater/reloader
     installed: {{ ne .Environment.Name "local" }}
     wait: true
@@ -127,8 +111,6 @@ releases:
 
   - name: metrics-server
     namespace: kube-system
-    labels:
-      wave: "-4"
     chart: metrics-server/metrics-server
     values:
       {{- if or (eq .Environment.Name "local") (eq .Environment.Name "remote-local") }}
@@ -139,8 +121,6 @@ releases:
 
   - name: kube-prometheus-stack
     namespace: monitoring
-    labels:
-      wave: "-4"
     chart: prometheus-community/kube-prometheus-stack
     disableValidation: true
     missingFileHandler: Info
@@ -154,8 +134,6 @@ releases:
   # ---------------------------------------------------------------------------
   - name: secrets
     chart: charts/secrets
-    labels:
-      wave: "-3"
     inherit:
       - template: default
     values:
@@ -202,8 +180,6 @@ releases:
     version: 31.5.0
     inherit:
       - template: shared
-    labels:
-      wave: "-1"
     needs:
       {{- if eq .Environment.Name "local" }}
       - harmony/minio
@@ -275,8 +251,6 @@ releases:
     chart: charts/init-job
     inherit:
       - template: local-only
-    labels:
-      wave: "0"
     needs:
       - harmony/dynamodb-local
 
