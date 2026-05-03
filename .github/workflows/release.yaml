@@ -64,7 +64,8 @@ jobs:
       - name: Build and push init-dynamodb image
         uses: docker/build-push-action@v7
         with:
-          context: ./infra/docker/images/init-dynamodb
+          context: ./infra
+          file: ./infra/docker/images/init-dynamodb/Dockerfile
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.ORG }}/harmony/init-dynamodb:${{ github.ref_name }}
