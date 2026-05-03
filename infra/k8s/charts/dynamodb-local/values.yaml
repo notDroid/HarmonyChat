@@ -17,7 +17,7 @@ args:
 persistence:
   enabled: true
   size: 1Gi
-  storageClass: ""
+  storageClass: "standard"
 
 service:
   type: ClusterIP

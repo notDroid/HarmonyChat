@@ -140,6 +140,8 @@ tasks:
   image:load:kind:
     desc: "🐳 KIND: Load backend and init images into local kind cluster"
     deps: [image:build:backend, image:build:init-dynamodb]
+    vars:
+      KIND_CLUSTER: "harmony-local"
     cmds:
       - kind load docker-image harmony-backend:local --name {{.KIND_CLUSTER}}
       - kind load docker-image init-dynamodb:latest --name {{.KIND_CLUSTER}}
